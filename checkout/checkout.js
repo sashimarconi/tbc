@@ -836,7 +836,7 @@ async function loadOffer() {
     return;
   }
 
-  const data = await res.json();
+  const data = await response.json();
   offerData = data;
 
   if (!offerData?.base) {
