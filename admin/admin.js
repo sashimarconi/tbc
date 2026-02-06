@@ -5,8 +5,6 @@ const loginBtn = document.getElementById("login-btn");
 const logoutBtn = document.getElementById("logout-btn");
 const passwordInput = document.getElementById("password");
 const loginError = document.getElementById("login-error");
-const newItemForm = document.getElementById("new-item");
-const itemsContainer = document.getElementById("items");
 const panelTabs = document.querySelectorAll(".panel-tab");
 const panelViews = document.querySelectorAll(".panel-view");
 const statsUpdated = document.getElementById("stats-updated");
@@ -53,6 +51,31 @@ const inspectorType = document.getElementById("inspector-type");
 const inspectorTitle = document.getElementById("inspector-title");
 const inspectorBody = document.getElementById("inspector-body");
 const inspectorClose = document.getElementById("inspector-close");
+const productsTableBody = document.getElementById("products-table-body");
+const productsSearchInput = document.getElementById("products-search");
+const createProductBtn = document.getElementById("create-product-btn");
+const productModal = document.getElementById("product-modal");
+const productModalTitle = document.getElementById("product-modal-title");
+const productForm = document.getElementById("product-form");
+const productTypeSelect = document.getElementById("product-type");
+const productNameInput = document.getElementById("product-name");
+const productDescriptionInput = document.getElementById("product-description");
+const productPriceInput = document.getElementById("product-price");
+const productCompareInput = document.getElementById("product-compare");
+const productActiveSelect = document.getElementById("product-active");
+const productSortInput = document.getElementById("product-sort");
+const formFactorButtons = document.querySelectorAll("[data-form-factor]");
+const logisticsSection = document.getElementById("logistics-section");
+const logHeightInput = document.getElementById("log-height");
+const logWidthInput = document.getElementById("log-width");
+const logLengthInput = document.getElementById("log-length");
+const logWeightInput = document.getElementById("log-weight");
+const mediaTabs = document.querySelectorAll("[data-image-mode]");
+const mediaPanels = document.querySelectorAll("[data-image-panel]");
+const productImageUpload = document.getElementById("product-image-upload");
+const productImageUrl = document.getElementById("product-image-url");
+const productImagePreview = document.querySelector("#product-image-preview img");
+const productSubmitBtn = document.getElementById("product-submit");
 const numberFormatter = new Intl.NumberFormat("pt-BR");
 const percentFormatter = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
@@ -68,6 +91,14 @@ let token = localStorage.getItem("admin_token") || "";
 let summaryInterval = null;
 let ordersInterval = null;
 let cartsInterval = null;
+let productsCache = [];
+let productModalMode = "create";
+let editingProductId = null;
+let selectedFormFactor = "physical";
+let currentImageMode = "upload";
+let currentImageValue = "";
+let isUploadingImage = false;
+const fallbackProductImage = "https://dummyimage.com/200x200/ede9df/8a8277&text=Produto";
 
 function setAuthHeader() {
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -267,6 +298,126 @@ function renderTableMessage(tbody, columns, message) {
 function formatCurrency(value) {
   const cents = Number(value || 0);
   return currencyFormatter.format(cents / 100);
+}
+
+function escapeHtml(value = "") {
+  return value
+    .toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function parseCurrencyInput(value) {
+  if (!value) {
+    return 0;
+  }
+  const normalized = value
+    .toString()
+    .replace(/[^0-9,.-]/g, "")
+    .replace(/,/g, ".");
+  const amount = Number(normalized);
+  if (Number.isNaN(amount)) {
+    return 0;
+  }
+  return Math.round(amount * 100);
+}
+
+function formatCentsForField(cents) {
+  return (Number(cents || 0) / 100).toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function updateImagePreview(src) {
+  if (!productImagePreview) {
+    return;
+  }
+  productImagePreview.src = src || fallbackProductImage;
+}
+
+function isStoredMediaUrl(value) {
+  return typeof value === "string" && value.includes("/api/public/media");
+}
+
+function setFormFactor(factor) {
+  selectedFormFactor = factor === "digital" ? "digital" : "physical";
+  formFactorButtons.forEach((btn) => {
+    btn.classList.toggle("is-active", btn.dataset.formFactor === selectedFormFactor);
+  });
+  if (logisticsSection) {
+    logisticsSection.classList.toggle("hidden", selectedFormFactor === "digital");
+  }
+}
+
+function setImageMode(mode) {
+  currentImageMode = mode;
+  mediaTabs.forEach((tab) => {
+    tab.classList.toggle("is-active", tab.dataset.imageMode === mode);
+  });
+  mediaPanels.forEach((panel) => {
+    panel.classList.toggle("hidden", panel.dataset.imagePanel !== mode);
+  });
+}
+
+function handleImageUploadChange(event) {
+  const file = event.target.files?.[0];
+  if (!file) {
+    return;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    alert("Envie imagens de até 2MB.");
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      isUploadingImage = true;
+      updateUploadState(true);
+      const uploaded = await uploadProductImage(reader.result, file.name);
+      currentImageValue = uploaded?.file?.url || uploaded?.url || "";
+      if (productImageUrl) {
+        productImageUrl.value = "";
+      }
+      setImageMode("upload");
+      updateImagePreview(currentImageValue);
+    } catch (error) {
+      console.error(error);
+      alert(error.message || "Não foi possível enviar a imagem.");
+    } finally {
+      isUploadingImage = false;
+      updateUploadState(false);
+    }
+  };
+  reader.readAsDataURL(file);
+  event.target.value = "";
+}
+
+function updateUploadState(uploading) {
+  const label = document.querySelector(".upload-tile span");
+  if (!label) {
+    return;
+  }
+  label.textContent = uploading ? "Enviando..." : "Arraste ou clique para enviar";
+}
+
+async function uploadProductImage(dataUrl, filename) {
+  const res = await fetch("/api/admin/uploads", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...setAuthHeader(),
+    },
+    body: JSON.stringify({ data_url: dataUrl, filename }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || "Falha no upload");
+  }
+  return data;
 }
 
 function formatDateTime(value) {
@@ -531,118 +682,241 @@ function activateView(targetId) {
   }
 }
 
-function renderItems(items) {
-  itemsContainer.innerHTML = "";
-  items.forEach((item) => {
-    const el = document.createElement("div");
-    el.className = "item";
-    const shareLink = item.type === "base" && item.slug ? buildCheckoutLink(item.slug) : "";
-    el.innerHTML = `
-      <div><strong>${item.type.toUpperCase()}</strong> - ${item.name}</div>
-      <div class="item__row">
-        <input data-field="name" value="${item.name || ""}" />
-        <input data-field="description" value="${item.description || ""}" />
-        <input data-field="price_cents" type="number" value="${
-          item.price_cents || 0
-        }" />
-        <input data-field="compare_price_cents" type="number" value="${
-          item.compare_price_cents || ""
-        }" placeholder="Preço antigo" />
-        <input data-field="sort" type="number" value="${item.sort || 0}" />
-        <input data-field="image_url" value="${item.image_url || ""}" />
-      </div>
-      <div class="item__row">
-        <select data-field="type">
-          <option value="base" ${item.type === "base" ? "selected" : ""}>Base</option>
-          <option value="bump" ${item.type === "bump" ? "selected" : ""}>Bump</option>
-          <option value="upsell" ${item.type === "upsell" ? "selected" : ""}>Upsell</option>
-          <option value="shipping" ${item.type === "shipping" ? "selected" : ""}>Frete</option>
-        </select>
-        <select data-field="active">
-          <option value="true" ${item.active ? "selected" : ""}>Ativo</option>
-          <option value="false" ${!item.active ? "selected" : ""}>Inativo</option>
-        </select>
-      </div>
-      <div class="item__actions">
-        <button data-action="save">Salvar</button>
-        <button data-action="delete" class="ghost">Excluir</button>
-      </div>
-      ${
-        item.type === "base"
-          ? `
-        <div class="item__share" data-base-share>
-          <label>Link do checkout</label>
-          <div class="item__share-row" data-share-row>
-            <input type="text" readonly data-share-input />
-            <button type="button" data-action="copy-link">Copiar link</button>
-          </div>
-          <p class="muted" data-share-pending>O link será gerado após salvar.</p>
-        </div>
-      `
-          : ""
-      }
-    `;
-
-    el.querySelector("[data-action=save]").addEventListener("click", async () => {
-      const payload = collectItem(el);
-      await updateItem(item.id, payload);
-    });
-
-    el.querySelector("[data-action=delete]").addEventListener("click", async () => {
-      if (!confirm("Excluir item?")) {
-        return;
-      }
-      await deleteItem(item.id);
-    });
-
-    if (item.type === "base") {
-      const shareWrapper = el.querySelector("[data-base-share]");
-      const shareRow = shareWrapper?.querySelector("[data-share-row]");
-      const shareInput = shareWrapper?.querySelector("[data-share-input]");
-      const sharePending = shareWrapper?.querySelector("[data-share-pending]");
-      const copyBtn = shareWrapper?.querySelector("[data-action=copy-link]");
-      if (shareLink) {
-        if (shareInput) {
-          shareInput.value = shareLink;
-        }
-        shareRow?.classList.remove("hidden");
-        sharePending?.classList.add("hidden");
-        copyBtn?.addEventListener("click", async () => {
-          try {
-            await copyToClipboard(shareLink);
-            const original = copyBtn.textContent;
-            copyBtn.textContent = "Copiado";
-            setTimeout(() => {
-              copyBtn.textContent = original;
-            }, 1200);
-          } catch (error) {
-            console.warn("Não foi possível copiar o link", error);
-          }
-        });
-      } else {
-        shareRow?.classList.add("hidden");
-        sharePending?.classList.remove("hidden");
-      }
-    }
-
-    itemsContainer.appendChild(el);
-  });
+function renderItems(items = []) {
+  productsCache = Array.isArray(items) ? items : [];
+  renderProductsTable();
 }
 
-function collectItem(el) {
-  const payload = {};
-  el.querySelectorAll("[data-field]").forEach((input) => {
-    payload[input.dataset.field] = input.value;
-  });
-  payload.active = payload.active === "true";
-  payload.price_cents = Number(payload.price_cents || 0);
-  if (payload.compare_price_cents !== undefined) {
-    payload.compare_price_cents = payload.compare_price_cents
-      ? Number(payload.compare_price_cents)
-      : null;
+function renderProductsTable() {
+  if (!productsTableBody) {
+    return;
   }
-  payload.sort = Number(payload.sort || 0);
+  const searchTerm = (productsSearchInput?.value || "").trim().toLowerCase();
+  const filtered = productsCache.filter((product) => {
+    if (!searchTerm) {
+      return true;
+    }
+    const haystack = `${product.name || ""} ${product.description || ""}`.toLowerCase();
+    return haystack.includes(searchTerm);
+  });
+
+  if (!filtered.length) {
+    productsTableBody.innerHTML = `<tr><td colspan="5">Nenhum produto encontrado.</td></tr>`;
+    return;
+  }
+
+  const typeMap = {
+    base: "Oferta base",
+    bump: "Bump",
+    upsell: "Upsell",
+    shipping: "Frete",
+  };
+
+  const rows = filtered
+    .map((item) => {
+      const image = item.image_url || fallbackProductImage;
+      const typeLabel = typeMap[item.type] || item.type;
+      const formFactorLabel = item.form_factor === "digital" ? "Digital" : "Físico";
+      const formFactorClass = item.form_factor === "digital" ? "pill pill--digital" : "pill";
+      const priceHtml = `
+        <div class="product-price">
+          <strong>${formatCurrency(item.price_cents)}</strong>
+          ${
+            item.compare_price_cents
+              ? `<small>De ${formatCurrency(item.compare_price_cents)}</small>`
+              : ""
+          }
+        </div>`;
+      const statusClass = item.active
+        ? "product-status product-status--active"
+        : "product-status product-status--draft";
+      const statusLabel = item.active ? "Publicado" : "Rascunho";
+      const shareLink = item.type === "base" && item.slug ? buildCheckoutLink(item.slug) : "";
+      const shareButton = shareLink
+        ? `<button type="button" class="ghost" data-action="share" data-product-id="${item.id}">Copiar link</button>`
+        : "";
+      return `
+        <tr data-product-id="${item.id}">
+          <td>
+            <div class="product-cell">
+              <img src="${image}" alt="${escapeHtml(item.name || "Produto")}" />
+              <div>
+                <strong>${escapeHtml(item.name || "Produto")}</strong>
+                <span>${escapeHtml(typeLabel)}</span>
+              </div>
+            </div>
+          </td>
+          <td><span class="${formFactorClass}">${formFactorLabel}</span></td>
+          <td>${priceHtml}</td>
+          <td><span class="${statusClass}">${statusLabel}</span></td>
+          <td>
+            <div class="product-actions">
+              <button type="button" class="ghost" data-action="edit" data-product-id="${item.id}">Editar</button>
+              ${shareButton}
+              <button type="button" class="ghost" data-action="delete" data-product-id="${item.id}">Excluir</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  productsTableBody.innerHTML = rows;
+}
+
+function resetProductForm() {
+  if (!productForm) {
+    return;
+  }
+  productForm.reset();
+  productDescriptionInput.value = "";
+  productSortInput.value = "0";
+  productCompareInput.value = "";
+  if (productImageUrl) {
+    productImageUrl.value = "";
+  }
+  logHeightInput.value = "";
+  logWidthInput.value = "";
+  logLengthInput.value = "";
+  logWeightInput.value = "";
+  currentImageValue = "";
+  if (productImageUpload) {
+    productImageUpload.value = "";
+  }
+  if (productImageUrl) {
+    productImageUrl.value = "";
+  }
+  updateImagePreview("");
+  setFormFactor("physical");
+  setImageMode("upload");
+}
+
+function fillProductForm(item) {
+  productTypeSelect.value = item.type || "base";
+  productNameInput.value = item.name || "";
+  productDescriptionInput.value = item.description || "";
+  productPriceInput.value = formatCentsForField(item.price_cents);
+  productCompareInput.value = item.compare_price_cents
+    ? formatCentsForField(item.compare_price_cents)
+    : "";
+  productActiveSelect.value = item.active ? "true" : "false";
+  productSortInput.value = Number(item.sort || 0);
+  logHeightInput.value = Number(item.height_cm || 0) || "";
+  logWidthInput.value = Number(item.width_cm || 0) || "";
+  logLengthInput.value = Number(item.length_cm || 0) || "";
+  logWeightInput.value = Number(item.weight_grams || 0) || "";
+  setFormFactor(item.form_factor === "digital" ? "digital" : "physical");
+  currentImageValue = item.image_url || "";
+  updateImagePreview(currentImageValue);
+  const storedUpload = isStoredMediaUrl(currentImageValue);
+  if (productImageUrl) {
+    productImageUrl.value = storedUpload ? "" : currentImageValue;
+  }
+  const mode = storedUpload ? "upload" : currentImageValue ? "url" : "upload";
+  setImageMode(mode);
+}
+
+function openProductModal(mode, product) {
+  if (!productModal || !productForm) {
+    return;
+  }
+  productModalMode = mode;
+  editingProductId = product?.id || null;
+  productModalTitle.textContent =
+    mode === "edit" ? `Editar ${product?.name || "produto"}` : "Criar produto";
+  resetProductForm();
+  if (mode === "edit" && product) {
+    fillProductForm(product);
+  }
+  productModal.classList.remove("hidden");
+  productModal.hidden = false;
+  setTimeout(() => {
+    productNameInput?.focus();
+  }, 60);
+}
+
+function closeProductModal() {
+  if (!productModal) {
+    return;
+  }
+  productModal.classList.add("hidden");
+  productModal.hidden = true;
+  editingProductId = null;
+}
+
+function resolveImageValue() {
+  const manualValue = productImageUrl?.value.trim() || "";
+  if (currentImageMode === "url") {
+    return manualValue;
+  }
+  if (currentImageValue) {
+    return currentImageValue;
+  }
+  return manualValue;
+}
+
+function collectProductPayload() {
+  const priceCents = parseCurrencyInput(productPriceInput.value);
+  const compareCents = productCompareInput.value
+    ? parseCurrencyInput(productCompareInput.value)
+    : null;
+  const payload = {
+    type: productTypeSelect.value,
+    name: productNameInput.value.trim(),
+    description: productDescriptionInput.value.trim(),
+    price_cents: priceCents,
+    compare_price_cents: compareCents,
+    active: productActiveSelect.value !== "false",
+    sort: Number(productSortInput.value || 0),
+    image_url: resolveImageValue(),
+    form_factor: selectedFormFactor,
+    requires_address: selectedFormFactor !== "digital",
+    weight_grams: selectedFormFactor === "digital" ? 0 : Number(logWeightInput.value || 0),
+    length_cm: selectedFormFactor === "digital" ? 0 : Number(logLengthInput.value || 0),
+    width_cm: selectedFormFactor === "digital" ? 0 : Number(logWidthInput.value || 0),
+    height_cm: selectedFormFactor === "digital" ? 0 : Number(logHeightInput.value || 0),
+  };
   return payload;
+}
+
+async function handleProductSubmit(event) {
+  event.preventDefault();
+  if (!productForm) {
+    return;
+  }
+  const payload = collectProductPayload();
+  if (!payload.name || !payload.type) {
+    alert("Preencha os campos obrigatórios.");
+    return;
+  }
+  const originalText = productSubmitBtn?.textContent;
+  if (productSubmitBtn) {
+    productSubmitBtn.disabled = true;
+    productSubmitBtn.textContent = "Salvando...";
+  }
+  try {
+    if (productModalMode === "edit" && editingProductId) {
+      await updateItem(editingProductId, payload);
+    } else {
+      await fetch("/api/admin/items", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...setAuthHeader(),
+        },
+        body: JSON.stringify(payload),
+      });
+    }
+    closeProductModal();
+    loadItems();
+  } catch (error) {
+    alert("Não foi possível salvar o produto.");
+  } finally {
+    if (productSubmitBtn) {
+      productSubmitBtn.disabled = false;
+      productSubmitBtn.textContent = originalText || "Salvar produto";
+    }
+  }
 }
 
 async function updateItem(id, payload) {
@@ -654,7 +928,6 @@ async function updateItem(id, payload) {
     },
     body: JSON.stringify(payload),
   });
-  loadItems();
 }
 
 async function deleteItem(id) {
@@ -662,7 +935,6 @@ async function deleteItem(id) {
     method: "DELETE",
     headers: { ...setAuthHeader() },
   });
-  loadItems();
 }
 
 function closeInspector() {
@@ -890,30 +1162,6 @@ function buildKeyValueRows(obj) {
     .map(([key, value]) => [key.toUpperCase(), String(value)]);
 }
 
-newItemForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const formData = new FormData(newItemForm);
-  const payload = Object.fromEntries(formData.entries());
-  payload.active = payload.active === "true";
-  payload.price_cents = Number(payload.price_cents || 0);
-  payload.compare_price_cents = payload.compare_price_cents
-    ? Number(payload.compare_price_cents)
-    : null;
-  payload.sort = Number(payload.sort || 0);
-
-  await fetch("/api/admin/items", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...setAuthHeader(),
-    },
-    body: JSON.stringify(payload),
-  });
-
-  newItemForm.reset();
-  loadItems();
-});
-
 loginBtn.addEventListener("click", login);
 loginForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -927,6 +1175,61 @@ logoutBtn.addEventListener("click", () => {
 
 ordersRefreshBtn?.addEventListener("click", () => loadOrders());
 cartsRefreshBtn?.addEventListener("click", () => loadCarts());
+
+productsSearchInput?.addEventListener("input", () => renderProductsTable());
+createProductBtn?.addEventListener("click", () => openProductModal("create"));
+productForm?.addEventListener("submit", handleProductSubmit);
+formFactorButtons.forEach((btn) => {
+  btn.addEventListener("click", () => setFormFactor(btn.dataset.formFactor));
+});
+mediaTabs.forEach((tab) => {
+  tab.addEventListener("click", () => setImageMode(tab.dataset.imageMode));
+});
+productImageUpload?.addEventListener("change", handleImageUploadChange);
+productImageUrl?.addEventListener("input", () => {
+  setImageMode("url");
+  currentImageValue = productImageUrl.value.trim();
+  updateImagePreview(currentImageValue);
+});
+document.querySelectorAll("[data-close-product]").forEach((btn) => {
+  btn.addEventListener("click", closeProductModal);
+});
+productModal?.addEventListener("click", (event) => {
+  if (event.target === productModal) {
+    closeProductModal();
+  }
+});
+productsTableBody?.addEventListener("click", async (event) => {
+  const target = event.target.closest("[data-action]");
+  if (!target) {
+    return;
+  }
+  const { productId } = target.dataset;
+  const product = productsCache.find((item) => item.id === productId);
+  const action = target.dataset.action;
+  if (action === "edit" && product) {
+    openProductModal("edit", product);
+    return;
+  }
+  if (action === "delete" && productId) {
+    if (!confirm("Excluir este produto?")) {
+      return;
+    }
+    await deleteItem(productId);
+    loadItems();
+    return;
+  }
+  if (action === "share" && product && product.slug) {
+    const link = buildCheckoutLink(product.slug);
+    if (link) {
+      await copyToClipboard(link);
+      target.textContent = "Copiado";
+      setTimeout(() => {
+        target.textContent = "Copiar link";
+      }, 1200);
+    }
+  }
+});
 
 ordersTableBody?.addEventListener("click", (event) => {
   const row = event.target.closest("tr[data-order-id]");
@@ -954,6 +1257,7 @@ inspector?.addEventListener("click", (event) => {
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     closeInspector();
+    closeProductModal();
   }
 });
 
@@ -965,6 +1269,14 @@ panelTabs.forEach((tab) => {
     activateView(tab.dataset.target);
   });
 });
+
+if (productImagePreview) {
+  updateImagePreview("");
+}
+if (productForm) {
+  setFormFactor("physical");
+  setImageMode("upload");
+}
 
 if (token) {
   showPanel();

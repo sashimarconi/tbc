@@ -2,6 +2,8 @@ create table if not exists products (
   id uuid primary key default gen_random_uuid(),
   type text not null check (type in ('base', 'bump', 'upsell', 'shipping')),
   slug text unique,
+  form_factor text not null default 'physical' check (form_factor in ('physical', 'digital')),
+  requires_address boolean not null default true,
   name text not null,
   description text,
   price_cents integer not null check (price_cents >= 0),
@@ -9,6 +11,10 @@ create table if not exists products (
   active boolean not null default true,
   sort integer not null default 0,
   image_url text,
+  weight_grams integer default 0,
+  length_cm integer default 0,
+  width_cm integer default 0,
+  height_cm integer default 0,
   created_at timestamptz not null default now()
 );
 
@@ -18,6 +24,14 @@ create index if not exists products_type_active_sort_idx
 create unique index if not exists products_slug_idx
   on products (slug)
   where slug is not null;
+
+create table if not exists product_files (
+  id uuid primary key default gen_random_uuid(),
+  filename text,
+  mime_type text not null,
+  data bytea not null,
+  created_at timestamptz not null default now()
+);
 
 create table if not exists analytics_sessions (
   session_id text primary key,

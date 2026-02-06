@@ -282,55 +282,175 @@
         </section>
 
         <section id="products-view" class="panel-view hidden">
-          <form id="new-item" class="form">
-            <h2>Novo item</h2>
-            <label>
-              Tipo
-              <select name="type">
+          <header class="products-head">
+            <div>
+              <h2>Produtos</h2>
+              <p>Gerencie o catálogo e os links de checkout.</p>
+            </div>
+            <button id="create-product-btn" type="button">Criar novo produto</button>
+          </header>
+
+          <div class="products-toolbar">
+            <label class="products-search" aria-label="Buscar produtos">
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path
+                  d="M9 3a6 6 0 104.47 10.03l3.75 3.75 1.42-1.42-3.75-3.75A6 6 0 009 3zm0 2a4 4 0 110 8 4 4 0 010-8z"
+                  fill="currentColor"
+                />
+              </svg>
+              <input id="products-search" type="search" placeholder="Buscar produtos..." />
+            </label>
+            <button id="products-filters" type="button" class="ghost" disabled>Filtros</button>
+          </div>
+
+          <div class="products-table-card">
+            <table class="products-table">
+              <thead>
+                <tr>
+                  <th>Produto</th>
+                  <th>Tipo</th>
+                  <th>Valor</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="products-table-body">
+                <tr>
+                  <td colspan="5">Carregando catálogo...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <aside id="product-modal" class="modal hidden" hidden role="dialog" aria-modal="true">
+      <div class="modal__panel">
+        <header class="modal__header">
+          <div>
+            <p class="modal__eyebrow">Produtos</p>
+            <h3 id="product-modal-title">Criar produto</h3>
+          </div>
+          <button type="button" class="ghost" data-close-product>Fechar</button>
+        </header>
+
+        <form id="product-form" class="product-form">
+          <section class="product-type">
+            <div class="product-type__group">
+              <label>Categoria</label>
+              <select id="product-type" name="type">
                 <option value="base">Base</option>
                 <option value="bump">Bump</option>
                 <option value="upsell">Upsell</option>
                 <option value="shipping">Frete</option>
               </select>
+            </div>
+            <div class="product-type__group">
+              <label>Formato</label>
+              <div class="toggle">
+                <button type="button" data-form-factor="physical" class="is-active">Físico</button>
+                <button type="button" data-form-factor="digital">Digital</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="media-card">
+            <header>
+              <div>
+                <h4>Imagem do produto</h4>
+                <p>Faça upload ou utilize uma URL pública.</p>
+              </div>
+              <div class="media-tabs">
+                <button type="button" data-image-mode="upload" class="is-active">Upload</button>
+                <button type="button" data-image-mode="url">URL</button>
+              </div>
+            </header>
+            <div data-image-panel="upload" class="media-panel">
+              <label class="upload-tile">
+                <input id="product-image-upload" type="file" accept="image/*" style="display:none" />
+                <span>Arraste ou clique para enviar</span>
+                <small>Formatos PNG, JPG ou WEBP</small>
+              </label>
+            </div>
+            <div data-image-panel="url" class="media-panel hidden">
+              <label>
+                <span>Link da imagem</span>
+                <input id="product-image-url" type="url" placeholder="https://..." />
+              </label>
+            </div>
+            <figure class="media-preview" id="product-image-preview">
+              <img alt="Pré-visualização" />
+              <figcaption>Pré-visualização</figcaption>
+            </figure>
+          </section>
+
+          <section class="product-grid">
+            <label>
+              Nome do produto
+              <input id="product-name" name="name" required placeholder="Digite o nome" />
             </label>
             <label>
-              Nome
-              <input name="name" required />
+              Preço original (R$)
+              <input id="product-price" name="price" inputmode="decimal" placeholder="0,00" />
             </label>
             <label>
-              Descricao
-              <input name="description" />
+              Preço promocional (R$)
+              <input id="product-compare" name="compare_price" inputmode="decimal" placeholder="Opcional" />
             </label>
             <label>
-              Preco (centavos)
-              <input name="price_cents" type="number" required />
-            </label>
-            <label>
-              Preço antigo (centavos)
-              <input name="compare_price_cents" type="number" />
-            </label>
-            <label>
-              Ativo
-              <select name="active">
-                <option value="true">Sim</option>
-                <option value="false">Nao</option>
+              Status
+              <select id="product-active" name="active">
+                <option value="true">Publicado</option>
+                <option value="false">Rascunho</option>
               </select>
             </label>
             <label>
-              Ordem
-              <input name="sort" type="number" value="0" />
+              Ordem na vitrine
+              <input id="product-sort" name="sort" type="number" value="0" />
             </label>
-            <label>
-              Imagem URL
-              <input name="image_url" />
-            </label>
-            <button type="submit">Adicionar</button>
-          </form>
+          </section>
 
-          <div id="items" class="items"></div>
-        </section>
-      </section>
-    </main>
+          <label>
+            Descrição breve
+            <textarea id="product-description" rows="3" placeholder="Conte por que seu produto é incrível."></textarea>
+          </label>
+
+          <section id="logistics-section" class="logistics-card">
+            <header>
+              <div>
+                <h4>Informações de logística</h4>
+                <p>Utilizadas para cálculo de frete.</p>
+              </div>
+              <span class="chip">Aparece apenas para produtos físicos</span>
+            </header>
+            <div class="logistics-grid">
+              <label>
+                Altura (cm)
+                <input id="log-height" type="number" min="0" step="1" />
+              </label>
+              <label>
+                Largura (cm)
+                <input id="log-width" type="number" min="0" step="1" />
+              </label>
+              <label>
+                Comprimento (cm)
+                <input id="log-length" type="number" min="0" step="1" />
+              </label>
+              <label>
+                Peso (g)
+                <input id="log-weight" type="number" min="0" step="10" />
+              </label>
+            </div>
+          </section>
+
+          <footer class="modal__footer">
+            <button type="button" class="ghost" data-close-product>Cancelar</button>
+            <button type="submit" id="product-submit">Salvar produto</button>
+          </footer>
+        </form>
+      </div>
+    </aside>
 
     <aside id="inspector" class="inspector hidden" hidden role="dialog" aria-modal="true">
       <div class="inspector__panel">

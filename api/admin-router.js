@@ -7,8 +7,12 @@ const {
   ensureBaseSlugs,
   generateUniqueSlug,
 } = require("../lib/ensure-products");
+const { saveProductFile } = require("../lib/product-files");
 
 function normalizeItemPayload(body = {}) {
+  const formFactor = body.form_factor === "digital" ? "digital" : "physical";
+  const requiresAddress =
+    body.requires_address === undefined ? formFactor !== "digital" : Boolean(body.requires_address);
   return {
     type: body.type,
     name: body.name,
@@ -23,6 +27,12 @@ function normalizeItemPayload(body = {}) {
     active: body.active !== false,
     sort: Number(body.sort || 0),
     image_url: body.image_url || "",
+    form_factor: formFactor,
+    requires_address: requiresAddress,
+    weight_grams: Number(body.weight_grams || 0),
+    length_cm: Number(body.length_cm || 0),
+    width_cm: Number(body.width_cm || 0),
+    height_cm: Number(body.height_cm || 0),
   };
 }
 
@@ -76,7 +86,23 @@ async function handleItems(req, res) {
     try {
       const slug = item.type === "base" ? await generateUniqueSlug() : null;
       const result = await query(
-        "insert into products (type, name, description, price_cents, compare_price_cents, active, sort, image_url, slug) values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning *",
+        `insert into products (
+           type,
+           name,
+           description,
+           price_cents,
+           compare_price_cents,
+           active,
+           sort,
+           image_url,
+           slug,
+           form_factor,
+           requires_address,
+           weight_grams,
+           length_cm,
+           width_cm,
+           height_cm
+         ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) returning *`,
         [
           item.type,
           item.name,
@@ -87,6 +113,12 @@ async function handleItems(req, res) {
           item.sort,
           item.image_url,
           slug,
+          item.form_factor,
+          item.requires_address,
+          item.weight_grams,
+          item.length_cm,
+          item.width_cm,
+          item.height_cm,
         ]
       );
       res.json({ item: result.rows[0] });
@@ -105,7 +137,22 @@ async function handleItems(req, res) {
     const updates = normalizeItemPayload(await parseJson(req));
     try {
       const result = await query(
-        "update products set type = $1, name = $2, description = $3, price_cents = $4, compare_price_cents = $5, active = $6, sort = $7, image_url = $8 where id = $9 returning *",
+        `update products set
+           type = $1,
+           name = $2,
+           description = $3,
+           price_cents = $4,
+           compare_price_cents = $5,
+           active = $6,
+           sort = $7,
+           image_url = $8,
+           form_factor = $9,
+           requires_address = $10,
+           weight_grams = $11,
+           length_cm = $12,
+           width_cm = $13,
+           height_cm = $14
+         where id = $15 returning *`,
         [
           updates.type,
           updates.name,
@@ -115,6 +162,12 @@ async function handleItems(req, res) {
           updates.active,
           updates.sort,
           updates.image_url,
+          updates.form_factor,
+          updates.requires_address,
+          updates.weight_grams,
+          updates.length_cm,
+          updates.width_cm,
+          updates.height_cm,
           id,
         ]
       );
@@ -281,7 +334,28 @@ module.exports = async (req, res) => {
     case "carts":
       await handleCarts(req, res);
       return;
+    case "uploads":
+      await handleUploads(req, res);
+      return;
     default:
       res.status(404).json({ error: "Not found" });
   }
 };
+
+async function handleUploads(req, res) {
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
+  try {
+    const body = await parseJson(req);
+    if (!body?.data_url) {
+      res.status(400).json({ error: "Missing data_url" });
+      return;
+    }
+    const file = await saveProductFile({ dataUrl: body.data_url, filename: body.filename || null });
+    res.json({ file });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+}
