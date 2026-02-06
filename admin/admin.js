@@ -1741,3 +1741,23 @@ if (sidebar && sidebarToggle && mainContent) {
     }
   });
 }
+
+// Sidebar highlight ativo e navegação acessível
+const navBtns = document.querySelectorAll('.sidebar__nav-btn');
+navBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    navBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    // Troca de view
+    const target = btn.getAttribute('data-target');
+    document.querySelectorAll('.panel-view').forEach(view => {
+      view.classList.add('hidden');
+      view.hidden = true;
+    });
+    const view = document.getElementById(target);
+    if (view) {
+      view.classList.remove('hidden');
+      view.hidden = false;
+    }
+  });
+});
