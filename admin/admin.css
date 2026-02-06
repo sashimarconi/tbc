@@ -30,14 +30,14 @@ body {
 }
 
 .card {
-  width: min(980px, 100%);
-  background: #fff9f0;
-  border: 1px solid rgba(90, 88, 82, 0.15);
-  border-radius: 28px;
-  padding: 28px;
-  box-shadow: 0 30px 80px rgba(42, 34, 28, 0.18);
+  width: 100%;
+  background: #0D0D12;
+  border: 1.5px solid #232336;
+  border-radius: 18px;
+  padding: 2.2rem 1.5rem;
+  box-shadow: 0 2px 24px 0 #A100FF11;
   display: grid;
-  gap: 20px;
+  gap: 1.5rem;
 }
 
 .card h1,
@@ -135,9 +135,12 @@ button.ghost {
 .panel-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
+  align-items: center;
+  gap: 1.5rem;
   flex-wrap: wrap;
+  background: #0D0D12;
+  border-bottom: 1.5px solid #232336;
+  margin-bottom: 2.2rem;
 }
 
 .panel-header__actions {
@@ -154,19 +157,24 @@ button.ghost {
 }
 
 .panel-tab {
-  background: rgba(95, 111, 63, 0.08);
-  color: #3d3a33;
-  border: 1px solid rgba(95, 111, 63, 0.2);
-  padding: 10px 16px;
-  border-radius: 999px;
+  background: #181825;
+  color: #B7B7C2;
+  border: 1.5px solid #232336;
+  padding: 0.85em 1.7em;
+  border-radius: 14px;
   box-shadow: none;
-  font-weight: 600;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  font-size: 1.05em;
+  letter-spacing: 0.01em;
+  transition: background 0.18s, color 0.18s, border 0.18s;
 }
 
 .panel-tab.is-active {
-  background: linear-gradient(135deg, #5f6f3f, #76854d);
-  color: #fff;
-  border-color: transparent;
+  background: linear-gradient(90deg,#181825 80%,#A100FF11 100%);
+  color: #A100FF;
+  border-color: #A100FF;
+  box-shadow: 0 0 0 2px #A100FF,0 2px 16px 0 #A100FF22;
 }
 
 .panel-view {
@@ -181,13 +189,13 @@ button.ghost {
 }
 
 .stat-card {
-  background: #fff;
+  background: #13131A;
   border-radius: 18px;
-  padding: 18px;
-  border: 1px solid rgba(90, 88, 82, 0.12);
-  box-shadow: 0 12px 30px rgba(34, 30, 26, 0.08);
+  padding: 2.2rem 1.5rem;
+  border: 1.5px solid #232336;
+  box-shadow: 0 2px 24px 0 #A100FF11;
   display: grid;
-  gap: 6px;
+  gap: 0.7rem;
 }
 
 .stat-card strong {
@@ -200,18 +208,19 @@ button.ghost {
 }
 
 .stat-card--accent {
-  background: linear-gradient(135deg, #8c5f38, #c18952);
-  color: #fff9f0;
-  border: none;
+  background: linear-gradient(120deg,#181825 60%,#A100FF22 100%);
+  color: #A100FF;
+  border: 1.5px solid #A100FF;
+  box-shadow: 0 2px 32px 0 #A100FF33;
 }
 
 .funnel-card,
 .timeline-card {
-  background: #fffdf8;
-  border-radius: 20px;
-  border: 1px solid rgba(90, 88, 82, 0.15);
-  padding: 20px;
-  box-shadow: 0 16px 40px rgba(42, 34, 28, 0.12);
+  background: #181825;
+  border-radius: 18px;
+  border: 1.5px solid #232336;
+  padding: 2rem;
+  box-shadow: 0 2px 24px 0 #A100FF11;
 }
 
 .funnel-card h2,
@@ -221,18 +230,18 @@ button.ghost {
 
 .funnel-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(180px,1fr));
+  gap: 1.5rem;
 }
 
 .funnel-item {
-  background: #fff;
+  background: #13131A;
   border-radius: 16px;
-  border: 1px solid rgba(90, 88, 82, 0.12);
-  padding: 16px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border: 1.5px solid #232336;
+  padding: 1.2rem 1rem;
+  box-shadow: 0 2px 24px 0 #A100FF11;
   display: grid;
-  gap: 10px;
+  gap: 0.7rem;
 }
 
 .funnel-item__header {
@@ -862,7 +871,9 @@ button.ghost {
   padding: 4px 12px;
   border-radius: 999px;
   font-size: 12px;
-  background: rgba(42, 38, 34, 0.08);
+  background: #232336;
+  color: #B7B7C2;
+  box-shadow: 0 2px 16px 0 #A100FF11;
 }
 
 .logistics-grid {
