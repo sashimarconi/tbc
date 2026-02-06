@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/checkout/:slug", "destination": "/checkout/index.html" },
+    { "source": "/checkout/:slug/", "destination": "/checkout/index.html" },
+    { "source": "/checkout/:slug/:rest*", "destination": "/checkout/index.html" }
+  ]
+}
