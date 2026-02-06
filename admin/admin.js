@@ -73,6 +73,30 @@ function setAuthHeader() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+function buildCheckoutLink(slug) {
+  if (!slug) {
+    return "";
+  }
+  const origin = window.location?.origin?.replace(/\/$/, "") || "";
+  return `${origin}/checkout/${slug}`;
+}
+
+async function copyToClipboard(value) {
+  if (!value) {
+    return;
+  }
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+  const tempInput = document.createElement("textarea");
+  tempInput.value = value;
+  document.body.appendChild(tempInput);
+  tempInput.select();
+  document.execCommand("copy");
+  document.body.removeChild(tempInput);
+}
+
 async function login() {
   loginError.textContent = "";
   const password = passwordInput.value;
@@ -512,6 +536,7 @@ function renderItems(items) {
   items.forEach((item) => {
     const el = document.createElement("div");
     el.className = "item";
+    const shareLink = item.type === "base" && item.slug ? buildCheckoutLink(item.slug) : "";
     el.innerHTML = `
       <div><strong>${item.type.toUpperCase()}</strong> - ${item.name}</div>
       <div class="item__row">
@@ -542,6 +567,20 @@ function renderItems(items) {
         <button data-action="save">Salvar</button>
         <button data-action="delete" class="ghost">Excluir</button>
       </div>
+      ${
+        item.type === "base"
+          ? `
+        <div class="item__share" data-base-share>
+          <label>Link do checkout</label>
+          <div class="item__share-row" data-share-row>
+            <input type="text" readonly data-share-input />
+            <button type="button" data-action="copy-link">Copiar link</button>
+          </div>
+          <p class="muted" data-share-pending>O link será gerado após salvar.</p>
+        </div>
+      `
+          : ""
+      }
     `;
 
     el.querySelector("[data-action=save]").addEventListener("click", async () => {
@@ -555,6 +594,36 @@ function renderItems(items) {
       }
       await deleteItem(item.id);
     });
+
+    if (item.type === "base") {
+      const shareWrapper = el.querySelector("[data-base-share]");
+      const shareRow = shareWrapper?.querySelector("[data-share-row]");
+      const shareInput = shareWrapper?.querySelector("[data-share-input]");
+      const sharePending = shareWrapper?.querySelector("[data-share-pending]");
+      const copyBtn = shareWrapper?.querySelector("[data-action=copy-link]");
+      if (shareLink) {
+        if (shareInput) {
+          shareInput.value = shareLink;
+        }
+        shareRow?.classList.remove("hidden");
+        sharePending?.classList.add("hidden");
+        copyBtn?.addEventListener("click", async () => {
+          try {
+            await copyToClipboard(shareLink);
+            const original = copyBtn.textContent;
+            copyBtn.textContent = "Copiado";
+            setTimeout(() => {
+              copyBtn.textContent = original;
+            }, 1200);
+          } catch (error) {
+            console.warn("Não foi possível copiar o link", error);
+          }
+        });
+      } else {
+        shareRow?.classList.add("hidden");
+        sharePending?.classList.remove("hidden");
+      }
+    }
 
     itemsContainer.appendChild(el);
   });

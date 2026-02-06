@@ -1,6 +1,7 @@
 create table if not exists products (
   id uuid primary key default gen_random_uuid(),
   type text not null check (type in ('base', 'bump', 'upsell', 'shipping')),
+  slug text unique,
   name text not null,
   description text,
   price_cents integer not null check (price_cents >= 0),
@@ -13,6 +14,10 @@ create table if not exists products (
 
 create index if not exists products_type_active_sort_idx
   on products (type, active, sort, created_at);
+
+create unique index if not exists products_slug_idx
+  on products (slug)
+  where slug is not null;
 
 create table if not exists analytics_sessions (
   session_id text primary key,

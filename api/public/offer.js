@@ -1,4 +1,5 @@
 const { query } = require("../../lib/db");
+const { ensureProductSchema, ensureBaseSlugs } = require("../../lib/ensure-products");
 
 module.exports = async (req, res) => {
   if (req.method !== "GET") {
@@ -7,10 +8,23 @@ module.exports = async (req, res) => {
   }
 
   try {
+    await ensureProductSchema();
+    await ensureBaseSlugs();
+
+    const slug = (req.query?.slug || "").toString().trim();
+    if (!slug) {
+      res.status(400).json({ error: "Checkout não encontrado" });
+      return;
+    }
+
     const baseRes = await query(
-      "select * from products where type = $1 and active = true order by sort asc, created_at asc limit 1",
-      ["base"]
+      "select * from products where type = 'base' and active = true and slug = $1 limit 1",
+      [slug]
     );
+    if (!baseRes.rows?.length) {
+      res.status(404).json({ error: "Checkout não encontrado" });
+      return;
+    }
     const bumpRes = await query(
       "select * from products where type = $1 and active = true order by sort asc, created_at asc",
       ["bump"]

@@ -41,6 +41,8 @@ const shippingSection = document.getElementById("shipping-section");
 const shippingList = document.getElementById("shipping-list");
 const CPF_FALLBACK = "25335818875";
 
+const activeOfferSlug = resolveOfferSlug();
+
 let offerData = null;
 let selectedBumps = new Set();
 let bumpMap = new Map();
@@ -54,6 +56,52 @@ let cartId = initCartId();
 let cartStageLevel = 0;
 let cartSyncTimeout = null;
 let lastCartPayloadSignature = "";
+
+function resolveOfferSlug() {
+  try {
+    const segments = window.location.pathname.split("/").filter(Boolean);
+    const checkoutIndex = segments.lastIndexOf("checkout");
+    if (checkoutIndex !== -1) {
+      const slug = segments[checkoutIndex + 1];
+      if (slug) {
+        return slug.trim();
+      }
+    }
+  } catch (error) {
+    // Ignored on purpose.
+  }
+  const params = new URLSearchParams(window.location.search);
+  return (params.get("offer") || "").trim();
+}
+
+function showOfferUnavailable(message = "Oferta não encontrada") {
+  offerData = null;
+  if (productTitle) {
+    productTitle.textContent = message;
+  }
+  if (productDescription) {
+    productDescription.textContent = "Solicite um novo link com o suporte.";
+  }
+  if (productCover) {
+    productCover.src = "https://dummyimage.com/200x280/f0f0f0/aaa&text=Livro";
+  }
+  if (payBtn) {
+    payBtn.disabled = true;
+    payBtn.textContent = "Indisponível";
+  }
+  form?.classList.add("form--disabled");
+  addonsSection?.classList.add("hidden");
+  shippingSection?.classList.add("hidden");
+  summaryLines.innerHTML = "";
+  summarySubtotal.textContent = "R$ 0,00";
+  if (summaryShipping) {
+    summaryShipping.textContent = "R$ 0,00";
+  }
+  summaryTotal.textContent = "R$ 0,00";
+  if (summaryCount) {
+    summaryCount.textContent = "0 itens";
+  }
+}
 
 function initCartId() {
   const nextId = () => {
@@ -714,13 +762,45 @@ if (cepInput) {
 }
 
 async function loadOffer() {
-  const res = await fetch("/api/public/offer");
-  const data = await res.json();
+  if (!activeOfferSlug) {
+    showOfferUnavailable("Link inválido");
+    return;
+  }
+
+  let response;
+  try {
+    response = await fetch(`/api/public/offer?slug=${encodeURIComponent(activeOfferSlug)}`);
+  } catch (error) {
+    showOfferUnavailable("Não foi possível carregar a oferta.");
+    return;
+  }
+
+  if (!response.ok) {
+    let errorMessage = "Oferta indisponível";
+    try {
+      const info = await response.json();
+      if (info?.error) {
+        errorMessage = info.error;
+      }
+    } catch (error) {
+      // ignore parse issues
+    }
+    showOfferUnavailable(errorMessage);
+    return;
+  }
+
+  const data = await response.json();
   offerData = data;
 
   if (!offerData?.base) {
-    productTitle.textContent = "Oferta não configurada";
+    showOfferUnavailable("Oferta indisponível");
     return;
+  }
+
+  form?.classList.remove("form--disabled");
+  if (payBtn) {
+    payBtn.disabled = false;
+    payBtn.textContent = "Comprar agora";
   }
 
   const base = offerData.base;

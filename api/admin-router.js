@@ -2,6 +2,11 @@ const { query } = require("../lib/db");
 const { parseJson } = require("../lib/parse-json");
 const { signToken, requireAuth } = require("../lib/auth");
 const { ensureSalesTables } = require("../lib/ensure-sales");
+const {
+  ensureProductSchema,
+  ensureBaseSlugs,
+  generateUniqueSlug,
+} = require("../lib/ensure-products");
 
 function normalizeItemPayload(body = {}) {
   return {
@@ -45,10 +50,12 @@ async function handleLogin(req, res) {
 }
 
 async function handleItems(req, res) {
+  await ensureProductSchema();
   const { id } = req.query || {};
 
   if (req.method === "GET") {
     try {
+      await ensureBaseSlugs();
       const result = await query(
         "select * from products order by type asc, sort asc, created_at asc"
       );
@@ -67,8 +74,9 @@ async function handleItems(req, res) {
     }
 
     try {
+      const slug = item.type === "base" ? await generateUniqueSlug() : null;
       const result = await query(
-        "insert into products (type, name, description, price_cents, compare_price_cents, active, sort, image_url) values ($1, $2, $3, $4, $5, $6, $7, $8) returning *",
+        "insert into products (type, name, description, price_cents, compare_price_cents, active, sort, image_url, slug) values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning *",
         [
           item.type,
           item.name,
@@ -78,6 +86,7 @@ async function handleItems(req, res) {
           item.active,
           item.sort,
           item.image_url,
+          slug,
         ]
       );
       res.json({ item: result.rows[0] });

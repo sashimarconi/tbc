@@ -242,6 +242,14 @@ body {
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 14px 16px;
+.form--disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.form--disabled .cta {
+  cursor: not-allowed;
+}
   font-size: 15px;
   font-family: inherit;
   background: #fff;
