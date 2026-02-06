@@ -1,3 +1,54 @@
+/* BADGES E BOTÕES PREMIUM/DARK */
+.data-table .badge, .products-table .badge {
+  display: inline-block;
+  padding: 0.25em 0.9em;
+  border-radius: 8px;
+  font-size: 0.98em;
+  font-weight: 700;
+  background: #181825;
+  color: #A100FF;
+  border: 1.5px solid #A100FF;
+  letter-spacing: 0.01em;
+}
+.data-table .badge.published, .products-table .badge.published {
+  color: #A100FF;
+  border-color: #A100FF;
+  background: #232336;
+}
+.data-table .badge.draft, .products-table .badge.draft {
+  color: #bdbdbd;
+  border-color: #232336;
+  background: #181825;
+}
+
+.products-table button, .data-table button, .bumps-grid button, .bumps-empty__card button {
+  background: #181825;
+  border: 1.5px solid #232336;
+  color: #bdbdbd;
+  border-radius: 8px;
+  font-weight: 700;
+  padding: 0.4em 1em;
+  margin-right: 0.5em;
+  cursor: pointer;
+  transition: background .15s, border .15s, color .15s;
+}
+.products-table button:hover, .data-table button:hover, .bumps-grid button:hover, .bumps-empty__card button:hover {
+  background: #A100FF22;
+  border-color: #A100FF;
+  color: #A100FF;
+}
+
+/* Status pills (remover verde) */
+.status-pill--paid,
+.status-pill--converted {
+  background: #A100FF22;
+  color: #A100FF;
+}
+.status-pill--pending,
+.status-pill--open {
+  background: #232336;
+  color: var(--color-text-secondary, #8a8a8a);
+}
 /* Funil visual horizontal */
 .funnel-bar-visual {
   width: 100%;
