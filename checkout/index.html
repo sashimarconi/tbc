@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+
+    <script>
+  window.pixelId = "698027bf7ab4b0dab673a28c";
+  var a = document.createElement("script");
+  a.setAttribute("async", "");
+  a.setAttribute("defer", "");
+  a.setAttribute("src", "https://cdn.utmify.com.br/scripts/pixel/pixel.js");
+  document.head.appendChild(a);
+</script>
+
+<script
+  src="https://cdn.utmify.com.br/scripts/utms/latest.js"
+  data-utmify-prevent-xcod-sck
+  data-utmify-prevent-subids
+  async
+  defer
+></script>
+
+    <script defer src="/assets/live-analytics.js"></script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout Pix</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/checkout/checkout.css" />
+  </head>
+  <body data-analytics-page="checkout">
+    <div class="trust-bar">
+      <div class="trust-bar__content">
+        <img
+          src="https://cdn.awsli.com.br/400x300/618/618258/logo/85d7098802.png"
+          alt="Centro Dom Bosco"
+          class="trust-bar__logo"
+        />
+        <div class="trust-bar__badge">
+          <span class="trust-bar__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="presentation">
+              <path
+                d="M12 3l7 3v5c0 4.97-3.16 9.36-7 10-3.84-.64-7-5.03-7-10V6l7-3z"
+                fill="currentColor"
+              />
+              <path d="M10.5 12.75l-2-2 1.5-1.5L11 11.25l4-4L16.5 8l-5 5z" fill="#fff" />
+            </svg>
+          </span>
+          <div class="trust-bar__text">
+            <span>PAGAMENTO</span>
+            <strong>100% SEGURO</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+    <main class="page">
+      <section class="checkout">
+        <header class="country-switcher">
+          <div class="country-switcher__flag">🇧🇷</div>
+          <span>Brasil</span>
+          <button
+            type="button"
+            class="country-switcher__toggle"
+            aria-label="Trocar país"
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" />
+            </svg>
+          </button>
+        </header>
+
+        <article class="product-card">
+          <div class="product-card__media">
+            <img
+              id="product-cover"
+              src="https://dummyimage.com/200x280/f0f0f0/aaa&text=Livro"
+              alt="Capa do produto"
+            />
+          </div>
+          <div class="product-card__body">
+            <p class="product-card__badge">Devocional digital</p>
+            <h1 id="product-title">Devocional - 365 Dias de Amor com Deus</h1>
+            <p id="product-description">
+              Receba instantaneamente no seu e-mail e comece hoje o seu novo hábito com Deus.
+            </p>
+            <div class="product-card__prices">
+              <span id="product-compare-price" class="product-card__compare hidden">R$ 0,00</span>
+              <strong id="product-price">R$ 0,00</strong>
+            </div>
+          </div>
+        </article>
+
+        <hr class="divider" />
+
+        <form id="checkout-form" class="form">
+          <div class="field">
+            <label for="email">Seu e-mail</label>
+            <input id="email" type="email" name="email" required placeholder="Insira seu e-mail" />
+          </div>
+
+          <div class="field">
+            <label for="full-name">Nome completo</label>
+            <input id="full-name" type="text" name="name" required placeholder="Insira seu nome completo" />
+          </div>
+
+          <div class="field">
+            <label for="tax-id">CPF/CNPJ</label>
+            <input id="tax-id" type="text" name="taxId" placeholder="Insira seu CPF ou CNPJ" />
+          </div>
+
+          <div class="field">
+            <label for="cellphone">Seu celular</label>
+            <div class="phone-field">
+              <span class="phone-field__code">🇧🇷 +55</span>
+              <input id="cellphone" type="tel" name="cellphone" placeholder="Insira seu celular" />
+            </div>
+          </div>
+
+          <section class="address address--collapsed" id="address-card">
+            <header class="address__header">
+              <div>
+                <h3>Entrega</h3>
+                <p>Preencha o endereço para liberar o frete.</p>
+              </div>
+              <button type="button" id="address-toggle" class="address__toggle" disabled>
+                Adicionar endereço
+              </button>
+            </header>
+            <div id="address-content" class="address__content hidden">
+              <div class="address__grid">
+                <label class="field field--full">
+                  CEP
+                  <input
+                    id="cep"
+                    name="cep"
+                    inputmode="numeric"
+                    pattern="\d{5}-?\d{3}"
+                    placeholder="00000-000"
+                  />
+                  <small class="helper">Digite um CEP válido e aguarde o preenchimento automático.</small>
+                  <p id="cep-error" class="field-error hidden"></p>
+                </label>
+
+                <label class="field field--full">
+                  Endereço
+                  <input id="address-street" name="street" readonly placeholder="Rua" />
+                </label>
+
+                <label class="field">
+                  Número
+                  <input id="address-number" name="address_number" placeholder="Digite o número" />
+                </label>
+
+                <label class="field">
+                  Complemento
+                  <input id="address-complement" name="complement" placeholder="Apartamento, bloco, etc." />
+                </label>
+
+                <label class="field">
+                  Bairro
+                  <input id="address-neighborhood" name="neighborhood" readonly placeholder="Bairro" />
+                </label>
+
+                <label class="field">
+                  Cidade
+                  <input id="address-city" name="city" readonly placeholder="Cidade" />
+                </label>
+
+                <label class="field">
+                  Estado
+                  <input id="address-state" name="state" readonly placeholder="UF" />
+                </label>
+
+                <label class="field">
+                  País
+                  <input id="address-country" name="country" readonly value="Brasil" />
+                </label>
+              </div>
+            </div>
+          </section>
+
+          <section id="shipping-section" class="shipping hidden">
+            <h3>Escolha o melhor frete para você</h3>
+            <div id="shipping-list" class="shipping__list"></div>
+          </section>
+
+          <section id="addons-section" class="addons hidden">
+            <header class="addons__header">
+              <div>
+                <p class="eyebrow">Você pode gostar</p>
+              </div>
+              <label class="select-all">
+                <input type="checkbox" id="select-all" />
+                <span id="select-all-text">Selecionar todos</span>
+              </label>
+            </header>
+            <div id="addons-list" class="addons__list"></div>
+          </section>
+
+          <section class="summary">
+            <header class="summary__header">
+              <h3>Resumo</h3>
+              <span id="summary-count" class="summary__count">0 itens</span>
+            </header>
+            <div id="summary-lines" class="summary__lines"></div>
+            <div class="summary__line">
+              <span>Subtotal</span>
+              <strong id="summary-subtotal">R$ 0,00</strong>
+            </div>
+            <div class="summary__line">
+              <span>Frete</span>
+              <strong id="summary-shipping">R$ 0,00</strong>
+            </div>
+            <div class="summary__total">
+              <span>Total</span>
+              <strong id="summary-total">R$ 0,00</strong>
+            </div>
+          </section>
+
+          <button id="pay-btn" type="submit" class="cta">Comprar agora</button>
+          <p class="trust">Ambiente seguro • Seus dados são confidenciais</p>
+        </form>
+
+        <section id="pix-result" class="pix hidden">
+          <div class="pix__content">
+            <div>
+              <h2>Pix gerado</h2>
+              <p>Escaneie o QR Code ou copie o código abaixo para pagar.</p>
+            </div>
+            <img id="pix-qr" alt="QR Code Pix" />
+          </div>
+          <label class="field">
+            Código Pix
+            <textarea id="pix-code" readonly></textarea>
+          </label>
+          <button id="copy-btn" type="button" class="ghost">Copiar código</button>
+        </section>
+      </section>
+    </main>
+
+    <script src="/checkout/checkout.js"></script>
+  </body>
+</html>

@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Checkout</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      .hidden {
+        display: none !important;
+      }
+    </style>
+    <link rel="stylesheet" href="/admin/admin.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section id="login" class="card">
+        <h1>Admin</h1>
+        <form id="login-form" class="form">
+          <label>
+            Senha
+            <input id="password" type="password" />
+          </label>
+          <button id="login-btn" type="submit">Entrar</button>
+          <p id="login-error" class="error"></p>
+        </form>
+      </section>
+
+      <section id="panel" class="card hidden" hidden>
+        <header class="panel-header">
+          <div>
+            <h1>Painel</h1>
+            <p>Visão ao vivo da loja e gestão dos produtos.</p>
+          </div>
+          <div class="panel-header__actions">
+            <div class="panel-tabs" role="tablist">
+              <button type="button" class="panel-tab is-active" data-target="dashboard-view">
+                Dashboard
+              </button>
+              <button type="button" class="panel-tab" data-target="orders-view">
+                Pedidos
+              </button>
+              <button type="button" class="panel-tab" data-target="carts-view">
+                Carrinhos
+              </button>
+              <button type="button" class="panel-tab" data-target="products-view">
+                Produtos
+              </button>
+            </div>
+            <button id="logout-btn" class="ghost">Sair</button>
+          </div>
+        </header>
+
+        <section id="dashboard-view" class="panel-view">
+          <div class="stats-grid">
+            <article class="stat-card">
+              <p>Pessoas ao vivo</p>
+              <strong id="stat-online">0</strong>
+              <small>Atualiza a cada 20s</small>
+            </article>
+            <article class="stat-card">
+              <p>Visitantes no dia</p>
+              <strong id="stat-visitors">0</strong>
+              <small>Únicos</small>
+            </article>
+            <article class="stat-card">
+              <p>Foram ao checkout</p>
+              <strong id="stat-checkout-visits">0</strong>
+              <small>Visitantes únicos</small>
+            </article>
+            <article class="stat-card">
+              <p>Checkout iniciado</p>
+              <strong id="stat-checkout-starts">0</strong>
+              <small>Cliques no botão pagar</small>
+            </article>
+            <article class="stat-card">
+              <p>Pix gerados</p>
+              <strong id="stat-pix">0</strong>
+              <small>Total do dia</small>
+            </article>
+            <article class="stat-card">
+              <p>Compras</p>
+              <strong id="stat-purchases">0</strong>
+              <small>Clientes únicos</small>
+            </article>
+            <article class="stat-card stat-card--accent">
+              <p>Conversão do checkout</p>
+              <strong id="stat-conversion">0%</strong>
+              <small>Compras ÷ Inícios</small>
+            </article>
+          </div>
+
+          <section class="funnel-card">
+            <h2>Funil do dia</h2>
+            <div class="funnel-list">
+              <article class="funnel-item">
+                <div class="funnel-item__header">
+                  <p>Visitantes</p>
+                  <strong id="funnel-visitors">0</strong>
+                </div>
+                <div class="funnel-bar">
+                  <span id="funnel-visitors-bar"></span>
+                </div>
+              </article>
+              <article class="funnel-item">
+                <div class="funnel-item__header">
+                  <p>Checkout</p>
+                  <strong id="funnel-checkout">0</strong>
+                </div>
+                <div class="funnel-bar">
+                  <span id="funnel-checkout-bar"></span>
+                </div>
+              </article>
+              <article class="funnel-item">
+                <div class="funnel-item__header">
+                  <p>Checkout iniciado</p>
+                  <strong id="funnel-starts">0</strong>
+                </div>
+                <div class="funnel-bar">
+                  <span id="funnel-starts-bar"></span>
+                </div>
+              </article>
+              <article class="funnel-item">
+                <div class="funnel-item__header">
+                  <p>Compras</p>
+                  <strong id="funnel-purchases">0</strong>
+                </div>
+                <div class="funnel-bar">
+                  <span id="funnel-purchases-bar"></span>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="timeline-card">
+            <header>
+              <div>
+                <h2>Últimas 12 horas</h2>
+                <p>Comparativo de visitas, checkout e Pix.</p>
+              </div>
+              <small id="stats-updated">--</small>
+            </header>
+            <div class="timeline-table__wrap">
+              <table class="timeline-table">
+                <thead>
+                  <tr>
+                    <th>Hora</th>
+                    <th>Visitantes</th>
+                    <th>Checkout</th>
+                    <th>Checkout iniciado</th>
+                    <th>Pix</th>
+                  </tr>
+                </thead>
+                <tbody id="timeline-body">
+                  <tr>
+                    <td colspan="5">Carregando...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="orders-view" class="panel-view hidden" hidden>
+          <header class="view-header">
+            <div>
+              <h2>Pedidos</h2>
+              <p>Acompanhe os Pix gerados e o status financeiro de cada pedido.</p>
+            </div>
+            <div class="view-header__actions">
+              <button id="orders-refresh" type="button" class="ghost">Atualizar</button>
+            </div>
+          </header>
+          <div class="stats-grid stats-grid--compact">
+            <article class="stat-card">
+              <p>Pedidos totais</p>
+              <strong id="orders-total">0</strong>
+            </article>
+            <article class="stat-card">
+              <p>Pix pendentes</p>
+              <strong id="orders-pending">0</strong>
+            </article>
+            <article class="stat-card">
+              <p>Pix compensados</p>
+              <strong id="orders-paid">0</strong>
+            </article>
+            <article class="stat-card stat-card--accent">
+              <p>Faturamento potencial</p>
+              <strong id="orders-amount">R$ 0,00</strong>
+              <small>Total bruto registrado</small>
+            </article>
+          </div>
+          <section class="table-card">
+            <header>
+              <div>
+                <h3>Últimos pedidos</h3>
+                <p>Mostrando até 150 registros</p>
+              </div>
+            </header>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>Pix</th>
+                    <th>Criado em</th>
+                  </tr>
+                </thead>
+                <tbody id="orders-table-body">
+                  <tr>
+                    <td colspan="5">Carregando pedidos...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="carts-view" class="panel-view hidden" hidden>
+          <header class="view-header">
+            <div>
+              <h2>Carrinhos abandonados</h2>
+              <p>Veja em que etapa os leads pararam e recupere oportunidades.</p>
+            </div>
+            <div class="view-header__actions">
+              <button id="carts-refresh" type="button" class="ghost">Atualizar</button>
+            </div>
+          </header>
+          <div class="stats-grid stats-grid--compact">
+            <article class="stat-card">
+              <p>Total capturado</p>
+              <strong id="carts-total">0</strong>
+            </article>
+            <article class="stat-card">
+              <p>Abertos</p>
+              <strong id="carts-open">0</strong>
+            </article>
+            <article class="stat-card">
+              <p>Convertidos</p>
+              <strong id="carts-converted">0</strong>
+            </article>
+            <article class="stat-card stat-card--accent">
+              <p>Valor em jogo</p>
+              <strong id="carts-value">R$ 0,00</strong>
+              <small>Soma dos carrinhos</small>
+            </article>
+          </div>
+          <section class="table-card">
+            <header>
+              <div>
+                <h3>Últimas interações</h3>
+                <p>Ordenado pelo último contato</p>
+              </div>
+            </header>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Etapa</th>
+                    <th>Status</th>
+                    <th>Valor</th>
+                    <th>Último contato</th>
+                    <th>Criado em</th>
+                  </tr>
+                </thead>
+                <tbody id="carts-table-body">
+                  <tr>
+                    <td colspan="6">Carregando carrinhos...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="products-view" class="panel-view hidden">
+          <form id="new-item" class="form">
+            <h2>Novo item</h2>
+            <label>
+              Tipo
+              <select name="type">
+                <option value="base">Base</option>
+                <option value="bump">Bump</option>
+                <option value="upsell">Upsell</option>
+                <option value="shipping">Frete</option>
+              </select>
+            </label>
+            <label>
+              Nome
+              <input name="name" required />
+            </label>
+            <label>
+              Descricao
+              <input name="description" />
+            </label>
+            <label>
+              Preco (centavos)
+              <input name="price_cents" type="number" required />
+            </label>
+            <label>
+              Preço antigo (centavos)
+              <input name="compare_price_cents" type="number" />
+            </label>
+            <label>
+              Ativo
+              <select name="active">
+                <option value="true">Sim</option>
+                <option value="false">Nao</option>
+              </select>
+            </label>
+            <label>
+              Ordem
+              <input name="sort" type="number" value="0" />
+            </label>
+            <label>
+              Imagem URL
+              <input name="image_url" />
+            </label>
+            <button type="submit">Adicionar</button>
+          </form>
+
+          <div id="items" class="items"></div>
+        </section>
+      </section>
+    </main>
+
+    <aside id="inspector" class="inspector hidden" hidden role="dialog" aria-modal="true">
+      <div class="inspector__panel">
+        <header class="inspector__header">
+          <div>
+            <p id="inspector-type" class="inspector__eyebrow">Detalhes</p>
+            <h3 id="inspector-title">Selecione um registro</h3>
+          </div>
+          <button id="inspector-close" type="button" class="ghost">Fechar</button>
+        </header>
+        <div id="inspector-body" class="inspector__body">
+          <p class="muted">Escolha um pedido ou carrinho para ver as informações completas.</p>
+        </div>
+      </div>
+    </aside>
+
+    <script src="/admin/admin.js"></script>
+  </body>
+</html>
