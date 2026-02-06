@@ -122,43 +122,19 @@
 
           <section class="funnel-card card" style="margin-top:2.5rem;padding:2rem;">
             <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.3rem;margin-bottom:1.5rem;">Funil do dia</h2>
-            <div class="funnel-list" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1.5rem;">
-              <article class="funnel-item" style="background:var(--color-bg-main);border-radius:var(--radius-card);padding:1.2rem 1rem;">
-                <div class="funnel-item__header" style="display:flex;align-items:center;justify-content:space-between;">
-                  <p style="color:var(--color-text-secondary);font-weight:600;">Visitantes</p>
-                  <strong id="funnel-visitors" style="font-size:1.3rem;">0</strong>
-                </div>
-                <div class="progress-bar" style="margin-top:0.7rem;">
-                  <span id="funnel-visitors-bar" class="progress-bar__fill" style="width:100%;display:block;"></span>
-                </div>
-              </article>
-              <article class="funnel-item" style="background:var(--color-bg-main);border-radius:var(--radius-card);padding:1.2rem 1rem;">
-                <div class="funnel-item__header" style="display:flex;align-items:center;justify-content:space-between;">
-                  <p style="color:var(--color-text-secondary);font-weight:600;">Checkout</p>
-                  <strong id="funnel-checkout" style="font-size:1.3rem;">0</strong>
-                </div>
-                <div class="progress-bar" style="margin-top:0.7rem;">
-                  <span id="funnel-checkout-bar" class="progress-bar__fill" style="width:100%;display:block;"></span>
-                </div>
-              </article>
-              <article class="funnel-item" style="background:var(--color-bg-main);border-radius:var(--radius-card);padding:1.2rem 1rem;">
-                <div class="funnel-item__header" style="display:flex;align-items:center;justify-content:space-between;">
-                  <p style="color:var(--color-text-secondary);font-weight:600;">Checkout iniciado</p>
-                  <strong id="funnel-starts" style="font-size:1.3rem;">0</strong>
-                </div>
-                <div class="progress-bar" style="margin-top:0.7rem;">
-                  <span id="funnel-starts-bar" class="progress-bar__fill" style="width:100%;display:block;"></span>
-                </div>
-              </article>
-              <article class="funnel-item" style="background:var(--color-bg-main);border-radius:var(--radius-card);padding:1.2rem 1rem;">
-                <div class="funnel-item__header" style="display:flex;align-items:center;justify-content:space-between;">
-                  <p style="color:var(--color-text-secondary);font-weight:600;">Compras</p>
-                  <strong id="funnel-purchases" style="font-size:1.3rem;">0</strong>
-                </div>
-                <div class="progress-bar" style="margin-top:0.7rem;">
-                  <span id="funnel-purchases-bar" class="progress-bar__fill" style="width:100%;display:block;"></span>
-                </div>
-              </article>
+            <div class="funnel-bar-visual">
+              <div class="funnel-bar-labels">
+                <div>Visitantes<br><span id="funnel-visitors" class="funnel-bar-value">0</span></div>
+                <div>Checkout<br><span id="funnel-checkout" class="funnel-bar-value">0</span></div>
+                <div>Checkout iniciado<br><span id="funnel-starts" class="funnel-bar-value">0</span></div>
+                <div>Compras<br><span id="funnel-purchases" class="funnel-bar-value">0</span></div>
+              </div>
+              <div class="funnel-bar-track">
+                <div id="funnel-bar-segment-visitors" class="funnel-bar-segment"></div>
+                <div id="funnel-bar-segment-checkout" class="funnel-bar-segment"></div>
+                <div id="funnel-bar-segment-starts" class="funnel-bar-segment"></div>
+                <div id="funnel-bar-segment-purchases" class="funnel-bar-segment"></div>
+              </div>
             </div>
           </section>
 

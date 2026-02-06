@@ -68,10 +68,10 @@ const funnelValues = {
   purchases: document.getElementById("funnel-purchases"),
 };
 const funnelBars = {
-  visitors: document.getElementById("funnel-visitors-bar"),
-  checkout: document.getElementById("funnel-checkout-bar"),
-  starts: document.getElementById("funnel-starts-bar"),
-  purchases: document.getElementById("funnel-purchases-bar"),
+  visitors: document.getElementById("funnel-bar-segment-visitors"),
+  checkout: document.getElementById("funnel-bar-segment-checkout"),
+  starts: document.getElementById("funnel-bar-segment-starts"),
+  purchases: document.getElementById("funnel-bar-segment-purchases"),
 };
 const ordersStatsElements = {
   total: document.getElementById("orders-total"),
@@ -325,10 +325,20 @@ function updateFunnel(data) {
   funnelValues.starts.textContent = formatNumber(starts);
   funnelValues.purchases.textContent = formatNumber(purchases);
 
-  funnelBars.visitors.style.width = "100%";
-  funnelBars.checkout.style.width = `${Math.min(100, (checkout / base) * 100).toFixed(2)}%`;
-  funnelBars.starts.style.width = `${Math.min(100, (starts / base) * 100).toFixed(2)}%`;
-  funnelBars.purchases.style.width = `${Math.min(100, (purchases / base) * 100).toFixed(2)}%`;
+  // Calcular proporções para cada etapa
+  const v = visitors;
+  const c = Math.max(0, Math.min(checkout, v));
+  const s = Math.max(0, Math.min(starts, c));
+  const p = Math.max(0, Math.min(purchases, s));
+  const total = v > 0 ? v : 1;
+  const wV = (v / total) * 100;
+  const wC = (c / total) * 100;
+  const wS = (s / total) * 100;
+  const wP = (p / total) * 100;
+  funnelBars.visitors.style.width = wV + "%";
+  funnelBars.checkout.style.width = (wC - wS > 0 ? wC - wS : 0) + "%";
+  funnelBars.starts.style.width = (wS - wP > 0 ? wS - wP : 0) + "%";
+  funnelBars.purchases.style.width = wP + "%";
 }
 
 function renderTimeline(rows) {

@@ -1,3 +1,53 @@
+/* Funil visual horizontal */
+.funnel-bar-visual {
+  width: 100%;
+  padding: 1.2rem 0 0.5rem 0;
+}
+.funnel-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  color: var(--color-text-secondary, #bdbdbd);
+  font-weight: 600;
+}
+.funnel-bar-labels div {
+  text-align: center;
+  flex: 1 1 0;
+}
+.funnel-bar-value {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--color-brand, #A100FF);
+  margin-top: 0.2em;
+}
+.funnel-bar-track {
+  width: 100%;
+  height: 18px;
+  background: #181825;
+  border-radius: 12px;
+  display: flex;
+  overflow: hidden;
+  box-shadow: 0 2px 16px 0 #0006;
+}
+.funnel-bar-segment {
+  height: 100%;
+  transition: width 0.4s cubic-bezier(.7,.2,.2,1);
+}
+#funnel-bar-segment-visitors {
+  background: linear-gradient(90deg, #A100FF 60%, #7B2FF2 100%);
+}
+#funnel-bar-segment-checkout {
+  background: linear-gradient(90deg, #7B2FF2 60%, #00ff85 100%);
+}
+#funnel-bar-segment-starts {
+  background: linear-gradient(90deg, #00ff85 60%, #00C3FF 100%);
+}
+#funnel-bar-segment-purchases {
+  background: linear-gradient(90deg, #00C3FF 60%, #fff 100%);
+}
 :root {
   color-scheme: light;
   font-family: "DM Sans", sans-serif;
