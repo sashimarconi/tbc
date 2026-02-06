@@ -1,3 +1,60 @@
+/* SOBRESCREVER TUDO: Bumps, cards vazios, botões, badges, fundo, sombra, cor */
+.bumps-empty {
+  background: #181825 !important;
+  border: 1.5px solid #232336 !important;
+  box-shadow: 0 2px 16px 0 #A100FF22 !important;
+}
+.bumps-empty__card {
+  background: #181825 !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #A100FF !important;
+}
+.bumps-empty__card p,
+.bumps-empty__card button {
+  color: #A100FF !important;
+  border-color: #A100FF !important;
+}
+.bumps-empty__card button {
+  background: transparent !important;
+  border: 1.5px solid #A100FF !important;
+  color: #A100FF !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+}
+.bumps-empty__card button:hover {
+  background: #A100FF22 !important;
+  color: #fff !important;
+}
+.bump-card {
+  background: #181825 !important;
+  border: 1.5px solid #232336 !important;
+  box-shadow: 0 2px 16px 0 #A100FF22 !important;
+  color: #EDEDED !important;
+}
+.bump-card .bump-title {
+  color: #A100FF !important;
+}
+.bump-card .bump-status {
+  color: #A100FF !important;
+}
+.bump-card .bump-actions button {
+  background: #181825 !important;
+  border: 1.5px solid #A100FF !important;
+  color: #A100FF !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+.bump-card .bump-actions button:hover {
+  background: #A100FF22 !important;
+  color: #fff !important;
+}
+.bump-pill--active, .bump-pill--inactive {
+  background: #232336 !important;
+  color: #A100FF !important;
+  border: 1.5px solid #A100FF !important;
+}
 /* FORÇAR VISUAL PREMIUM/DARK EM TABELAS, BADGES E BOTÕES */
 .products-table-card.card,
 .table-card.card,
