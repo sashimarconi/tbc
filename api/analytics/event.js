@@ -1,6 +1,7 @@
 const { query } = require("../../lib/db");
 const { parseJson } = require("../../lib/parse-json");
 const { ensureAnalyticsTables } = require("../../lib/ensure-analytics");
+const { getGeoFromIp } = require("../../lib/geoip");
 
 const FALLBACK_PAGE = "unknown";
 const MAX_STRING = 512;
@@ -42,6 +43,12 @@ module.exports = async (req, res) => {
   }
 
   await ensureAnalyticsTables();
+  // Captura IP
+  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.connection?.remoteAddress || req.socket?.remoteAddress || null;
+  let geo = null;
+  if (ip && typeof getGeoFromIp === 'function') {
+    geo = await getGeoFromIp(ip);
+  }
 
   const sessionId = sanitizeString(body.session_id || body.sessionId);
   const eventType = normalizeEventType(body.type || body.event_type);
@@ -73,8 +80,8 @@ module.exports = async (req, res) => {
     );
 
     await query(
-      `insert into analytics_sessions (session_id, last_page, last_event, source, user_agent, utm)
-       values ($1, $2, $3, $4, $5, $6)
+      `insert into analytics_sessions (session_id, last_page, last_event, source, user_agent, utm, city, lat, lng)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        on conflict (session_id)
        do update set
          last_seen = now(),
@@ -86,8 +93,12 @@ module.exports = async (req, res) => {
                  when analytics_sessions.utm is null or jsonb_typeof(analytics_sessions.utm) = 'null'
                    then excluded.utm
                  else analytics_sessions.utm
-               end`,
-      [sessionId, page, eventType, source || null, userAgent || null, utm]
+               end,
+         city = coalesce(excluded.city, analytics_sessions.city),
+         lat = coalesce(excluded.lat, analytics_sessions.lat),
+         lng = coalesce(excluded.lng, analytics_sessions.lng)
+      `,
+      [sessionId, page, eventType, source || null, userAgent || null, utm, geo?.city || null, geo?.lat || null, geo?.lng || null]
     );
 
     res.status(201).json({ ok: true });

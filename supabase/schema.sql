@@ -49,7 +49,10 @@ create table if not exists analytics_sessions (
   last_event text,
   source text,
   user_agent text,
-  utm jsonb
+  utm jsonb,
+  city text,
+  lat double precision,
+  lng double precision
 );
 
 create table if not exists analytics_events (

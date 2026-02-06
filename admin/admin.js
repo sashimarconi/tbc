@@ -3,25 +3,29 @@ window.addEventListener('DOMContentLoaded', () => {
   const globeEl = document.getElementById('live-globe');
   if (!globeEl || typeof Globe !== 'function') return;
 
-  // Mock de sessões online (latitude, longitude, label)
-  const onlineSessions = [
-    { lat: -23.5505, lng: -46.6333, city: 'São Paulo, Brasil', color: '#00FF85' },
-    { lat: 40.7128, lng: -74.0060, city: 'Nova York, EUA', color: '#00FF85' },
-    { lat: -15.7801, lng: -47.9292, city: 'Brasília, Brasil', color: '#00FF85' }
-  ];
-
-  // Renderizar lista ao lado do globo
-  const listEl = document.getElementById('live-view-list');
-  if (listEl) {
-    listEl.innerHTML = onlineSessions.map(s => `<li><span style="color:#00FF85;font-weight:700;">●</span> ${s.city}</li>`).join('');
+  // Fetch liveView data
+  async function updateLiveView() {
+    try {
+      const res = await fetch('/api/analytics/summary');
+      const data = await res.json();
+      const { onlineSessions = [], cityCounts = [] } = data.liveView || {};
+      // Renderizar lista de cidades do dia
+      const listEl = document.getElementById('live-view-list');
+      if (listEl) {
+        listEl.innerHTML = cityCounts.map(s => `<li><span style="color:#00FF85;font-weight:700;">●</span> ${s.count} ${s.city}</li>`).join('');
+      }
+      // Atualizar pontos do globo
+      if (window.liveGlobe && typeof window.liveGlobe.pointsData === 'function') {
+        window.liveGlobe.pointsData(onlineSessions);
+      }
+    } catch (e) { /* ignore */ }
   }
-
   // Inicializar globo
   const globe = Globe()(globeEl)
     .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
     .backgroundColor('rgba(0,0,0,0)')
     .pointOfView({ lat: 0, lng: -30, altitude: 2.2 })
-    .pointsData(onlineSessions)
+    .pointsData([])
     .pointLat('lat')
     .pointLng('lng')
     .pointColor('color')
@@ -31,7 +35,7 @@ window.addEventListener('DOMContentLoaded', () => {
     .showAtmosphere(true)
     .atmosphereColor('#00FF85')
     .atmosphereAltitude(0.18);
-
+  window.liveGlobe = globe;
   // Responsivo
   function resizeGlobe() {
     const w = Math.min(380, globeEl.offsetWidth);
@@ -40,6 +44,9 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   resizeGlobe();
   window.addEventListener('resize', resizeGlobe);
+  // Atualizar live view a cada 20s
+  updateLiveView();
+  setInterval(updateLiveView, 20000);
 });
 const loginSection = document.getElementById("login");
 const panelSection = document.getElementById("panel");
