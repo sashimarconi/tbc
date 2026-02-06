@@ -1,3 +1,106 @@
+/* === FIX PREMIUM/DARK FINAL === */
+.bumps-empty {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.bumps-empty__card {
+  background: #181825 !important;
+  border: 1.5px solid #232336 !important;
+  box-shadow: 0 2px 16px 0 #A100FF22 !important;
+  color: #A100FF !important;
+}
+.bumps-empty__card p,
+.bumps-empty__card button {
+  color: #A100FF !important;
+  border-color: #A100FF !important;
+}
+.bumps-empty__card button {
+  background: transparent !important;
+  border: 1.5px solid #A100FF !important;
+  color: #A100FF !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  padding: 0.4em 1em !important;
+  margin-top: 1.2em;
+}
+.bumps-empty__card button:hover {
+  background: #A100FF22 !important;
+  color: #fff !important;
+}
+.bump-card {
+  background: #181825 !important;
+  border: 1.5px solid #232336 !important;
+  box-shadow: 0 2px 16px 0 #A100FF22 !important;
+  color: #EDEDED !important;
+}
+.bump-card .bump-title {
+  color: #A100FF !important;
+}
+.bump-card .bump-status {
+  color: #A100FF !important;
+}
+.bump-card .bump-actions button {
+  background: #181825 !important;
+  border: 1.5px solid #A100FF !important;
+  color: #A100FF !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  padding: 0.4em 1em !important;
+}
+.bump-card .bump-actions button:hover {
+  background: #A100FF22 !important;
+  color: #fff !important;
+}
+.bump-pill--active, .bump-pill--inactive {
+  background: #232336 !important;
+  color: #A100FF !important;
+  border: 1.5px solid #A100FF !important;
+}
+.products-table button, .data-table button, .bumps-grid button, .bumps-empty__card button {
+  background: #181825 !important;
+  border: 1.5px solid #A100FF !important;
+  color: #A100FF !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  padding: 0.4em 1em !important;
+  margin-right: 0.5em;
+  cursor: pointer;
+  transition: background .15s, border .15s, color .15s;
+  box-shadow: none !important;
+}
+.products-table button:hover, .data-table button:hover, .bumps-grid button:hover, .bumps-empty__card button:hover {
+  background: #A100FF22 !important;
+  border-color: #A100FF !important;
+  color: #fff !important;
+}
+.data-table .badge, .products-table .badge {
+  display: inline-block;
+  padding: 0.25em 0.9em;
+  border-radius: 8px;
+  font-size: 0.98em;
+  font-weight: 700;
+  background: #232336 !important;
+  color: #A100FF !important;
+  border: 1.5px solid #A100FF !important;
+  letter-spacing: 0.01em;
+}
+.data-table .badge.published, .products-table .badge.published {
+  color: #A100FF !important;
+  border-color: #A100FF !important;
+  background: #232336 !important;
+}
+.data-table .badge.draft, .products-table .badge.draft {
+  color: #bdbdbd !important;
+  border-color: #232336 !important;
+  background: #181825 !important;
+}
+.bumps-counters strong {
+  color: #A100FF !important;
+}
 /* SOBRESCREVER TUDO: Bumps, cards vazios, botões, badges, fundo, sombra, cor */
 .bumps-empty {
   background: #181825 !important;
