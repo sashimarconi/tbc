@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="pt-BR">
   <head>
+      <!-- Globe.gl CDN for 3D globe visualization -->
+      <script src="https://unpkg.com/globe.gl"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>The Black Checkout – Admin</title>
@@ -69,6 +71,17 @@
         </header>
 
         <section id="dashboard-view" class="panel-view">
+                <!-- LIVE VIEW SECTION -->
+                <section id="live-view" class="card" style="margin-bottom:2.5rem;padding:2.5rem 2vw 2.5rem 2vw;display:flex;align-items:center;gap:3vw;background:#0D0D12;border:1.5px solid #232336;box-shadow:0 2px 32px 0 #00FF8511;">
+                  <div style="flex:1;min-width:320px;max-width:520px;display:flex;flex-direction:column;gap:1.2rem;">
+                    <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.5rem;margin:0 0 0.7rem 0;color:#00FF85;letter-spacing:-1px;">Live View</h2>
+                    <p style="color:var(--color-text-secondary);font-size:1.08rem;max-width:420px;">Veja em tempo real onde há pessoas online na sua loja. Os pontos verdes representam sessões ativas.</p>
+                    <ul id="live-view-list" style="margin:1.2rem 0 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:0.7rem;font-size:1.08rem;color:#EDEDED;"></ul>
+                  </div>
+                  <div style="flex:2;min-width:320px;display:flex;justify-content:center;align-items:center;">
+                    <div id="live-globe" style="width:380px;height:380px;max-width:100%;background:transparent;border-radius:50%;box-shadow:0 0 32px 0 #00FF8533;"></div>
+                  </div>
+                </section>
           <div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:2.2rem;">
             <article class="stat-card card" style="padding:2.2rem 1.5rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 24px 0 #A100FF11;">
               <p style="color:var(--color-text-secondary);font-weight:600;">Pessoas ao vivo</p>

@@ -1,3 +1,46 @@
+// LIVE VIEW GLOBE (Globe.gl)
+window.addEventListener('DOMContentLoaded', () => {
+  const globeEl = document.getElementById('live-globe');
+  if (!globeEl || typeof Globe !== 'function') return;
+
+  // Mock de sessões online (latitude, longitude, label)
+  const onlineSessions = [
+    { lat: -23.5505, lng: -46.6333, city: 'São Paulo, Brasil', color: '#00FF85' },
+    { lat: 40.7128, lng: -74.0060, city: 'Nova York, EUA', color: '#00FF85' },
+    { lat: -15.7801, lng: -47.9292, city: 'Brasília, Brasil', color: '#00FF85' }
+  ];
+
+  // Renderizar lista ao lado do globo
+  const listEl = document.getElementById('live-view-list');
+  if (listEl) {
+    listEl.innerHTML = onlineSessions.map(s => `<li><span style="color:#00FF85;font-weight:700;">●</span> ${s.city}</li>`).join('');
+  }
+
+  // Inicializar globo
+  const globe = Globe()(globeEl)
+    .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
+    .backgroundColor('rgba(0,0,0,0)')
+    .pointOfView({ lat: 0, lng: -30, altitude: 2.2 })
+    .pointsData(onlineSessions)
+    .pointLat('lat')
+    .pointLng('lng')
+    .pointColor('color')
+    .pointAltitude(0.08)
+    .pointRadius(0.22)
+    .pointLabel('city')
+    .showAtmosphere(true)
+    .atmosphereColor('#00FF85')
+    .atmosphereAltitude(0.18);
+
+  // Responsivo
+  function resizeGlobe() {
+    const w = Math.min(380, globeEl.offsetWidth);
+    globe.width(w);
+    globe.height(w);
+  }
+  resizeGlobe();
+  window.addEventListener('resize', resizeGlobe);
+});
 const loginSection = document.getElementById("login");
 const panelSection = document.getElementById("panel");
 const loginForm = document.getElementById("login-form");

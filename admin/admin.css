@@ -138,9 +138,10 @@ button.ghost {
   align-items: center;
   gap: 1.5rem;
   flex-wrap: wrap;
-  background: #0D0D12;
+  background: #0D0D12 !important;
   border-bottom: 1.5px solid #232336;
   margin-bottom: 2.2rem;
+  box-shadow: none !important;
 }
 
 .panel-header__actions {
