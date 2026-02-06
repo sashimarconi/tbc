@@ -35,7 +35,7 @@ body {
   border: 1.5px solid #232336;
   border-radius: 18px;
   padding: 2.2rem 1.5rem;
-  box-shadow: 0 2px 24px 0 #A100FF11;
+  box-shadow: 0 4px 24px 0 #0008;
   display: grid;
   gap: 1.5rem;
 }
@@ -194,24 +194,28 @@ button.ghost {
   border-radius: 18px;
   padding: 2.2rem 1.5rem;
   border: 1.5px solid #232336;
-  box-shadow: 0 2px 24px 0 #A100FF11;
+  box-shadow: 0 2px 16px 0 #A100FF22;
+  font-weight: 700;
+  letter-spacing: -0.5px;
   display: grid;
   gap: 0.7rem;
 }
 
 .stat-card strong {
-  font-size: 32px;
-  font-family: "Playfair Display", serif;
+  font-size: 2.1rem;
+  font-family: var(--font-title, "Playfair Display", serif);
+  font-weight: 900;
+  color: var(--color-brand, #A100FF);
 }
 
 .stat-card small {
-  color: rgba(42, 38, 34, 0.7);
+  color: var(--color-text-secondary, #8a8a8a);
 }
 
 .stat-card--accent {
   background: linear-gradient(120deg,#181825 60%,#A100FF22 100%);
-  color: #A100FF;
-  border: 1.5px solid #A100FF;
+  color: var(--color-brand, #A100FF);
+  border: 1.5px solid var(--color-brand, #A100FF);
   box-shadow: 0 2px 32px 0 #A100FF33;
 }
 
@@ -220,8 +224,8 @@ button.ghost {
   background: #181825;
   border-radius: 18px;
   border: 1.5px solid #232336;
-  padding: 2rem;
-  box-shadow: 0 2px 24px 0 #A100FF11;
+  padding: 2rem 1.5rem;
+  box-shadow: 0 4px 24px 0 #0008;
 }
 
 .funnel-card h2,
@@ -240,7 +244,8 @@ button.ghost {
   border-radius: 16px;
   border: 1.5px solid #232336;
   padding: 1.2rem 1rem;
-  box-shadow: 0 2px 24px 0 #A100FF11;
+  box-shadow: 0 1px 8px 0 #A100FF11;
+  font-weight: 600;
   display: grid;
   gap: 0.7rem;
 }
@@ -252,12 +257,14 @@ button.ghost {
 }
 
 .funnel-item__header strong {
-  font-size: 24px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-brand, #A100FF);
 }
 
 .funnel-bar {
   height: 8px;
-  background: rgba(138, 154, 115, 0.2);
+    background: #232336;
   border-radius: 999px;
   overflow: hidden;
 }
@@ -265,7 +272,7 @@ button.ghost {
 .funnel-bar span {
   display: block;
   height: 100%;
-  background: linear-gradient(135deg, #5f6f3f, #a1b46d);
+    background: linear-gradient(90deg, var(--color-brand, #A100FF) 60%, #00ff85 100%);
   width: 0;
   transition: width 0.3s ease;
 }
@@ -284,7 +291,8 @@ button.ghost {
 .timeline-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 15px;
+  background: transparent;
 }
 
 .timeline-table th,
@@ -298,7 +306,8 @@ button.ghost {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: rgba(42, 38, 34, 0.7);
+  color: var(--color-text-secondary, #8a8a8a);
+  font-weight: 700;
 }
 
 .timeline-table tr:last-child td {
@@ -353,14 +362,17 @@ button.ghost {
 .data-table td {
   padding: 12px 14px;
   text-align: left;
-  border-bottom: 1px solid rgba(90, 88, 82, 0.1);
+  border-bottom: 1px solid #232336;
+  color: var(--color-text-main, #eaeaea);
+  font-weight: 500;
 }
 
 .data-table th {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: rgba(42, 38, 34, 0.7);
+  color: var(--color-text-secondary, #8a8a8a);
+  font-weight: 700;
 }
 
 .data-table tr:last-child td {
@@ -403,23 +415,23 @@ button.ghost {
 }
 
 .status-pill--pending {
-  background: rgba(193, 137, 82, 0.15);
-  color: #8c5f38;
+  background: #232336;
+  color: var(--color-text-secondary, #8a8a8a);
 }
 
 .status-pill--paid,
 .status-pill--converted {
-  background: rgba(103, 120, 74, 0.18);
-  color: #425226;
+  background: #00ff85;
+  color: #050505;
 }
 
 .status-pill--open {
-  background: rgba(138, 154, 115, 0.15);
-  color: #536138;
+  background: #232336;
+  color: var(--color-text-secondary, #8a8a8a);
 }
 
 .muted {
-  color: rgba(42, 38, 34, 0.7);
+  color: var(--color-text-secondary, #8a8a8a);
   font-size: 14px;
 }
 
@@ -449,7 +461,9 @@ button.ghost {
   align-items: flex-start;
   gap: 12px;
   padding: 24px;
-  border-bottom: 1px solid rgba(90, 88, 82, 0.1);
+  border-bottom: 1px solid #232336;
+  color: var(--color-text-main, #eaeaea);
+  font-weight: 500;
 }
 
 .inspector__body {
@@ -887,7 +901,11 @@ button.ghost {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 14px;
+    padding: 4px 12px;
+    font-weight: 700;
+    background: #232336;
+    color: var(--color-brand, #A100FF);
+    border: none;
   border-radius: 999px;
   border: 1px solid rgba(90, 88, 82, 0.2);
   background: rgba(255, 255, 255, 0.7);
