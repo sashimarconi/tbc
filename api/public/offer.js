@@ -29,6 +29,26 @@ module.exports = async (req, res) => {
       "select * from products where type = $1 and active = true order by sort asc, created_at asc",
       ["bump"]
     );
+    const bumpRows = bumpRes.rows || [];
+    const bumpIds = bumpRows.map((row) => row.id);
+    let bumpRuleMap = new Map();
+    if (bumpIds.length) {
+      const ruleRes = await query(
+        "select bump_id, apply_to_all, trigger_product_ids from order_bump_rules where bump_id = any($1::uuid[])",
+        [bumpIds]
+      );
+      bumpRuleMap = new Map(
+        (ruleRes.rows || []).map((row) => [
+          row.bump_id,
+          {
+            apply_to_all: row.apply_to_all !== false,
+            trigger_product_ids: Array.isArray(row.trigger_product_ids)
+              ? row.trigger_product_ids
+              : [],
+          },
+        ])
+      );
+    }
     const upsellRes = await query(
       "select * from products where type = $1 and active = true order by sort asc, created_at asc",
       ["upsell"]
@@ -38,9 +58,24 @@ module.exports = async (req, res) => {
       ["shipping"]
     );
 
+    const baseProduct = baseRes.rows?.[0] || null;
+    const bumps = (bumpRows || []).filter((bump) => {
+      const rule = bumpRuleMap.get(bump.id);
+      if (!rule) {
+        return true;
+      }
+      if (rule.apply_to_all !== false) {
+        return true;
+      }
+      return Array.isArray(rule.trigger_product_ids) && rule.trigger_product_ids.includes(baseProduct?.id);
+    });
+
     res.json({
-      base: baseRes.rows?.[0] || null,
-      bumps: bumpRes.rows || [],
+      base: baseProduct,
+      bumps: bumps.map((bump) => ({
+        ...bump,
+        bump_rule: bumpRuleMap.get(bump.id) || null,
+      })),
       upsells: upsellRes.rows || [],
       shipping: shippingRes.rows || [],
     });

@@ -57,7 +57,6 @@ const createProductBtn = document.getElementById("create-product-btn");
 const productModal = document.getElementById("product-modal");
 const productModalTitle = document.getElementById("product-modal-title");
 const productForm = document.getElementById("product-form");
-const productTypeSelect = document.getElementById("product-type");
 const productNameInput = document.getElementById("product-name");
 const productDescriptionInput = document.getElementById("product-description");
 const productPriceInput = document.getElementById("product-price");
@@ -75,7 +74,34 @@ const mediaPanels = document.querySelectorAll("[data-image-panel]");
 const productImageUpload = document.getElementById("product-image-upload");
 const productImageUrl = document.getElementById("product-image-url");
 const productImagePreview = document.querySelector("#product-image-preview img");
+const productUploadLabel = document.querySelector("#product-upload-tile span");
 const productSubmitBtn = document.getElementById("product-submit");
+const orderBumpsView = document.getElementById("order-bumps-view");
+const orderBumpsSearchInput = document.getElementById("order-bumps-search");
+const orderBumpsList = document.getElementById("order-bumps-list");
+const orderBumpsEmpty = document.getElementById("order-bumps-empty");
+const orderBumpsEmptyBtn = document.getElementById("order-bumps-empty-btn");
+const bumpsActiveCount = document.getElementById("bumps-active-count");
+const bumpsInactiveCount = document.getElementById("bumps-inactive-count");
+const bumpsTotalCount = document.getElementById("bumps-total-count");
+const createBumpBtn = document.getElementById("create-bump-btn");
+const bumpModal = document.getElementById("order-bump-modal");
+const bumpModalTitle = document.getElementById("order-bump-modal-title");
+const bumpForm = document.getElementById("order-bump-form");
+const bumpTitleInput = document.getElementById("bump-title");
+const bumpDescriptionInput = document.getElementById("bump-description");
+const bumpPriceInput = document.getElementById("bump-price");
+const bumpCompareInput = document.getElementById("bump-compare");
+const bumpActiveInput = document.getElementById("bump-active");
+const bumpApplyAllInput = document.getElementById("bump-apply-all");
+const bumpTriggersList = document.getElementById("bump-triggers-list");
+const bumpSubmitBtn = document.getElementById("bump-submit");
+const bumpMediaTabs = document.querySelectorAll("[data-bump-image-mode]");
+const bumpMediaPanels = document.querySelectorAll("[data-bump-image-panel]");
+const bumpImageUpload = document.getElementById("bump-image-upload");
+const bumpImageUrlInput = document.getElementById("bump-image-url");
+const bumpImagePreview = document.querySelector("#bump-image-preview img");
+const bumpUploadLabel = document.querySelector("#bump-upload-tile span");
 const numberFormatter = new Intl.NumberFormat("pt-BR");
 const percentFormatter = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
@@ -94,10 +120,15 @@ let cartsInterval = null;
 let productsCache = [];
 let productModalMode = "create";
 let editingProductId = null;
+let editingProductType = "base";
 let selectedFormFactor = "physical";
 let currentImageMode = "upload";
 let currentImageValue = "";
-let isUploadingImage = false;
+let bumpModalMode = "create";
+let editingBumpId = null;
+let currentBumpImageMode = "upload";
+let currentBumpImageValue = "";
+let editingBumpSort = 0;
 const fallbackProductImage = "https://dummyimage.com/200x200/ede9df/8a8277&text=Produto";
 
 function setAuthHeader() {
@@ -363,8 +394,15 @@ function setImageMode(mode) {
   });
 }
 
-function handleImageUploadChange(event) {
-  const file = event.target.files?.[0];
+function updateUploadState(uploading, labelEl) {
+  const label = labelEl || document.querySelector(".upload-tile span");
+  if (!label) {
+    return;
+  }
+  label.textContent = uploading ? "Enviando..." : "Arraste ou clique para enviar";
+}
+
+function uploadMediaFile(file, { labelEl, onSuccess }) {
   if (!file) {
     return;
   }
@@ -375,24 +413,72 @@ function handleImageUploadChange(event) {
   const reader = new FileReader();
   reader.onload = async () => {
     try {
-      isUploadingImage = true;
-      updateUploadState(true);
+      updateUploadState(true, labelEl);
       const uploaded = await uploadProductImage(reader.result, file.name);
-      currentImageValue = uploaded?.file?.url || uploaded?.url || "";
+      const url = uploaded?.file?.url || uploaded?.url || "";
+      onSuccess(url);
+    } catch (error) {
+      console.error(error);
+      alert(error.message || "Não foi possível enviar a imagem.");
+    } finally {
+      updateUploadState(false, labelEl);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleImageUploadChange(event) {
+  const file = event.target.files?.[0];
+  if (!file) {
+    return;
+  }
+  uploadMediaFile(file, {
+    labelEl: productUploadLabel,
+    onSuccess: (url) => {
+      currentImageValue = url;
       if (productImageUrl) {
         productImageUrl.value = "";
       }
       setImageMode("upload");
       updateImagePreview(currentImageValue);
-    } catch (error) {
-      console.error(error);
-      alert(error.message || "Não foi possível enviar a imagem.");
-    } finally {
-      isUploadingImage = false;
-      updateUploadState(false);
-    }
-  };
-  reader.readAsDataURL(file);
+    },
+  });
+  event.target.value = "";
+}
+
+function setBumpImageMode(mode) {
+  currentBumpImageMode = mode;
+  bumpMediaTabs.forEach((tab) => {
+    tab.classList.toggle("is-active", tab.dataset.bumpImageMode === mode);
+  });
+  bumpMediaPanels.forEach((panel) => {
+    panel.classList.toggle("hidden", panel.dataset.bumpImagePanel !== mode);
+  });
+}
+
+function updateBumpImagePreview(src) {
+  if (!bumpImagePreview) {
+    return;
+  }
+  bumpImagePreview.src = src || fallbackProductImage;
+}
+
+function handleBumpImageUploadChange(event) {
+  const file = event.target.files?.[0];
+  if (!file) {
+    return;
+  }
+  uploadMediaFile(file, {
+    labelEl: bumpUploadLabel,
+    onSuccess: (url) => {
+      currentBumpImageValue = url;
+      if (bumpImageUrlInput) {
+        bumpImageUrlInput.value = "";
+      }
+      setBumpImageMode("upload");
+      updateBumpImagePreview(currentBumpImageValue);
+    },
+  });
   event.target.value = "";
 }
 
@@ -413,11 +499,20 @@ async function uploadProductImage(dataUrl, filename) {
     },
     body: JSON.stringify({ data_url: dataUrl, filename }),
   });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.error || "Falha no upload");
+  const raw = await res.text();
+  let data = null;
+  if (raw) {
+    try {
+      data = JSON.parse(raw);
+    } catch (error) {
+      data = null;
+    }
   }
-  return data;
+  if (!res.ok) {
+    const message = data?.error || raw || "Falha no upload";
+    throw new Error(message);
+  }
+  return data || {};
 }
 
 function formatDateTime(value) {
@@ -679,12 +774,24 @@ function activateView(targetId) {
 
   if (targetId === "products-view") {
     loadItems();
+  } else if (targetId === "order-bumps-view") {
+    loadItems();
+    renderOrderBumpsList();
   }
 }
 
 function renderItems(items = []) {
   productsCache = Array.isArray(items) ? items : [];
   renderProductsTable();
+  renderOrderBumpsList();
+}
+
+function getBaseProducts() {
+  return productsCache.filter((product) => product.type === "base");
+}
+
+function getBumpProducts() {
+  return productsCache.filter((product) => product.type === "bump");
 }
 
 function renderProductsTable() {
@@ -692,7 +799,8 @@ function renderProductsTable() {
     return;
   }
   const searchTerm = (productsSearchInput?.value || "").trim().toLowerCase();
-  const filtered = productsCache.filter((product) => {
+  const bases = getBaseProducts();
+  const filtered = bases.filter((product) => {
     if (!searchTerm) {
       return true;
     }
@@ -701,7 +809,7 @@ function renderProductsTable() {
   });
 
   if (!filtered.length) {
-    productsTableBody.innerHTML = `<tr><td colspan="5">Nenhum produto encontrado.</td></tr>`;
+    productsTableBody.innerHTML = `<tr><td colspan="5">Nenhum produto base encontrado.</td></tr>`;
     return;
   }
 
@@ -764,6 +872,94 @@ function renderProductsTable() {
   productsTableBody.innerHTML = rows;
 }
 
+function renderOrderBumpsList() {
+  if (!orderBumpsList) {
+    return;
+  }
+  const baseProducts = getBaseProducts();
+  const bumps = getBumpProducts();
+  const activeCount = bumps.filter((item) => item.active).length;
+  const totalCount = bumps.length;
+  const inactiveCount = Math.max(totalCount - activeCount, 0);
+  if (bumpsActiveCount) bumpsActiveCount.textContent = activeCount;
+  if (bumpsInactiveCount) bumpsInactiveCount.textContent = inactiveCount;
+  if (bumpsTotalCount) bumpsTotalCount.textContent = totalCount;
+
+  if (!totalCount) {
+    orderBumpsEmpty?.classList.remove("hidden");
+    orderBumpsList.innerHTML = "";
+    return;
+  }
+
+  orderBumpsEmpty?.classList.add("hidden");
+  const searchTerm = (orderBumpsSearchInput?.value || "").trim().toLowerCase();
+  const filtered = bumps
+    .filter((item) => {
+      if (!searchTerm) {
+        return true;
+      }
+      const haystack = `${item.name || ""} ${item.description || ""}`.toLowerCase();
+      return haystack.includes(searchTerm);
+    })
+    .sort((a, b) => {
+      if (a.sort !== b.sort) {
+        return Number(a.sort || 0) - Number(b.sort || 0);
+      }
+      return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+    });
+
+  if (!filtered.length) {
+    orderBumpsList.innerHTML = `<div class="bump-empty-row">Nenhum order bump corresponde à busca.</div>`;
+    return;
+  }
+
+  orderBumpsList.innerHTML = filtered
+    .map((item) => {
+      const image = item.image_url || fallbackProductImage;
+      const statusLabel = item.active ? "Ativo" : "Inativo";
+      const pillClass = item.active ? "bump-pill bump-pill--active" : "bump-pill bump-pill--inactive";
+      const compareHtml = item.compare_price_cents
+        ? `<small>De ${formatCurrency(item.compare_price_cents)}</small>`
+        : "";
+      const rule = item.bump_rule || { apply_to_all: true, trigger_product_ids: [] };
+      const triggerNames = Array.isArray(rule.trigger_product_ids)
+        ? baseProducts
+            .filter((product) => rule.trigger_product_ids.includes(product.id))
+            .map((product) => product.name || "Produto")
+        : [];
+      const ruleDetail = rule.apply_to_all !== false
+        ? "Mostrado em todos os checkouts"
+        : triggerNames.length
+        ? `Mostrado em ${triggerNames.join(", ")}`
+        : `Mostrado em ${rule.trigger_product_ids.length} produto(s)`;
+      const safeRuleText = escapeHtml(ruleDetail);
+      return `
+        <article class="bump-card" data-bump-id="${item.id}">
+          <div class="bump-card__header">
+            <img src="${image}" alt="${escapeHtml(item.name || "Order bump")}" />
+            <div>
+              <strong>${escapeHtml(item.name || "Order bump")}</strong>
+              <span class="muted">${escapeHtml(item.description || "Sem descrição")}</span>
+            </div>
+          </div>
+          <div class="bump-meta">
+            <div>
+              <strong>${formatCurrency(item.price_cents)}</strong>
+              ${compareHtml}
+            </div>
+            <span class="${pillClass}">${statusLabel}</span>
+          </div>
+          <p class="muted">${safeRuleText}</p>
+          <div class="bump-actions">
+            <button type="button" class="ghost" data-bump-action="edit" data-bump-id="${item.id}">Editar</button>
+            <button type="button" class="ghost" data-bump-action="delete" data-bump-id="${item.id}">Excluir</button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
 function resetProductForm() {
   if (!productForm) {
     return;
@@ -772,6 +968,7 @@ function resetProductForm() {
   productDescriptionInput.value = "";
   productSortInput.value = "0";
   productCompareInput.value = "";
+  editingProductType = "base";
   if (productImageUrl) {
     productImageUrl.value = "";
   }
@@ -792,7 +989,7 @@ function resetProductForm() {
 }
 
 function fillProductForm(item) {
-  productTypeSelect.value = item.type || "base";
+  editingProductType = item.type || "base";
   productNameInput.value = item.name || "";
   productDescriptionInput.value = item.description || "";
   productPriceInput.value = formatCentsForField(item.price_cents);
@@ -860,8 +1057,9 @@ function collectProductPayload() {
   const compareCents = productCompareInput.value
     ? parseCurrencyInput(productCompareInput.value)
     : null;
+  const itemType = editingProductType || "base";
   const payload = {
-    type: productTypeSelect.value,
+    type: itemType,
     name: productNameInput.value.trim(),
     description: productDescriptionInput.value.trim(),
     price_cents: priceCents,
@@ -877,6 +1075,206 @@ function collectProductPayload() {
     height_cm: selectedFormFactor === "digital" ? 0 : Number(logHeightInput.value || 0),
   };
   return payload;
+}
+
+function resetBumpForm() {
+  if (!bumpForm) {
+    return;
+  }
+  bumpForm.reset();
+  bumpTitleInput.value = "";
+  bumpDescriptionInput.value = "";
+  bumpPriceInput.value = "";
+  bumpCompareInput.value = "";
+  bumpActiveInput.checked = true;
+  bumpApplyAllInput.checked = true;
+  editingBumpSort = 0;
+  currentBumpImageValue = "";
+  if (bumpImageUpload) {
+    bumpImageUpload.value = "";
+  }
+  if (bumpImageUrlInput) {
+    bumpImageUrlInput.value = "";
+  }
+  setBumpImageMode("upload");
+  updateBumpImagePreview("");
+  renderBumpTriggerOptions([]);
+  toggleBumpTriggerList(true);
+}
+
+function renderBumpTriggerOptions(selectedIds = []) {
+  if (!bumpTriggersList) {
+    return;
+  }
+  const baseProducts = getBaseProducts();
+  if (!baseProducts.length) {
+    bumpTriggersList.innerHTML = '<p class="muted">Cadastre um produto base para usar gatilhos.</p>';
+    return;
+  }
+  bumpTriggersList.innerHTML = baseProducts
+    .map((product) => {
+      const checked = selectedIds.includes(product.id) ? "checked" : "";
+      return `
+        <label>
+          <input type="checkbox" value="${product.id}" ${checked} />
+          <span>${escapeHtml(product.name || "Produto")}</span>
+        </label>
+      `;
+    })
+    .join("");
+}
+
+function toggleBumpTriggerList(applyAll) {
+  if (!bumpTriggersList) {
+    return;
+  }
+  const hasBaseProducts = getBaseProducts().length > 0;
+  bumpTriggersList.classList.toggle("hidden", applyAll && hasBaseProducts);
+}
+
+function getSelectedTriggerIds() {
+  if (!bumpTriggersList) {
+    return [];
+  }
+  return Array.from(bumpTriggersList.querySelectorAll('input[type="checkbox"]:checked')).map(
+    (input) => input.value
+  );
+}
+
+function resolveBumpImageValue() {
+  const manualValue = bumpImageUrlInput?.value.trim() || "";
+  if (currentBumpImageMode === "url") {
+    return manualValue;
+  }
+  if (currentBumpImageValue) {
+    return currentBumpImageValue;
+  }
+  return manualValue;
+}
+
+function fillBumpForm(item) {
+  bumpTitleInput.value = item.name || "";
+  bumpDescriptionInput.value = item.description || "";
+  bumpPriceInput.value = formatCentsForField(item.price_cents);
+  bumpCompareInput.value = item.compare_price_cents
+    ? formatCentsForField(item.compare_price_cents)
+    : "";
+  bumpActiveInput.checked = item.active !== false;
+  editingBumpSort = Number(item.sort || 0);
+  const rule = item.bump_rule || { apply_to_all: true, trigger_product_ids: [] };
+  bumpApplyAllInput.checked = rule.apply_to_all !== false;
+  renderBumpTriggerOptions(rule.trigger_product_ids || []);
+  toggleBumpTriggerList(bumpApplyAllInput.checked);
+  currentBumpImageValue = item.image_url || "";
+  updateBumpImagePreview(currentBumpImageValue);
+  const storedUpload = isStoredMediaUrl(currentBumpImageValue);
+  if (bumpImageUrlInput) {
+    bumpImageUrlInput.value = storedUpload ? "" : currentBumpImageValue;
+  }
+  const mode = storedUpload ? "upload" : currentBumpImageValue ? "url" : "upload";
+  setBumpImageMode(mode);
+}
+
+function openBumpModal(mode, bump) {
+  if (!bumpModal || !bumpForm) {
+    return;
+  }
+  bumpModalMode = mode;
+  editingBumpId = bump?.id || null;
+  bumpModalTitle.textContent =
+    mode === "edit" ? `Editar ${bump?.name || "order bump"}` : "Criar order bump";
+  resetBumpForm();
+  if (mode === "edit" && bump) {
+    fillBumpForm(bump);
+  }
+  bumpModal.classList.remove("hidden");
+  bumpModal.hidden = false;
+  setTimeout(() => {
+    bumpTitleInput?.focus();
+  }, 60);
+}
+
+function closeBumpModal() {
+  if (!bumpModal) {
+    return;
+  }
+  bumpModal.classList.add("hidden");
+  bumpModal.hidden = true;
+  editingBumpId = null;
+}
+
+function collectBumpPayload() {
+  const priceCents = parseCurrencyInput(bumpPriceInput.value);
+  const compareCents = bumpCompareInput.value ? parseCurrencyInput(bumpCompareInput.value) : null;
+  const applyAll = bumpApplyAllInput?.checked !== false;
+  return {
+    type: "bump",
+    name: bumpTitleInput.value.trim(),
+    description: bumpDescriptionInput.value.trim(),
+    price_cents: priceCents,
+    compare_price_cents: compareCents,
+    active: bumpActiveInput?.checked !== false,
+    sort: editingBumpSort || 0,
+    image_url: resolveBumpImageValue(),
+    form_factor: "digital",
+    requires_address: false,
+    weight_grams: 0,
+    length_cm: 0,
+    width_cm: 0,
+    height_cm: 0,
+    bump_rule: {
+      apply_to_all: applyAll,
+      trigger_product_ids: applyAll ? [] : getSelectedTriggerIds(),
+    },
+  };
+}
+
+async function handleBumpSubmit(event) {
+  event.preventDefault();
+  if (!bumpForm) {
+    return;
+  }
+  const applyAll = bumpApplyAllInput?.checked !== false;
+  if (!applyAll) {
+    const selectedTriggers = getSelectedTriggerIds();
+    if (!selectedTriggers.length) {
+      alert("Selecione pelo menos um produto gatilho ou deixe a opção de aplicar em todos.");
+      return;
+    }
+  }
+  const payload = collectBumpPayload();
+  if (!payload.name) {
+    alert("Informe o título do order bump.");
+    return;
+  }
+  const originalText = bumpSubmitBtn?.textContent;
+  if (bumpSubmitBtn) {
+    bumpSubmitBtn.disabled = true;
+    bumpSubmitBtn.textContent = "Salvando...";
+  }
+  try {
+    if (bumpModalMode === "edit" && editingBumpId) {
+      await updateItem(editingBumpId, payload);
+    } else {
+      await fetch("/api/admin/items", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...setAuthHeader(),
+        },
+        body: JSON.stringify(payload),
+      });
+    }
+    closeBumpModal();
+    loadItems();
+  } catch (error) {
+    alert("Não foi possível salvar o order bump.");
+  } finally {
+    if (bumpSubmitBtn) {
+      bumpSubmitBtn.disabled = false;
+      bumpSubmitBtn.textContent = originalText || "Salvar order bump";
+    }
+  }
 }
 
 async function handleProductSubmit(event) {
@@ -1191,12 +1589,36 @@ productImageUrl?.addEventListener("input", () => {
   currentImageValue = productImageUrl.value.trim();
   updateImagePreview(currentImageValue);
 });
+orderBumpsSearchInput?.addEventListener("input", () => renderOrderBumpsList());
+createBumpBtn?.addEventListener("click", () => openBumpModal("create"));
+orderBumpsEmptyBtn?.addEventListener("click", () => openBumpModal("create"));
+bumpForm?.addEventListener("submit", handleBumpSubmit);
+bumpMediaTabs.forEach((tab) => {
+  tab.addEventListener("click", () => setBumpImageMode(tab.dataset.bumpImageMode));
+});
+bumpImageUpload?.addEventListener("change", handleBumpImageUploadChange);
+bumpImageUrlInput?.addEventListener("input", () => {
+  setBumpImageMode("url");
+  currentBumpImageValue = bumpImageUrlInput.value.trim();
+  updateBumpImagePreview(currentBumpImageValue);
+});
+bumpApplyAllInput?.addEventListener("change", () => {
+  toggleBumpTriggerList(bumpApplyAllInput.checked);
+});
 document.querySelectorAll("[data-close-product]").forEach((btn) => {
   btn.addEventListener("click", closeProductModal);
 });
 productModal?.addEventListener("click", (event) => {
   if (event.target === productModal) {
     closeProductModal();
+  }
+});
+document.querySelectorAll("[data-close-bump]").forEach((btn) => {
+  btn.addEventListener("click", closeBumpModal);
+});
+bumpModal?.addEventListener("click", (event) => {
+  if (event.target === bumpModal) {
+    closeBumpModal();
   }
 });
 productsTableBody?.addEventListener("click", async (event) => {
@@ -1230,6 +1652,25 @@ productsTableBody?.addEventListener("click", async (event) => {
     }
   }
 });
+orderBumpsList?.addEventListener("click", async (event) => {
+  const target = event.target.closest("[data-bump-action]");
+  if (!target) {
+    return;
+  }
+  const { bumpId } = target.dataset;
+  const bump = getBumpProducts().find((item) => item.id === bumpId);
+  if (target.dataset.bumpAction === "edit" && bump) {
+    openBumpModal("edit", bump);
+    return;
+  }
+  if (target.dataset.bumpAction === "delete" && bumpId) {
+    if (!confirm("Excluir este order bump?")) {
+      return;
+    }
+    await deleteItem(bumpId);
+    loadItems();
+  }
+});
 
 ordersTableBody?.addEventListener("click", (event) => {
   const row = event.target.closest("tr[data-order-id]");
@@ -1258,6 +1699,7 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     closeInspector();
     closeProductModal();
+    closeBumpModal();
   }
 });
 

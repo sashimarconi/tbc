@@ -33,6 +33,14 @@ create table if not exists product_files (
   created_at timestamptz not null default now()
 );
 
+create table if not exists order_bump_rules (
+  bump_id uuid primary key references products(id) on delete cascade,
+  apply_to_all boolean not null default true,
+  trigger_product_ids uuid[] not null default '{}',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists analytics_sessions (
   session_id text primary key,
   first_seen timestamptz not null default now(),

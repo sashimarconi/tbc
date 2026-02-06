@@ -51,6 +51,9 @@
               <button type="button" class="panel-tab" data-target="products-view">
                 Produtos
               </button>
+              <button type="button" class="panel-tab" data-target="order-bumps-view">
+                Order Bumps
+              </button>
             </div>
             <button id="logout-btn" class="ghost">Sair</button>
           </div>
@@ -322,6 +325,43 @@
             </table>
           </div>
         </section>
+
+        <section id="order-bumps-view" class="panel-view hidden" hidden>
+          <header class="bumps-head">
+            <div>
+              <h2>Order Bumps</h2>
+              <p>Configure ofertas adicionais para aumentar o ticket médio.</p>
+            </div>
+            <button id="create-bump-btn" type="button">Novo order bump</button>
+          </header>
+
+          <div class="bumps-toolbar">
+            <label class="products-search" aria-label="Buscar order bumps">
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path
+                  d="M9 3a6 6 0 104.47 10.03l3.75 3.75 1.42-1.42-3.75-3.75A6 6 0 009 3zm0 2a4 4 0 110 8 4 4 0 010-8z"
+                  fill="currentColor"
+                />
+              </svg>
+              <input id="order-bumps-search" type="search" placeholder="Buscar por nome ou descrição..." />
+            </label>
+            <div class="bumps-counters">
+              <span><strong id="bumps-active-count">0</strong> ativos</span>
+              <span><strong id="bumps-inactive-count">0</strong> inativos</span>
+              <span><strong id="bumps-total-count">0</strong> total</span>
+            </div>
+          </div>
+
+          <div id="order-bumps-empty" class="bumps-empty">
+            <div class="bumps-empty__card">
+              <p>Nenhum order bump cadastrado</p>
+              <small>Crie seu primeiro order bump para oferecer ofertas complementares.</small>
+              <button type="button" id="order-bumps-empty-btn">Criar order bump</button>
+            </div>
+          </div>
+
+          <div id="order-bumps-list" class="bumps-grid"></div>
+        </section>
       </section>
     </main>
 
@@ -336,22 +376,14 @@
         </header>
 
         <form id="product-form" class="product-form">
-          <section class="product-type">
-            <div class="product-type__group">
-              <label>Categoria</label>
-              <select id="product-type" name="type">
-                <option value="base">Base</option>
-                <option value="bump">Bump</option>
-                <option value="upsell">Upsell</option>
-                <option value="shipping">Frete</option>
-              </select>
-            </div>
+          <section class="product-type single">
             <div class="product-type__group">
               <label>Formato</label>
               <div class="toggle">
                 <button type="button" data-form-factor="physical" class="is-active">Físico</button>
                 <button type="button" data-form-factor="digital">Digital</button>
               </div>
+              <small>Escolha se este produto exige endereço de entrega.</small>
             </div>
           </section>
 
@@ -367,7 +399,7 @@
               </div>
             </header>
             <div data-image-panel="upload" class="media-panel">
-              <label class="upload-tile">
+              <label class="upload-tile" id="product-upload-tile">
                 <input id="product-image-upload" type="file" accept="image/*" style="display:none" />
                 <span>Arraste ou clique para enviar</span>
                 <small>Formatos PNG, JPG ou WEBP</small>
@@ -447,6 +479,98 @@
           <footer class="modal__footer">
             <button type="button" class="ghost" data-close-product>Cancelar</button>
             <button type="submit" id="product-submit">Salvar produto</button>
+          </footer>
+        </form>
+      </div>
+    </aside>
+
+    <aside id="order-bump-modal" class="modal hidden" hidden role="dialog" aria-modal="true">
+      <div class="modal__panel">
+        <header class="modal__header">
+          <div>
+            <p class="modal__eyebrow">Order Bumps</p>
+            <h3 id="order-bump-modal-title">Criar order bump</h3>
+          </div>
+          <button type="button" class="ghost" data-close-bump>Fechar</button>
+        </header>
+
+        <form id="order-bump-form" class="bump-form">
+          <section class="bump-toggle">
+            <label class="switch">
+              <input id="bump-active" type="checkbox" checked />
+              <span>Oferta ativa</span>
+            </label>
+          </section>
+
+          <section class="bump-basic">
+            <label>
+              Título do order bump
+              <input id="bump-title" placeholder="Ex: Oferta complementar" required />
+            </label>
+            <label>
+              Descrição
+              <textarea id="bump-description" rows="3" placeholder="Texto curto para explicar o benefício."></textarea>
+            </label>
+          </section>
+
+          <section class="media-card bump-media">
+            <header>
+              <div>
+                <h4>Imagem exibida no checkout</h4>
+                <p>Use o mesmo estilo do produto principal.</p>
+              </div>
+              <div class="media-tabs">
+                <button type="button" data-bump-image-mode="upload" class="is-active">Upload</button>
+                <button type="button" data-bump-image-mode="url">URL</button>
+              </div>
+            </header>
+            <div data-bump-image-panel="upload" class="media-panel">
+              <label class="upload-tile" id="bump-upload-tile">
+                <input id="bump-image-upload" type="file" accept="image/*" style="display:none" />
+                <span>Arraste ou clique para enviar</span>
+                <small>Formatos PNG, JPG ou WEBP</small>
+              </label>
+            </div>
+            <div data-bump-image-panel="url" class="media-panel hidden">
+              <label>
+                <span>Link da imagem</span>
+                <input id="bump-image-url" type="url" placeholder="https://..." />
+              </label>
+            </div>
+            <figure class="media-preview" id="bump-image-preview">
+              <img alt="Pré-visualização" />
+              <figcaption>Pré-visualização</figcaption>
+            </figure>
+          </section>
+
+          <section class="bump-pricing">
+            <label>
+              Preço da oferta (R$)
+              <input id="bump-price" inputmode="decimal" placeholder="0,00" />
+            </label>
+            <label>
+              Preço riscado (opcional)
+              <input id="bump-compare" inputmode="decimal" placeholder="Exibe âncora de preço" />
+            </label>
+          </section>
+
+          <section class="bump-triggers">
+            <header>
+              <div>
+                <h4>Produtos gatilho</h4>
+                <p>Escolha em quais checkouts este bump aparece.</p>
+              </div>
+              <label class="switch small">
+                <input type="checkbox" id="bump-apply-all" checked />
+                <span>Aplicar em todos</span>
+              </label>
+            </header>
+            <div id="bump-triggers-list" class="trigger-grid"></div>
+          </section>
+
+          <footer class="modal__footer">
+            <button type="button" class="ghost" data-close-bump>Cancelar</button>
+            <button type="submit" id="bump-submit">Salvar order bump</button>
           </footer>
         </form>
       </div>

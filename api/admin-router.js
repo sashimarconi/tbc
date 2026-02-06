@@ -9,10 +9,25 @@ const {
 } = require("../lib/ensure-products");
 const { saveProductFile } = require("../lib/product-files");
 
+function normalizeBumpRule(rule) {
+  if (!rule || typeof rule !== "object") {
+    return null;
+  }
+  const applyAll = rule.apply_to_all !== false;
+  const triggers = Array.isArray(rule.trigger_product_ids)
+    ? rule.trigger_product_ids.filter(Boolean)
+    : [];
+  return {
+    apply_to_all: applyAll,
+    trigger_product_ids: applyAll ? [] : triggers,
+  };
+}
+
 function normalizeItemPayload(body = {}) {
   const formFactor = body.form_factor === "digital" ? "digital" : "physical";
   const requiresAddress =
     body.requires_address === undefined ? formFactor !== "digital" : Boolean(body.requires_address);
+  const bumpRule = normalizeBumpRule(body.bump_rule);
   return {
     type: body.type,
     name: body.name,
@@ -33,7 +48,67 @@ function normalizeItemPayload(body = {}) {
     length_cm: Number(body.length_cm || 0),
     width_cm: Number(body.width_cm || 0),
     height_cm: Number(body.height_cm || 0),
+    bump_rule: bumpRule,
   };
+}
+
+function mapRuleRow(row) {
+  if (!row) {
+    return null;
+  }
+  return {
+    apply_to_all: row.apply_to_all !== false,
+    trigger_product_ids: Array.isArray(row.trigger_product_ids) ? row.trigger_product_ids : [],
+  };
+}
+
+async function fetchBumpRulesFor(ids = []) {
+  if (!ids.length) {
+    return new Map();
+  }
+  const res = await query(
+    "select bump_id, apply_to_all, trigger_product_ids from order_bump_rules where bump_id = any($1::uuid[])",
+    [ids]
+  );
+  const map = new Map();
+  res.rows?.forEach((row) => {
+    map.set(row.bump_id, mapRuleRow(row));
+  });
+  return map;
+}
+
+async function getBumpRule(bumpId) {
+  if (!bumpId) {
+    return null;
+  }
+  const res = await query(
+    "select bump_id, apply_to_all, trigger_product_ids from order_bump_rules where bump_id = $1",
+    [bumpId]
+  );
+  return mapRuleRow(res.rows?.[0]);
+}
+
+async function upsertBumpRule(bumpId, rule) {
+  if (!bumpId) {
+    return;
+  }
+  if (!rule) {
+    await query("delete from order_bump_rules where bump_id = $1", [bumpId]);
+    return;
+  }
+  const applyAll = rule.apply_to_all !== false;
+  const triggers = applyAll
+    ? []
+    : (Array.isArray(rule.trigger_product_ids) ? rule.trigger_product_ids.filter(Boolean) : []);
+  await query(
+    `insert into order_bump_rules (bump_id, apply_to_all, trigger_product_ids, updated_at)
+     values ($1, $2, $3, now())
+     on conflict (bump_id)
+     do update set apply_to_all = excluded.apply_to_all,
+                  trigger_product_ids = excluded.trigger_product_ids,
+                  updated_at = now()`,
+    [bumpId, applyAll, triggers]
+  );
 }
 
 async function handleLogin(req, res) {
@@ -69,7 +144,21 @@ async function handleItems(req, res) {
       const result = await query(
         "select * from products order by type asc, sort asc, created_at asc"
       );
-      res.json({ items: result.rows || [] });
+      const items = result.rows || [];
+      const bumpIds = items.filter((item) => item.type === "bump").map((item) => item.id);
+      const rulesMap = await fetchBumpRulesFor(bumpIds);
+      const enriched = items.map((item) =>
+        item.type === "bump"
+          ? {
+              ...item,
+              bump_rule: rulesMap.get(item.id) || {
+                apply_to_all: true,
+                trigger_product_ids: [],
+              },
+            }
+          : item
+      );
+      res.json({ items: enriched });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -121,7 +210,12 @@ async function handleItems(req, res) {
           item.height_cm,
         ]
       );
-      res.json({ item: result.rows[0] });
+      const saved = result.rows[0];
+      if (saved?.type === "bump") {
+        await upsertBumpRule(saved.id, item.bump_rule);
+        saved.bump_rule = await getBumpRule(saved.id);
+      }
+      res.json({ item: saved });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -171,7 +265,14 @@ async function handleItems(req, res) {
           id,
         ]
       );
-      res.json({ item: result.rows[0] });
+      const saved = result.rows[0];
+      if (saved?.type === "bump") {
+        await upsertBumpRule(saved.id, updates.bump_rule);
+        saved.bump_rule = await getBumpRule(saved.id);
+      } else {
+        await upsertBumpRule(saved?.id, null);
+      }
+      res.json({ item: saved });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
