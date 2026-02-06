@@ -9,13 +9,30 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Montserrat:wght@700;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/admin/theme.css" />
     <link rel="stylesheet" href="/admin/admin.css" />
+    <link rel="stylesheet" href="/admin/sidebar.css" />
     <style>
       .hidden { display: none !important; }
       body { min-height: 100vh; }
     </style>
   </head>
   <body>
-    <main class="page" style="background:#050505;min-height:100vh;">
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar__logo">
+        <svg width="38" height="38" viewBox="0 0 64 64" fill="none" aria-hidden="true"><rect x="8" y="40" width="48" height="8" rx="4" fill="#1B1B22"/><ellipse cx="32" cy="36" rx="18" ry="8" fill="#0D0D12"/><path d="M16 36c0-8 6-18 16-18s16 10 16 18" stroke="#A100FF" stroke-width="3" stroke-linecap="round" fill="none"/></svg>
+      </div>
+      <nav class="sidebar__nav">
+        <button class="sidebar__nav-btn active" data-target="dashboard-view"><svg viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm4 0h2v-2H7v2zm4 0h2v-2h-2v2zm4 0h2v-2h-2v2zm4 0h2v-2h-2v2z" fill="currentColor"/></svg>Dashboard</button>
+        <button class="sidebar__nav-btn" data-target="orders-view"><svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-2-.9-2-2V8c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2v8c0 1.1-.9 2-2 2H7zm0-2h10V8H7v8z" fill="currentColor"/></svg>Pedidos</button>
+        <button class="sidebar__nav-btn" data-target="carts-view"><svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-2-.9-2-2V8c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2v8c0 1.1-.9 2-2 2H7zm0-2h10V8H7v8z" fill="currentColor"/></svg>Carrinhos</button>
+        <button class="sidebar__nav-btn" data-target="products-view"><svg viewBox="0 0 24 24"><path d="M12 2l4 4H8l4-4zm0 2.83L9.17 8h5.66L12 4.83zM4 8v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8H4zm2 0h12v12H6V8z" fill="currentColor"/></svg>Produtos</button>
+        <button class="sidebar__nav-btn" data-target="order-bumps-view"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="currentColor"/></svg>Order Bumps</button>
+      </nav>
+      <div class="sidebar__footer">
+        <button id="logout-btn" class="ghost" style="width:80%;margin-bottom:1.2rem;">Sair</button>
+        <button class="sidebar__toggle" id="sidebar-toggle" title="Minimizar sidebar"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z" fill="currentColor"/></svg></button>
+      </div>
+    </div>
+    <main class="page" style="background:#050505;min-height:100vh;margin-left:250px;transition:margin-left 0.2s;" id="main-content">
       <section id="login" class="card" style="max-width:400px;margin:4rem auto 0;box-shadow:var(--shadow-dark);">
         <div style="display:flex;flex-direction:column;align-items:center;gap:2rem;">
           <svg width="64" height="64" viewBox="0 0 64 64" fill="none" aria-hidden="true" style="margin-bottom:1rem;"><!-- Chapéu fedora minimalista --><rect x="8" y="40" width="48" height="8" rx="4" fill="#1B1B22"/><ellipse cx="32" cy="36" rx="18" ry="8" fill="#0D0D12"/><path d="M16 36c0-8 6-18 16-18s16 10 16 18" stroke="#A100FF" stroke-width="3" stroke-linecap="round" fill="none"/></svg>

@@ -1725,3 +1725,19 @@ if (token) {
 } else {
   showLogin();
 }
+
+// Sidebar toggle para minimizar/expandir
+const sidebar = document.getElementById("sidebar");
+const mainContent = document.getElementById("main-content");
+const sidebarToggle = document.getElementById("sidebar-toggle");
+
+if (sidebar && sidebarToggle && mainContent) {
+  sidebarToggle.addEventListener("click", () => {
+    sidebar.classList.toggle("minimized");
+    if (sidebar.classList.contains("minimized")) {
+      mainContent.style.marginLeft = "72px";
+    } else {
+      mainContent.style.marginLeft = "250px";
+    }
+  });
+}
