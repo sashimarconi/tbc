@@ -25,43 +25,60 @@ body {
 
 .page {
   min-height: 100vh;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 42px 16px;
-}
-
-.checkout {
-  width: min(420px, 100%);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    font-size: 16px;
+    font-family: inherit;
+    background: #fff;
+    box-shadow: 0 2px 8px #A100FF08;
+    transition: border 0.2s, box-shadow 0.2s;
+  width: min(440px, 100%);
   background: var(--surface);
-  border-radius: 26px;
-  padding: 30px;
-  box-shadow: 0 35px 60px rgba(28, 29, 43, 0.18);
+  border-radius: 28px;
+  padding: 36px 28px 32px 28px;
+    border-color: var(--accent-strong);
+    outline: none;
+    box-shadow: 0 0 0 2px #ffe7aa55;
+  box-shadow: 0 35px 60px rgba(28, 29, 43, 0.18), 0 2px 8px #A100FF11;
   display: flex;
   flex-direction: column;
-  gap: 22px;
-}
-
-.trust-bar {
+    border: none;
+    border-radius: 16px;
+    padding: 16px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(90deg, var(--accent-strong) 0%, #ffb300 100%);
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(246, 195, 68, 0.18);
+    letter-spacing: 0.02em;
+    transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
   width: 100%;
   background: #fff;
-  border-bottom: 1px solid #e6e6ef;
+  border-bottom: 1.5px solid #e6e6ef;
+    background: linear-gradient(90deg, #ffb300 0%, var(--accent-strong) 100%);
+    box-shadow: 0 12px 32px rgba(246, 195, 68, 0.28);
+    transform: translateY(-2px) scale(1.02);
   box-shadow: 0 20px 35px rgba(16, 25, 40, 0.12);
+  border-radius: 0 0 18px 18px;
+  padding-bottom: 2px;
 }
 
 .trust-bar__content {
   max-width: 640px;
   margin: 0 auto;
-  padding: 18px 24px;
+  padding: 18px 24px 10px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 18px;
 }
 
 .trust-bar__logo {
-  max-height: 42px;
+  max-height: 48px;
   width: auto;
+  filter: drop-shadow(0 2px 8px #A100FF33);
 }
 
 .trust-bar__badge {
@@ -69,28 +86,30 @@ body {
   align-items: center;
   gap: 10px;
   background: #f5f7fb;
-  border: 1px solid #dfe5f5;
+  border: 1.5px solid #dfe5f5;
   border-radius: 999px;
-  padding: 8px 18px;
-  font-size: 12px;
+  padding: 8px 22px;
+  font-size: 13px;
   font-weight: 700;
   color: #0f5132;
   letter-spacing: 0.05em;
+  box-shadow: 0 2px 8px #A100FF11;
 }
 
 .trust-bar__icon {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: linear-gradient(135deg, #3ddc84, #1d9f55);
   display: grid;
   place-items: center;
   color: #0b381f;
+  box-shadow: 0 2px 8px #A100FF22;
 }
 
 .trust-bar__icon svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
 }
 
 .trust-bar__text {
@@ -98,10 +117,12 @@ body {
   flex-direction: column;
   line-height: 1.1;
   color: #0f5132;
+  font-size: 13px;
 }
 
 .trust-bar__text strong {
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 900;
 }
 
  .country-switcher {
@@ -220,7 +241,59 @@ body {
 
 .divider {
   border: none;
-  border-top: 1px solid var(--border);
+  border-top: 1.5px solid #ececec;
+  margin: 24px 0;
+  opacity: 0.85;
+}
+.hidden {
+  display: none !important;
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: 10px 0;
+  }
+  .checkout {
+    padding: 10px 2px 14px 2px;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(28, 29, 43, 0.10);
+    gap: 18px;
+  }
+  .trust-bar__content {
+    padding: 8px 4px 6px 4px;
+    gap: 6px;
+  }
+  .trust-bar__logo {
+    max-height: 28px;
+  }
+  .product-card {
+    flex-direction: column;
+    align-items: center;
+    padding: 6px;
+    gap: 6px;
+  }
+  .product-card__media {
+    flex: 0 0 60px;
+    border-radius: 8px;
+  }
+  .product-card__media img {
+    width: 44px;
+    height: 66px;
+  }
+  .product-card__body h1 {
+    font-size: 14px;
+  }
+  .product-card__body strong {
+    font-size: 15px;
+  }
+  .summary {
+    padding: 8px;
+    border-radius: 10px;
+  }
+  .cta {
+    padding: 12px;
+    font-size: 14px;
+  }
 }
 
 .form {
