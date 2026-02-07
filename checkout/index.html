@@ -33,6 +33,16 @@
     <link rel="stylesheet" href="/checkout/checkout.css" />
   </head>
   <body data-analytics-page="checkout">
+    <script>
+      window.addEventListener('message', function(e) {
+        if (!e.data || e.data.type !== 'customize') return;
+        const root = document.documentElement;
+        if (e.data.primary) root.style.setProperty('--accent', e.data.primary);
+        if (e.data.button) root.style.setProperty('--accent-strong', e.data.button);
+        if (e.data.bg) root.style.setProperty('--bg', e.data.bg);
+        if (e.data.font) root.style.fontFamily = e.data.font + ', sans-serif';
+      });
+    </script>
     <div class="trust-bar">
       <div class="trust-bar__content">
         <img

@@ -1806,10 +1806,13 @@ if (sidebar && sidebarToggle && mainContent) {
 const navBtns = document.querySelectorAll('.sidebar__nav-btn');
 navBtns.forEach(btn => {
   btn.addEventListener('click', () => {
+    const target = btn.getAttribute('data-target');
+    if (target === 'appearance-view') {
+      window.location.href = '/admin/builder.html';
+      return;
+    }
     navBtns.forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    // Troca de view
-    const target = btn.getAttribute('data-target');
     document.querySelectorAll('.panel-view').forEach(view => {
       view.classList.add('hidden');
       view.hidden = true;

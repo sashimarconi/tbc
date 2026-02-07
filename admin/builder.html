@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Personalizar Checkout</title>
+    <link rel="stylesheet" href="/admin/theme.css" />
+    <link rel="stylesheet" href="/admin/admin.css" />
+    <link rel="stylesheet" href="/admin/sidebar.css" />
+    <style>
+      body { background: #f7f7fb; min-height: 100vh; margin: 0; }
+      .builder-layout { display: flex; min-height: 100vh; }
+      .builder-sidebar {
+        width: 320px;
+        background: #fff;
+        border-right: 1.5px solid #ececf2;
+        display: flex;
+        flex-direction: column;
+        padding: 2.5rem 1.5rem 1.5rem 1.5rem;
+        box-shadow: 4px 0 24px 0 #0001;
+      }
+      .builder-sidebar h2 {
+        font-family: var(--font-title);
+        font-size: 1.3rem;
+        font-weight: 900;
+        margin-bottom: 0.5rem;
+      }
+      .builder-sidebar .builder-section {
+        margin-bottom: 2.2rem;
+        background: #fafaff;
+        border-radius: 16px;
+        box-shadow: 0 2px 12px 0 #0001;
+        padding: 1.2rem 1.2rem 1.2rem 1.2rem;
+      }
+      .builder-sidebar label {
+        display: block;
+        margin-bottom: 1.1rem;
+      }
+      .builder-sidebar input[type="color"] {
+        margin-left: 1rem;
+        vertical-align: middle;
+      }
+      .builder-sidebar select {
+        width: 100%;
+        margin-top: 0.5rem;
+      }
+      .builder-preview {
+        flex: 1;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        background: #f7f7fb;
+        padding: 2.5rem 0;
+      }
+      .builder-preview-iframe {
+        width: 420px;
+        height: 800px;
+        border: 1.5px solid #ececf2;
+        border-radius: 18px;
+        box-shadow: 0 8px 32px 0 #0002;
+        background: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="builder-layout">
+      <aside class="builder-sidebar">
+        <h2>Aparência</h2>
+        <div class="builder-section">
+          <h3>Tema / Layout</h3>
+          <label>
+            Tema do Checkout
+            <select id="builder-theme">
+              <option value="default">Padrão</option>
+              <option value="solarys">Solarys</option>
+              <option value="minimal">Minimal</option>
+            </select>
+          </label>
+        </div>
+        <div class="builder-section">
+          <h3>Esquema de Cores</h3>
+          <label>
+            Cor Principal
+            <input type="color" id="builder-primary-color" />
+          </label>
+          <label>
+            Cor dos Botões
+            <input type="color" id="builder-button-color" />
+          </label>
+          <label>
+            Cor de Fundo
+            <input type="color" id="builder-bg-color" />
+          </label>
+        </div>
+        <div class="builder-section">
+          <h3>Tipografia</h3>
+          <label>
+            Fonte Principal
+            <select id="builder-font">
+              <option value="Inter">Inter</option>
+              <option value="Montserrat">Montserrat</option>
+              <option value="Poppins">Poppins</option>
+              <option value="Roboto">Roboto</option>
+            </select>
+          </label>
+        </div>
+        <button id="builder-save" class="ghost" style="width:100%;font-weight:700;">Salvar Personalização</button>
+      </aside>
+      <main class="builder-preview">
+        <iframe class="builder-preview-iframe" src="/checkout/index.html" title="Preview do Checkout"></iframe>
+      </main>
+    </div>
+    <script>
+      const iframe = document.querySelector('.builder-preview-iframe');
+      function updatePreview() {
+        if (!iframe.contentWindow) return;
+        const primary = document.getElementById('builder-primary-color').value || '#A100FF';
+        const button = document.getElementById('builder-button-color').value || '#A100FF';
+        const bg = document.getElementById('builder-bg-color').value || '#e8ebf1';
+        const font = document.getElementById('builder-font').value || 'Inter';
+        // Envia mensagem para o iframe
+        iframe.contentWindow.postMessage({
+          type: 'customize',
+          primary, button, bg, font
+        }, '*');
+      }
+      document.getElementById('builder-primary-color').addEventListener('input', updatePreview);
+      document.getElementById('builder-button-color').addEventListener('input', updatePreview);
+      document.getElementById('builder-bg-color').addEventListener('input', updatePreview);
+      document.getElementById('builder-font').addEventListener('change', updatePreview);
+      // Inicializa preview
+      iframe.addEventListener('load', updatePreview);
+      document.getElementById('builder-save').onclick = function() {
+        alert('Personalização salva! (exemplo)');
+      };
+    </script>
+  </body>
+</html>
