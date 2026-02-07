@@ -17,14 +17,23 @@
 .sidebar.minimized {
   width: 72px;
 }
-.sidebar__logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 80px;
-  border-bottom: 2px solid #1B1B22;
-  background: #0D0D12;
-}
+  .sidebar__logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 80px;
+    border-bottom: 2px solid #1B1B22;
+    background: #0D0D12;
+  }
+  .sidebar-logo-img {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    background: #181825;
+    border-radius: 8px;
+    box-shadow: 0 0 8px #A100FF55;
+    display: block;
+  }
 .sidebar__logo svg {
   width: 44px;
   height: 44px;
