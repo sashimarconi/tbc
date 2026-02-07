@@ -117,3 +117,19 @@ create table if not exists checkout_orders (
 
 create index if not exists checkout_orders_created_idx
   on checkout_orders (created_at desc);
+
+-- Aparência do Checkout
+create table if not exists checkout_appearance (
+  id serial primary key,
+  theme text not null default 'default',
+  primary_color text not null default '#A100FF',
+  button_color text not null default '#A100FF',
+  bg_color text not null default '#e8ebf1',
+  font text not null default 'Inter',
+  updated_at timestamptz not null default now()
+);
+
+-- Apenas uma linha, use update/insert para modificar
+insert into checkout_appearance (theme, primary_color, button_color, bg_color, font)
+values ('default', '#A100FF', '#A100FF', '#e8ebf1', 'Inter')
+on conflict do nothing;

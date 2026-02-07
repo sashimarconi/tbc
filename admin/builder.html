@@ -250,26 +250,45 @@
     </div>
     <script>
       const iframe = document.querySelector('.builder-preview-iframe');
+      async function loadAppearance() {
+        const res = await fetch('/api/admin/appearance');
+        const data = await res.json();
+        document.getElementById('builder-theme').value = data.theme || 'default';
+        document.getElementById('builder-primary-color').value = data.primary_color || '#A100FF';
+        document.getElementById('builder-button-color').value = data.button_color || '#A100FF';
+        document.getElementById('builder-bg-color').value = data.bg_color || '#e8ebf1';
+        document.getElementById('builder-font').value = data.font || 'Inter';
+        updatePreview();
+      }
       function updatePreview() {
         if (!iframe.contentWindow) return;
         const primary = document.getElementById('builder-primary-color').value || '#A100FF';
         const button = document.getElementById('builder-button-color').value || '#A100FF';
         const bg = document.getElementById('builder-bg-color').value || '#e8ebf1';
         const font = document.getElementById('builder-font').value || 'Inter';
-        // Envia mensagem para o iframe
         iframe.contentWindow.postMessage({
           type: 'customize',
           primary, button, bg, font
         }, '*');
       }
+      document.getElementById('builder-theme').addEventListener('change', updatePreview);
       document.getElementById('builder-primary-color').addEventListener('input', updatePreview);
       document.getElementById('builder-button-color').addEventListener('input', updatePreview);
       document.getElementById('builder-bg-color').addEventListener('input', updatePreview);
       document.getElementById('builder-font').addEventListener('change', updatePreview);
-      // Inicializa preview
-      iframe.addEventListener('load', updatePreview);
-      document.getElementById('builder-save').onclick = function() {
-        alert('Personalização salva! (exemplo)');
+      iframe.addEventListener('load', loadAppearance);
+      document.getElementById('builder-save').onclick = async function() {
+        const theme = document.getElementById('builder-theme').value;
+        const primary_color = document.getElementById('builder-primary-color').value;
+        const button_color = document.getElementById('builder-button-color').value;
+        const bg_color = document.getElementById('builder-bg-color').value;
+        const font = document.getElementById('builder-font').value;
+        await fetch('/api/admin/appearance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ theme, primary_color, button_color, bg_color, font })
+        });
+        alert('Personalização salva!');
       };
     </script>
   </body>

@@ -408,6 +408,29 @@ function getPathSegments(req) {
   return cleaned.split("/").filter(Boolean);
 }
 
+// Aparência do Checkout
+async function handleAppearance(req, res) {
+  if (req.method === "GET") {
+    const result = await query("select * from checkout_appearance order by updated_at desc limit 1");
+    res.json(result.rows[0] || {});
+    return;
+  }
+  if (req.method === "POST") {
+    const body = await parseJson(req);
+    const { theme, primary_color, button_color, bg_color, font } = body;
+    await query(
+      `insert into checkout_appearance (theme, primary_color, button_color, bg_color, font, updated_at)
+       values ($1, $2, $3, $4, $5, now())
+       on conflict (id) do update set theme = $1, primary_color = $2, button_color = $3, bg_color = $4, font = $5, updated_at = now()`,
+      [theme || 'default', primary_color || '#A100FF', button_color || '#A100FF', bg_color || '#e8ebf1', font || 'Inter']
+    );
+    res.json({ success: true });
+    return;
+  }
+  res.status(405).json({ error: "Method not allowed" });
+}
+
+// Roteamento
 module.exports = async (req, res) => {
   const segments = getPathSegments(req);
   const path = segments[0] || "";
@@ -437,6 +460,9 @@ module.exports = async (req, res) => {
       return;
     case "uploads":
       await handleUploads(req, res);
+      return;
+    case "appearance":
+      await handleAppearance(req, res);
       return;
     default:
       res.status(404).json({ error: "Not found" });
