@@ -15,6 +15,7 @@ const DEFAULT_SEALPAY_API_URL =
 const LOGO_MAX_BYTES = Number(process.env.LOGO_UPLOAD_MAX_BYTES || 4 * 1024 * 1024);
 const LOGO_MAX_MB_LABEL = `${Math.round(LOGO_MAX_BYTES / (1024 * 1024))}MB`;
 const authHandler = require("./auth/[[...path]]");
+const analyticsHandler = require("./analytics/[[...path]]");
 
 function deepMerge(base, override) {
   if (Array.isArray(base)) {
@@ -961,7 +962,7 @@ module.exports = async (req, res) => {
   const segments = getPathSegments(req);
   const path = segments[0] || "";
 
-  if (segments.length > 1 && !req.query.id) {
+  if (["items", "orders", "carts"].includes(path) && segments.length > 1 && !req.query.id) {
     req.query.id = segments[1];
   }
 
@@ -1005,6 +1006,11 @@ module.exports = async (req, res) => {
       return;
     case "payment-settings":
       await handlePaymentSettings(req, res, user);
+      return;
+    case "analytics":
+      req.query = req.query || {};
+      req.query.path = segments.slice(1);
+      await analyticsHandler(req, res);
       return;
     default:
       res.status(404).json({ error: "Not found" });
