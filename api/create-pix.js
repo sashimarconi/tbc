@@ -1,4 +1,41 @@
 const { parseJson } = require("../lib/parse-json");
+const { query } = require("../lib/db");
+const { ensurePaymentGatewayTable } = require("../lib/ensure-payment-gateway");
+const { decryptText } = require("../lib/credentials-crypto");
+
+async function resolveGatewayBySlug(slug) {
+  if (!slug) {
+    return null;
+  }
+
+  const ownerRes = await query(
+    "select owner_user_id from products where slug = $1 and type = 'base' limit 1",
+    [slug]
+  );
+  const ownerUserId = ownerRes.rows?.[0]?.owner_user_id;
+  if (!ownerUserId) {
+    return null;
+  }
+
+  await ensurePaymentGatewayTable();
+  const gatewayRes = await query(
+    `select api_url, api_key_encrypted, is_active
+     from user_payment_gateways
+     where owner_user_id = $1 and provider = 'sealpay'
+     limit 1`,
+    [ownerUserId]
+  );
+
+  const gateway = gatewayRes.rows?.[0];
+  if (!gateway || gateway.is_active === false) {
+    return null;
+  }
+
+  return {
+    apiUrl: gateway.api_url,
+    apiKey: decryptText(gateway.api_key_encrypted || ""),
+  };
+}
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
@@ -9,19 +46,36 @@ module.exports = async (req, res) => {
   const body = await parseJson(req);
   const amount = Number(body.amount || 0);
   const customer = body.customer || {};
+  const slug = String(body.slug || "").trim();
 
   if (!amount || amount < 100 || !customer.name || !customer.email) {
     res.status(400).json({ error: "Missing required fields" });
     return;
   }
 
-  const apiUrl =
-    process.env.SEALPAY_API_URL ||
-    "https://abacate-5eo1.onrender.com/create-pix";
-  const apiKey = process.env.SEALPAY_API_KEY;
+  let apiUrl = "";
+  let apiKey = "";
+  try {
+    const gateway = await resolveGatewayBySlug(slug);
+    if (gateway) {
+      apiUrl = gateway.apiUrl;
+      apiKey = gateway.apiKey;
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Falha ao carregar configuracao de pagamento" });
+    return;
+  }
 
+  if (!apiUrl) {
+    apiUrl =
+      process.env.SEALPAY_API_URL ||
+      "https://abacate-5eo1.onrender.com/create-pix";
+  }
   if (!apiKey) {
-    res.status(500).json({ error: "Missing SEALPAY_API_KEY" });
+    apiKey = process.env.SEALPAY_API_KEY || "";
+  }
+  if (!apiKey) {
+    res.status(400).json({ error: "Pagamento nao configurado para este checkout" });
     return;
   }
 

@@ -1,295 +1,321 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Personalizar Checkout</title>
+    <title>Builder de Checkout</title>
     <link rel="stylesheet" href="/admin/theme.css" />
-    <link rel="stylesheet" href="/admin/admin.css" />
-    <link rel="stylesheet" href="/admin/sidebar.css" />
-    <style>
-      :root {
-        --builder-primary: #A100FF;
-        --builder-bg: #f7f7fb;
-        --builder-sidebar: #fff;
-        --builder-border: #ececf2;
-        --builder-section: #fafaff;
-        --builder-shadow: 0 2px 12px 0 #0001;
-        --builder-radius: 16px;
-        --builder-title: #232336;
-        --builder-label: #6b6b7b;
-      }
-      html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        background: #f7f7fb;
-      }
-      body { min-height: 100vh; }
-      .builder-layout {
-        display: flex;
-        min-height: 100vh;
-        height: 100vh;
-        width: 100vw;
-        overflow: hidden;
-        background: var(--builder-bg);
-      }
-      .builder-sidebar {
-        width: 340px;
-        min-width: 260px;
-        max-width: 100vw;
-        background: var(--builder-sidebar);
-        border-right: 1.5px solid var(--builder-border);
-        display: flex;
-        flex-direction: column;
-        padding: 2.5rem 1.5rem 1.5rem 1.5rem;
-        box-shadow: 4px 0 24px 0 #0001;
-        z-index: 2;
-        height: 100vh;
-        position: relative;
-        gap: 1.2rem;
-      }
-      .builder-sidebar h2 {
-        font-family: var(--font-title);
-        font-size: 1.3rem;
-        font-weight: 900;
-        margin-bottom: 0.5rem;
-        color: var(--builder-title);
-        letter-spacing: -0.5px;
-        display: flex;
-        align-items: center;
-        gap: 0.7em;
-      }
-      .builder-sidebar h2 svg {
-        color: var(--builder-primary);
-        width: 1.5em;
-        height: 1.5em;
-      }
-      .builder-sidebar .builder-section {
-        margin-bottom: 1.2rem;
-        background: var(--builder-section);
-        border-radius: var(--builder-radius);
-        box-shadow: var(--builder-shadow);
-        padding: 1.2rem 1.2rem 1.2rem 1.2rem;
-        border: 1.5px solid var(--builder-border);
-      }
-      .builder-sidebar label {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 1.1rem;
-        color: var(--builder-label);
-        font-weight: 600;
-        font-size: 1em;
-      }
-      .builder-sidebar input[type="color"] {
-        margin-left: 1rem;
-        vertical-align: middle;
-        border: none;
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
-        box-shadow: 0 1px 4px #0001;
-        background: #fff;
-        cursor: pointer;
-        transition: box-shadow 0.15s;
-      }
-      .builder-sidebar input[type="color"]:hover {
-        box-shadow: 0 2px 8px #A100FF33;
-      }
-      .builder-sidebar select {
-        width: 100%;
-        margin-top: 0.5rem;
-        padding: 0.6em 0.8em;
-        border-radius: 8px;
-        border: 1.5px solid var(--builder-border);
-        background: #fff;
-        font-size: 1em;
-        color: var(--builder-title);
-        font-weight: 600;
-      }
-      .builder-sidebar h3 {
-        font-family: var(--font-title);
-        font-size: 1.08rem;
-        font-weight: 900;
-        margin-bottom: 1.2rem;
-        color: var(--builder-title);
-        letter-spacing: -0.5px;
-      }
-      .builder-preview {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--builder-bg);
-        padding: 2.5rem 0;
-        min-width: 0;
-        overflow: auto;
-      }
-      .builder-preview-iframe {
-        width: 420px;
-        max-width: 100vw;
-        height: 800px;
-        max-height: 90vh;
-        border: 1.5px solid var(--builder-border);
-        border-radius: 18px;
-        box-shadow: 0 8px 32px 0 #0002;
-        background: #fff;
-        transition: width 0.2s, height 0.2s;
-      }
-      .ghost {
-        background: var(--builder-bg);
-        color: var(--builder-title);
-        border: 1.5px solid var(--builder-border);
-        border-radius: 10px;
-        font-weight: 700;
-        font-size: 1.08em;
-        padding: 0.9em 1.2em;
-        margin-top: 1.2rem;
-        cursor: pointer;
-        transition: background 0.15s, color 0.15s, box-shadow 0.15s;
-        box-shadow: 0 1px 4px #0001;
-      }
-      .ghost:hover {
-        background: #ececf2;
-        color: var(--builder-primary);
-        box-shadow: 0 2px 8px #A100FF33;
-      }
-      @media (max-width: 1100px) {
-        .builder-preview-iframe {
-          width: 340px;
-          height: 600px;
-        }
-      }
-      @media (max-width: 900px) {
-        .builder-layout {
-          flex-direction: column;
-        }
-        .builder-sidebar {
-          width: 100vw;
-          min-width: 0;
-          max-width: 100vw;
-          height: auto;
-          border-right: none;
-          border-bottom: 1.5px solid var(--builder-border);
-          box-shadow: 0 4px 24px 0 #0001;
-          padding: 1.2rem 1rem 1rem 1rem;
-        }
-        .builder-preview {
-          padding: 1.2rem 0;
-        }
-        .builder-preview-iframe {
-          width: 100vw;
-          min-width: 0;
-          height: 600px;
-          max-height: 70vh;
-        }
-      }
-      @media (max-width: 600px) {
-        .builder-preview-iframe {
-          width: 100vw;
-          height: 480px;
-          border-radius: 0;
-        }
-        .builder-sidebar {
-          padding: 0.7rem 0.5rem 0.5rem 0.5rem;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="/admin/builder.css" />
   </head>
   <body>
-    <div class="builder-layout">
-      <aside class="builder-sidebar">
-        <h2>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M7 7h.01"/><path d="M12 7h.01"/><path d="M17 7h.01"/><path d="M7 12h.01"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 17h.01"/><path d="M12 17h.01"/><path d="M17 17h.01"/></svg>
-          Aparência
-        </h2>
-        <div class="builder-section">
-          <h3><svg style="vertical-align:middle;margin-right:0.4em;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/></svg> Tema / Layout</h3>
-          <label>
-            Tema do Checkout
-            <select id="builder-theme">
-              <option value="default">Padrão</option>
-              <option value="solarys">Solarys</option>
-              <option value="minimal">Minimal</option>
-            </select>
-          </label>
+    <div class="builder-root">
+      <aside class="editor-sidebar">
+        <div class="editor-head">
+          <h1>Editor</h1>
+          <p>Personalize seu checkout</p>
         </div>
-        <div class="builder-section">
-          <h3><svg style="vertical-align:middle;margin-right:0.4em;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg> Esquema de Cores</h3>
-          <label>
-            Cor Principal
-            <input type="color" id="builder-primary-color" />
-          </label>
-          <label>
-            Cor dos Botões
-            <input type="color" id="builder-button-color" />
-          </label>
-          <label>
-            Cor de Fundo
-            <input type="color" id="builder-bg-color" />
-          </label>
-        </div>
-        <div class="builder-section">
-          <h3><svg style="vertical-align:middle;margin-right:0.4em;" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><polyline points="7 9 12 4 17 9"/><line x1="12" y1="4" x2="12" y2="16"/></svg> Tipografia</h3>
-          <label>
-            Fonte Principal
-            <select id="builder-font">
-              <option value="Inter">Inter</option>
-              <option value="Montserrat">Montserrat</option>
-              <option value="Poppins">Poppins</option>
-              <option value="Roboto">Roboto</option>
-            </select>
-          </label>
-        </div>
-        <button id="builder-save" class="ghost" style="width:100%;font-weight:700;">Salvar Personalização</button>
+
+        <label class="search-box">
+          <input id="menu-search" type="search" placeholder="Buscar configuracoes" />
+        </label>
+
+        <nav id="menu-list" class="editor-menu">
+          <button class="menu-item is-active" data-section="modelos">Modelos</button>
+          <button class="menu-item" data-section="aparencia">Aparencia</button>
+          <button class="menu-item" data-section="conversao">Conversao</button>
+          <button class="menu-item" data-section="pagamentos">Pagamentos</button>
+          <button class="menu-item" data-section="layout">Layout</button>
+          <button class="menu-item" data-section="elementos">Elementos</button>
+          <button class="menu-item" data-section="efeitos">Efeitos</button>
+          <button class="menu-item" data-section="configuracoes">Configuracoes</button>
+        </nav>
       </aside>
-      <main class="builder-preview">
-        <iframe class="builder-preview-iframe" src="/checkout/index.html" title="Preview do Checkout"></iframe>
-      </main>
+
+      <section class="builder-main">
+        <header class="builder-topbar">
+          <div class="device-switch">
+            <button class="device-btn is-active" data-device="mobile" aria-label="Mobile">M</button>
+            <button class="device-btn" data-device="tablet" aria-label="Tablet">T</button>
+            <button class="device-btn" data-device="desktop" aria-label="Desktop">D</button>
+          </div>
+          <div class="topbar-actions">
+            <span id="dirty-badge" class="status-badge">Sem alteracoes</span>
+            <button id="publish-btn" class="publish-btn" disabled>Publicar</button>
+          </div>
+        </header>
+
+        <div class="builder-columns">
+          <main class="content-column">
+            <header class="section-header">
+              <h2 id="section-title">Modelos</h2>
+              <p id="section-subtitle">Escolha o modelo visual base do seu checkout</p>
+            </header>
+
+            <section class="builder-section" data-section="modelos" data-search="modelos temas layout checkout">
+              <article class="card">
+                <h3>Layout do Checkout</h3>
+                <p>Escolha entre os temas disponiveis</p>
+                <div class="field-group">
+                  <label for="theme-select">Tema</label>
+                  <select id="theme-select"></select>
+                  <small id="theme-description"></small>
+                </div>
+                <div class="theme-meta">
+                  <span id="current-theme-pill" class="pill">-</span>
+                  <button id="apply-theme-btn" class="ghost-btn" type="button">Aplicar</button>
+                </div>
+              </article>
+            </section>
+
+            <section class="builder-section hidden" data-section="aparencia" data-search="aparencia cores tipografia arredondamento cabecalho selo seguranca">
+              <article class="card">
+                <h3>Esquema de Cores</h3>
+                <p>Ajuste a paleta principal do checkout</p>
+                <div class="inline-fields">
+                  <label>Cor Principal <input id="color-primary" type="color" /></label>
+                  <label>Cor dos Botoes <input id="color-buttons" type="color" /></label>
+                  <label>Cor do Fundo <input id="color-background" type="color" /></label>
+                </div>
+                <div class="inline-fields">
+                  <label>Cor do Card <input id="color-card" type="color" /></label>
+                  <label>Cor da Borda <input id="color-border" type="color" /></label>
+                  <label>Cor do Texto <input id="color-text" type="color" /></label>
+                </div>
+              </article>
+
+              <article class="card">
+                <h3>Tipografia</h3>
+                <p>Defina a fonte principal</p>
+                <div class="field-group">
+                  <label for="font-family">Fonte Principal</label>
+                  <select id="font-family">
+                    <option value="Poppins">Poppins</option>
+                    <option value="Inter">Inter</option>
+                    <option value="Montserrat">Montserrat</option>
+                  </select>
+                </div>
+              </article>
+
+              <article class="card">
+                <h3>Arredondamento</h3>
+                <p>Defina o arredondamento de cada elemento</p>
+                <div class="inline-fields">
+                  <label>Cards
+                    <select id="radius-cards">
+                      <option value="sm">Pequeno</option>
+                      <option value="md">Medio</option>
+                      <option value="lg">Grande</option>
+                      <option value="xl">Extra Grande</option>
+                    </select>
+                  </label>
+                  <label>Botoes
+                    <select id="radius-buttons">
+                      <option value="sm">Pequeno</option>
+                      <option value="md">Medio</option>
+                      <option value="lg">Grande</option>
+                      <option value="xl">Extra Grande</option>
+                    </select>
+                  </label>
+                  <label>Campos
+                    <select id="radius-fields">
+                      <option value="sm">Pequeno</option>
+                      <option value="md">Medio</option>
+                      <option value="lg">Grande</option>
+                      <option value="xl">Extra Grande</option>
+                    </select>
+                  </label>
+                  <label>Etapas
+                    <select id="radius-steps">
+                      <option value="square">Quadrado</option>
+                      <option value="rounded">Arredondado</option>
+                    </select>
+                  </label>
+                </div>
+              </article>
+
+              <article class="card">
+                <h3>Cabecalho</h3>
+                <p>Escolha o estilo do seu cabecalho</p>
+                <div class="inline-fields">
+                  <label>Estilo
+                    <select id="header-style">
+                      <option value="logo">Logo</option>
+                      <option value="texto">Texto</option>
+                      <option value="logo+texto">Logo + Texto</option>
+                    </select>
+                  </label>
+                  <label class="toggle-label">Centralizar Logo
+                    <input id="header-center-logo" type="checkbox" />
+                  </label>
+                </div>
+                <div class="inline-fields">
+                  <label>URL do Logo <input id="header-logo-url" type="url" placeholder="https://" /></label>
+                  <label>Largura (px) <input id="header-logo-width" type="number" min="1" /></label>
+                  <label>Altura (px) <input id="header-logo-height" type="number" min="1" /></label>
+                </div>
+                <div class="inline-fields">
+                  <label>Cor de Fundo <input id="header-bg-color" type="color" /></label>
+                  <label>Cor do Texto <input id="header-text-color" type="color" /></label>
+                </div>
+              </article>
+
+              <article class="card">
+                <h3>Selo de Seguranca</h3>
+                <p>Configure exibicao e estilo do selo</p>
+                <div class="inline-fields">
+                  <label class="toggle-label">Exibir selo
+                    <input id="seal-enabled" type="checkbox" />
+                  </label>
+                  <label>Estilo
+                    <select id="seal-style">
+                      <option value="padrao_bolinha_texto">Padrao (Bolinha + Texto)</option>
+                      <option value="somente_texto">Somente texto</option>
+                      <option value="somente_icone">Somente icone</option>
+                    </select>
+                  </label>
+                  <label>Tamanho
+                    <select id="seal-size">
+                      <option value="pequeno">Pequeno</option>
+                      <option value="medio">Medio</option>
+                      <option value="grande">Grande</option>
+                    </select>
+                  </label>
+                  <label>Arredondamento
+                    <select id="seal-radius">
+                      <option value="quadrado">Quadrado</option>
+                      <option value="arredondado">Arredondado</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="inline-fields">
+                  <label>Texto do selo
+                    <input id="seal-text" type="text" placeholder="Pagamento 100% seguro" />
+                  </label>
+                </div>
+                <div class="inline-fields">
+                  <label>Cor do texto <input id="seal-text-color" type="color" /></label>
+                  <label>Cor do fundo <input id="seal-bg-color" type="color" /></label>
+                  <label>Cor do icone <input id="seal-icon-color" type="color" /></label>
+                </div>
+              </article>
+            </section>
+
+            <section class="builder-section hidden" data-section="efeitos" data-search="efeitos animacoes botoes conversao">
+              <article class="card">
+                <h3>Animacoes de Botoes</h3>
+                <p>Configure o comportamento visual dos botoes</p>
+                <div class="inline-fields">
+                  <label>Botao Primario
+                    <select id="effect-primary-animation">
+                      <option value="none">Nenhuma</option>
+                      <option value="pulse">Pulse</option>
+                      <option value="shake">Shake leve</option>
+                      <option value="glow">Glow</option>
+                    </select>
+                  </label>
+                  <label>Velocidade
+                    <select id="effect-primary-speed">
+                      <option value="normal">Normal (3s)</option>
+                      <option value="rapido">Rapido</option>
+                      <option value="lento">Lento</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="inline-fields">
+                  <label>Botao Secundario
+                    <select id="effect-secondary-animation">
+                      <option value="none">Nenhuma</option>
+                      <option value="pulse">Pulse</option>
+                      <option value="shake">Shake leve</option>
+                      <option value="glow">Glow</option>
+                    </select>
+                  </label>
+                  <label>Velocidade
+                    <select id="effect-secondary-speed">
+                      <option value="normal">Normal (3s)</option>
+                      <option value="rapido">Rapido</option>
+                      <option value="lento">Lento</option>
+                    </select>
+                  </label>
+                </div>
+              </article>
+            </section>
+
+            <section class="builder-section hidden" data-section="configuracoes" data-search="configuracoes campos identificacao internacionalizacao idioma moeda">
+              <article class="card">
+                <h3>Campos de Identificacao</h3>
+                <p>Campos ocultos serao preenchidos automaticamente</p>
+                <div class="inline-fields">
+                  <label class="toggle-label">Nome Completo <input id="field-full-name" type="checkbox" /></label>
+                  <label class="toggle-label">E-mail <input id="field-email" type="checkbox" /></label>
+                  <label class="toggle-label">Telefone <input id="field-phone" type="checkbox" /></label>
+                  <label class="toggle-label">CPF <input id="field-cpf" type="checkbox" /></label>
+                </div>
+                <div class="field-group">
+                  <label>Campos Personalizados</label>
+                  <button id="add-custom-field" type="button" class="ghost-btn">+ Adicionar</button>
+                </div>
+              </article>
+
+              <article class="card">
+                <h3>Internacionalizacao</h3>
+                <p>Padroes de idioma e moeda</p>
+                <div class="inline-fields">
+                  <label>Idioma
+                    <select id="setting-language">
+                      <option value="pt-BR">Portugues (Brasil)</option>
+                    </select>
+                  </label>
+                  <label>Moeda
+                    <select id="setting-currency">
+                      <option value="BRL">BRL</option>
+                    </select>
+                  </label>
+                </div>
+              </article>
+            </section>
+
+            <section class="builder-section hidden" data-section="conversao" data-search="conversao">
+              <article class="card placeholder-card"><h3>Conversao</h3><p>Em breve.</p></article>
+            </section>
+            <section class="builder-section hidden" data-section="pagamentos" data-search="pagamentos sealpay api key gateway pix">
+              <article class="card">
+                <h3>Gateway SealPay</h3>
+                <p>Configure as credenciais da sua propria conta.</p>
+                <div class="field-group">
+                  <label for="payment-api-url">API URL</label>
+                  <input id="payment-api-url" type="url" placeholder="https://seu-endpoint/create-pix" />
+                </div>
+                <div class="field-group">
+                  <label for="payment-api-key">API Key</label>
+                  <input id="payment-api-key" type="password" placeholder="Cole sua chave (nao exibimos novamente)" />
+                  <small id="payment-key-hint"></small>
+                </div>
+                <div class="inline-fields">
+                  <label class="toggle-label">Ativo
+                    <input id="payment-active" type="checkbox" checked />
+                  </label>
+                  <button id="save-payment-settings" class="ghost-btn" type="button">Salvar credenciais</button>
+                </div>
+              </article>
+            </section>
+            <section class="builder-section hidden" data-section="layout" data-search="layout">
+              <article class="card placeholder-card"><h3>Layout</h3><p>Em breve.</p></article>
+            </section>
+            <section class="builder-section hidden" data-section="elementos" data-search="elementos">
+              <article class="card placeholder-card"><h3>Elementos</h3><p>Em breve.</p></article>
+            </section>
+          </main>
+
+          <aside class="preview-column">
+            <div id="preview-shell" class="preview-shell" data-device="mobile">
+              <iframe id="preview-iframe" title="Preview checkout"></iframe>
+            </div>
+          </aside>
+        </div>
+      </section>
     </div>
-    <script>
-      const iframe = document.querySelector('.builder-preview-iframe');
-      async function loadAppearance() {
-        const res = await fetch('/api/admin/appearance');
-        const data = await res.json();
-        document.getElementById('builder-theme').value = data.theme || 'default';
-        document.getElementById('builder-primary-color').value = data.primary_color || '#A100FF';
-        document.getElementById('builder-button-color').value = data.button_color || '#A100FF';
-        document.getElementById('builder-bg-color').value = data.bg_color || '#e8ebf1';
-        document.getElementById('builder-font').value = data.font || 'Inter';
-        updatePreview();
-      }
-      function updatePreview() {
-        if (!iframe.contentWindow) return;
-        const primary = document.getElementById('builder-primary-color').value || '#A100FF';
-        const button = document.getElementById('builder-button-color').value || '#A100FF';
-        const bg = document.getElementById('builder-bg-color').value || '#e8ebf1';
-        const font = document.getElementById('builder-font').value || 'Inter';
-        iframe.contentWindow.postMessage({
-          type: 'customize',
-          primary, button, bg, font
-        }, '*');
-      }
-      document.getElementById('builder-theme').addEventListener('change', updatePreview);
-      document.getElementById('builder-primary-color').addEventListener('input', updatePreview);
-      document.getElementById('builder-button-color').addEventListener('input', updatePreview);
-      document.getElementById('builder-bg-color').addEventListener('input', updatePreview);
-      document.getElementById('builder-font').addEventListener('change', updatePreview);
-      iframe.addEventListener('load', loadAppearance);
-      document.getElementById('builder-save').onclick = async function() {
-        const theme = document.getElementById('builder-theme').value;
-        const primary_color = document.getElementById('builder-primary-color').value;
-        const button_color = document.getElementById('builder-button-color').value;
-        const bg_color = document.getElementById('builder-bg-color').value;
-        const font = document.getElementById('builder-font').value;
-        await fetch('/api/admin/appearance', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ theme, primary_color, button_color, bg_color, font })
-        });
-        alert('Personalização salva!');
-      };
-    </script>
+
+    <script src="/admin/builder.js"></script>
   </body>
 </html>

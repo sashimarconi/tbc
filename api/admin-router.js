@@ -1,6 +1,6 @@
-const { query } = require("../lib/db");
+﻿const { query } = require("../lib/db");
 const { parseJson } = require("../lib/parse-json");
-const { signToken, requireAuth } = require("../lib/auth");
+const { requireAuth } = require("../lib/auth");
 const { ensureSalesTables } = require("../lib/ensure-sales");
 const {
   ensureProductSchema,
@@ -8,6 +8,52 @@ const {
   generateUniqueSlug,
 } = require("../lib/ensure-products");
 const { saveProductFile } = require("../lib/product-files");
+const { ensurePaymentGatewayTable } = require("../lib/ensure-payment-gateway");
+const { encryptText } = require("../lib/credentials-crypto");
+const authLoginHandler = require("./auth/login");
+
+function deepMerge(base, override) {
+  if (Array.isArray(base)) {
+    return Array.isArray(override) ? override.slice() : base.slice();
+  }
+
+  const baseIsObject = base && typeof base === "object";
+  const overrideIsObject = override && typeof override === "object";
+
+  if (!baseIsObject) {
+    if (Array.isArray(override)) {
+      return override.slice();
+    }
+    if (overrideIsObject) {
+      return { ...override };
+    }
+    return override !== undefined ? override : base;
+  }
+
+  const result = { ...base };
+  if (!overrideIsObject || Array.isArray(override)) {
+    return result;
+  }
+
+  Object.keys(override).forEach((key) => {
+    const nextOverride = override[key];
+    const nextBase = result[key];
+    if (
+      nextOverride &&
+      typeof nextOverride === "object" &&
+      !Array.isArray(nextOverride) &&
+      nextBase &&
+      typeof nextBase === "object" &&
+      !Array.isArray(nextBase)
+    ) {
+      result[key] = deepMerge(nextBase, nextOverride);
+      return;
+    }
+    result[key] = Array.isArray(nextOverride) ? nextOverride.slice() : nextOverride;
+  });
+
+  return result;
+}
 
 function normalizeBumpRule(rule) {
   if (!rule || typeof rule !== "object") {
@@ -28,6 +74,7 @@ function normalizeItemPayload(body = {}) {
   const requiresAddress =
     body.requires_address === undefined ? formFactor !== "digital" : Boolean(body.requires_address);
   const bumpRule = normalizeBumpRule(body.bump_rule);
+
   return {
     type: body.type,
     name: body.name,
@@ -62,13 +109,13 @@ function mapRuleRow(row) {
   };
 }
 
-async function fetchBumpRulesFor(ids = []) {
+async function fetchBumpRulesFor(ownerUserId, ids = []) {
   if (!ids.length) {
     return new Map();
   }
   const res = await query(
-    "select bump_id, apply_to_all, trigger_product_ids from order_bump_rules where bump_id = any($1::uuid[])",
-    [ids]
+    "select bump_id, apply_to_all, trigger_product_ids from order_bump_rules where owner_user_id = $1 and bump_id = any($2::uuid[])",
+    [ownerUserId, ids]
   );
   const map = new Map();
   res.rows?.forEach((row) => {
@@ -77,76 +124,283 @@ async function fetchBumpRulesFor(ids = []) {
   return map;
 }
 
-async function getBumpRule(bumpId) {
+async function getBumpRule(ownerUserId, bumpId) {
   if (!bumpId) {
     return null;
   }
   const res = await query(
-    "select bump_id, apply_to_all, trigger_product_ids from order_bump_rules where bump_id = $1",
-    [bumpId]
+    "select bump_id, apply_to_all, trigger_product_ids from order_bump_rules where owner_user_id = $1 and bump_id = $2",
+    [ownerUserId, bumpId]
   );
   return mapRuleRow(res.rows?.[0]);
 }
 
-async function upsertBumpRule(bumpId, rule) {
+async function upsertBumpRule(ownerUserId, bumpId, rule) {
   if (!bumpId) {
     return;
   }
   if (!rule) {
-    await query("delete from order_bump_rules where bump_id = $1", [bumpId]);
+    await query("delete from order_bump_rules where owner_user_id = $1 and bump_id = $2", [ownerUserId, bumpId]);
     return;
   }
+
   const applyAll = rule.apply_to_all !== false;
   const triggers = applyAll
     ? []
     : (Array.isArray(rule.trigger_product_ids) ? rule.trigger_product_ids.filter(Boolean) : []);
+
   await query(
-    `insert into order_bump_rules (bump_id, apply_to_all, trigger_product_ids, updated_at)
-     values ($1, $2, $3, now())
+    `insert into order_bump_rules (bump_id, owner_user_id, apply_to_all, trigger_product_ids, updated_at)
+     values ($1, $2, $3, $4, now())
      on conflict (bump_id)
-     do update set apply_to_all = excluded.apply_to_all,
+     do update set owner_user_id = excluded.owner_user_id,
+                  apply_to_all = excluded.apply_to_all,
                   trigger_product_ids = excluded.trigger_product_ids,
                   updated_at = now()`,
-    [bumpId, applyAll, triggers]
+    [bumpId, ownerUserId, applyAll, triggers]
   );
 }
 
-async function handleLogin(req, res) {
-  if (req.method !== "POST") {
+async function ensureThemesAndAppearanceSchema() {
+  await query(`
+    create table if not exists checkout_themes (
+      id serial primary key,
+      key text unique not null,
+      name text not null,
+      description text,
+      preview_image text,
+      defaults jsonb not null,
+      created_at timestamptz not null default now()
+    )
+  `);
+
+  await query(`
+    create table if not exists checkout_appearance (
+      id serial primary key,
+      owner_user_id uuid not null references users(id) on delete cascade,
+      theme_key text not null references checkout_themes(key),
+      overrides jsonb not null default '{}'::jsonb,
+      updated_at timestamptz not null default now(),
+      unique(owner_user_id)
+    )
+  `);
+
+  const minimalDefaults = {
+    palette: {
+      primary: "#f5a623",
+      buttons: "#f39c12",
+      background: "#f4f6fb",
+      text: "#1c2431",
+      card: "#ffffff",
+      border: "#dde3ee",
+    },
+    typography: { fontFamily: "Poppins" },
+    radius: {
+      cards: "16px",
+      buttons: "14px",
+      fields: "12px",
+      steps: "999px",
+    },
+    header: {
+      style: "logo+texto",
+      centerLogo: false,
+      logoUrl: "/assets/logo-blackout.png",
+      logoWidthPx: 120,
+      logoHeightPx: 40,
+      bgColor: "#ffffff",
+      textColor: "#0f5132",
+    },
+    securitySeal: {
+      enabled: true,
+      style: "padrao_bolinha_texto",
+      text: "Pagamento 100% seguro",
+      size: "medio",
+      textColor: "#0f5132",
+      bgColor: "#f5f7fb",
+      iconColor: "#1d9f55",
+      radius: "arredondado",
+    },
+    effects: {
+      primaryButton: { animation: "none", speed: "normal" },
+      secondaryButton: { animation: "none", speed: "normal" },
+    },
+    settings: {
+      fields: { fullName: true, email: true, phone: true, cpf: true, custom: [] },
+      i18n: { language: "pt-BR", currency: "BRL" },
+    },
+  };
+
+  await query(
+    `insert into checkout_themes (key, name, description, defaults)
+     values ($1, $2, $3, $4::jsonb)
+     on conflict (key) do nothing`,
+    ["solarys", "Solarys", "Tema Solarys", JSON.stringify(minimalDefaults)]
+  );
+
+  await query(
+    `insert into checkout_themes (key, name, description, defaults)
+     values ($1, $2, $3, $4::jsonb)
+     on conflict (key) do nothing`,
+    [
+      "minimal",
+      "Minimal",
+      "Tema Minimal",
+      JSON.stringify({
+        ...minimalDefaults,
+        palette: {
+          primary: "#111827",
+          buttons: "#111827",
+          background: "#f8fafc",
+          text: "#0f172a",
+          card: "#ffffff",
+          border: "#e2e8f0",
+        },
+        typography: { fontFamily: "Inter" },
+      }),
+    ]
+  );
+
+  await query(
+    `insert into checkout_themes (key, name, description, defaults)
+     values ($1, $2, $3, $4::jsonb)
+     on conflict (key) do nothing`,
+    [
+      "dark",
+      "Dark",
+      "Tema escuro",
+      JSON.stringify({
+        ...minimalDefaults,
+        palette: {
+          primary: "#22c55e",
+          buttons: "#16a34a",
+          background: "#0b1020",
+          text: "#e2e8f0",
+          card: "#111827",
+          border: "#24314b",
+        },
+        typography: { fontFamily: "Montserrat" },
+      }),
+    ]
+  );
+}
+
+async function getThemeByKey(key) {
+  const result = await query("select * from checkout_themes where key = $1 limit 1", [key]);
+  return result.rows?.[0] || null;
+}
+
+async function getOrCreateAppearance(ownerUserId) {
+  await ensureThemesAndAppearanceSchema();
+
+  let appearanceResult = await query(
+    "select * from checkout_appearance where owner_user_id = $1 limit 1",
+    [ownerUserId]
+  );
+
+  if (!appearanceResult.rows?.length) {
+    await query(
+      "insert into checkout_appearance (owner_user_id, theme_key, overrides, updated_at) values ($1, 'solarys', '{}'::jsonb, now())",
+      [ownerUserId]
+    );
+    appearanceResult = await query(
+      "select * from checkout_appearance where owner_user_id = $1 limit 1",
+      [ownerUserId]
+    );
+  }
+
+  const appearance = appearanceResult.rows?.[0];
+  const theme = (await getThemeByKey(appearance.theme_key)) || (await getThemeByKey("solarys"));
+  const effectiveConfig = deepMerge(theme?.defaults || {}, appearance?.overrides || {});
+
+  return {
+    appearance,
+    theme,
+    effectiveConfig,
+  };
+}
+
+async function handleThemes(req, res) {
+  if (req.method !== "GET") {
     res.status(405).json({ error: "Method not allowed" });
     return;
   }
 
-  const body = await parseJson(req);
-  const password = body.password || "";
-  const expected = process.env.ADMIN_PASSWORD || "";
-
-  if (!expected || password !== expected) {
-    res.status(401).json({ error: "Invalid password" });
-    return;
+  try {
+    await ensureThemesAndAppearanceSchema();
+    const result = await query(
+      "select id, key, name, description, preview_image, defaults, created_at from checkout_themes order by id asc"
+    );
+    res.json({ themes: result.rows || [] });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-
-  const token = signToken({
-    role: "admin",
-    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7,
-  });
-
-  res.json({ token });
 }
 
-async function handleItems(req, res) {
+async function handleAppearance(req, res, user) {
+  try {
+    if (req.method === "GET") {
+      const data = await getOrCreateAppearance(user.id);
+      res.json({
+        theme_key: data.appearance.theme_key,
+        overrides: data.appearance.overrides || {},
+        effectiveConfig: data.effectiveConfig || {},
+        updated_at: data.appearance.updated_at,
+      });
+      return;
+    }
+
+    if (req.method === "POST") {
+      const body = await parseJson(req);
+      const themeKey = (body.theme_key || "solarys").toString();
+      const overrides = body.overrides && typeof body.overrides === "object" ? body.overrides : {};
+
+      await ensureThemesAndAppearanceSchema();
+      const theme = await getThemeByKey(themeKey);
+      if (!theme) {
+        res.status(400).json({ error: "Tema invalido" });
+        return;
+      }
+
+      await query(
+        `insert into checkout_appearance (owner_user_id, theme_key, overrides, updated_at)
+         values ($1, $2, $3::jsonb, now())
+         on conflict (owner_user_id)
+         do update set theme_key = excluded.theme_key,
+                       overrides = excluded.overrides,
+                       updated_at = now()`,
+        [user.id, themeKey, JSON.stringify(overrides)]
+      );
+
+      const saved = await getOrCreateAppearance(user.id);
+      res.json({
+        ok: true,
+        theme_key: saved.appearance.theme_key,
+        overrides: saved.appearance.overrides || {},
+        effectiveConfig: saved.effectiveConfig || {},
+      });
+      return;
+    }
+
+    res.status(405).json({ error: "Method not allowed" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+async function handleItems(req, res, user) {
   await ensureProductSchema();
   const { id } = req.query || {};
 
   if (req.method === "GET") {
     try {
-      await ensureBaseSlugs();
+      await ensureBaseSlugs(user.id);
       const result = await query(
-        "select * from products order by type asc, sort asc, created_at asc"
+        "select * from products where owner_user_id = $1 order by type asc, sort asc, created_at asc",
+        [user.id]
       );
       const items = result.rows || [];
       const bumpIds = items.filter((item) => item.type === "bump").map((item) => item.id);
-      const rulesMap = await fetchBumpRulesFor(bumpIds);
+      const rulesMap = await fetchBumpRulesFor(user.id, bumpIds);
       const enriched = items.map((item) =>
         item.type === "bump"
           ? {
@@ -176,6 +430,7 @@ async function handleItems(req, res) {
       const slug = item.type === "base" ? await generateUniqueSlug() : null;
       const result = await query(
         `insert into products (
+           owner_user_id,
            type,
            name,
            description,
@@ -191,8 +446,9 @@ async function handleItems(req, res) {
            length_cm,
            width_cm,
            height_cm
-         ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) returning *`,
+         ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) returning *`,
         [
+          user.id,
           item.type,
           item.name,
           item.description,
@@ -212,8 +468,8 @@ async function handleItems(req, res) {
       );
       const saved = result.rows[0];
       if (saved?.type === "bump") {
-        await upsertBumpRule(saved.id, item.bump_rule);
-        saved.bump_rule = await getBumpRule(saved.id);
+        await upsertBumpRule(user.id, saved.id, item.bump_rule);
+        saved.bump_rule = await getBumpRule(user.id, saved.id);
       }
       res.json({ item: saved });
     } catch (error) {
@@ -246,7 +502,7 @@ async function handleItems(req, res) {
            length_cm = $12,
            width_cm = $13,
            height_cm = $14
-         where id = $15 returning *`,
+         where id = $15 and owner_user_id = $16 returning *`,
         [
           updates.type,
           updates.name,
@@ -263,14 +519,20 @@ async function handleItems(req, res) {
           updates.width_cm,
           updates.height_cm,
           id,
+          user.id,
         ]
       );
       const saved = result.rows[0];
-      if (saved?.type === "bump") {
-        await upsertBumpRule(saved.id, updates.bump_rule);
-        saved.bump_rule = await getBumpRule(saved.id);
+      if (!saved) {
+        res.status(404).json({ error: "Item not found" });
+        return;
+      }
+
+      if (saved.type === "bump") {
+        await upsertBumpRule(user.id, saved.id, updates.bump_rule);
+        saved.bump_rule = await getBumpRule(user.id, saved.id);
       } else {
-        await upsertBumpRule(saved?.id, null);
+        await upsertBumpRule(user.id, saved.id, null);
       }
       res.json({ item: saved });
     } catch (error) {
@@ -281,7 +543,8 @@ async function handleItems(req, res) {
 
   if (req.method === "DELETE") {
     try {
-      await query("delete from products where id = $1", [id]);
+      await query("delete from products where id = $1 and owner_user_id = $2", [id, user.id]);
+      await query("delete from order_bump_rules where bump_id = $1 and owner_user_id = $2", [id, user.id]);
       res.json({ ok: true });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -292,7 +555,7 @@ async function handleItems(req, res) {
   res.status(405).json({ error: "Method not allowed" });
 }
 
-async function handleOrders(req, res) {
+async function handleOrders(req, res, user) {
   if (req.method !== "GET") {
     res.status(405).json({ error: "Method not allowed" });
     return;
@@ -305,8 +568,8 @@ async function handleOrders(req, res) {
 
     if (id) {
       const detail = await query(
-        "select * from checkout_orders where id = $1 limit 1",
-        [id]
+        "select * from checkout_orders where id = $1 and owner_user_id = $2 limit 1",
+        [id, user.id]
       );
       if (!detail.rows?.length) {
         res.status(404).json({ error: "Order not found" });
@@ -320,8 +583,10 @@ async function handleOrders(req, res) {
       query(
         `select id, cart_key, customer, summary, status, pix, created_at
          from checkout_orders
+         where owner_user_id = $1
          order by created_at desc
-         limit 150`
+         limit 150`,
+        [user.id]
       ),
       query(
         `select
@@ -329,7 +594,9 @@ async function handleOrders(req, res) {
            count(*) filter (where status = 'pending') as pending,
            count(*) filter (where status = 'paid') as paid,
            coalesce(sum(total_cents),0) as total_amount
-         from checkout_orders`
+         from checkout_orders
+         where owner_user_id = $1`,
+        [user.id]
       ),
     ]);
 
@@ -342,7 +609,7 @@ async function handleOrders(req, res) {
   }
 }
 
-async function handleCarts(req, res) {
+async function handleCarts(req, res, user) {
   if (req.method !== "GET") {
     res.status(405).json({ error: "Method not allowed" });
     return;
@@ -355,8 +622,8 @@ async function handleCarts(req, res) {
 
     if (id) {
       const detail = await query(
-        "select * from checkout_carts where id = $1 limit 1",
-        [id]
+        "select * from checkout_carts where id = $1 and owner_user_id = $2 limit 1",
+        [id, user.id]
       );
       if (!detail.rows?.length) {
         res.status(404).json({ error: "Cart not found" });
@@ -370,8 +637,10 @@ async function handleCarts(req, res) {
       query(
         `select id, cart_key, customer, summary, stage, status, total_cents, last_seen, created_at
          from checkout_carts
+         where owner_user_id = $1
          order by last_seen desc
-         limit 200`
+         limit 200`,
+        [user.id]
       ),
       query(
         `select
@@ -379,7 +648,9 @@ async function handleCarts(req, res) {
            count(*) filter (where status = 'open') as open,
            count(*) filter (where status = 'converted') as converted,
            coalesce(sum(total_cents),0) as total_value
-         from checkout_carts`
+         from checkout_carts
+         where owner_user_id = $1`,
+        [user.id]
       ),
     ]);
 
@@ -387,6 +658,118 @@ async function handleCarts(req, res) {
       carts: cartsResult.rows || [],
       stats: statsResult.rows?.[0] || { total: 0, open: 0, converted: 0, total_value: 0 },
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+async function handleUploads(req, res, user) {
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
+  try {
+    const body = await parseJson(req);
+    if (!body?.data_url) {
+      res.status(400).json({ error: "Missing data_url" });
+      return;
+    }
+    const file = await saveProductFile({
+      ownerUserId: user.id,
+      dataUrl: body.data_url,
+      filename: body.filename || null,
+    });
+    res.json({ file });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+}
+
+function maskKey(value = "") {
+  if (!value) return "";
+  if (value.length <= 8) return "********";
+  return `${value.slice(0, 4)}********${value.slice(-4)}`;
+}
+
+async function handlePaymentSettings(req, res, user) {
+  try {
+    await ensurePaymentGatewayTable();
+
+    if (req.method === "GET") {
+      const result = await query(
+        `select provider, api_url, is_active, updated_at
+         from user_payment_gateways
+         where owner_user_id = $1 and provider = 'sealpay'
+         limit 1`,
+        [user.id]
+      );
+      const row = result.rows?.[0];
+      res.json({
+        provider: "sealpay",
+        api_url: row?.api_url || "",
+        is_active: row?.is_active !== false,
+        has_api_key: Boolean(row),
+        masked_api_key: row ? "********" : "",
+        updated_at: row?.updated_at || null,
+      });
+      return;
+    }
+
+    if (req.method === "POST") {
+      const body = await parseJson(req);
+      const provider = "sealpay";
+      const apiUrl = String(body.api_url || "").trim();
+      const apiKey = String(body.api_key || "").trim();
+      const isActive = body.is_active !== false;
+
+      if (!apiUrl) {
+        res.status(400).json({ error: "api_url obrigatorio" });
+        return;
+      }
+
+      const currentRes = await query(
+        `select api_key_encrypted
+         from user_payment_gateways
+         where owner_user_id = $1 and provider = $2
+         limit 1`,
+        [user.id, provider]
+      );
+      const currentEncrypted = currentRes.rows?.[0]?.api_key_encrypted || "";
+
+      let encryptedKey = currentEncrypted;
+      if (apiKey) {
+        encryptedKey = encryptText(apiKey);
+      }
+
+      if (!encryptedKey) {
+        res.status(400).json({ error: "api_key obrigatoria na primeira configuracao" });
+        return;
+      }
+
+      await query(
+        `insert into user_payment_gateways (owner_user_id, provider, api_url, api_key_encrypted, is_active, updated_at)
+         values ($1, $2, $3, $4, $5, now())
+         on conflict (owner_user_id, provider)
+         do update set
+           api_url = excluded.api_url,
+           api_key_encrypted = excluded.api_key_encrypted,
+           is_active = excluded.is_active,
+           updated_at = now()`,
+        [user.id, provider, apiUrl, encryptedKey, isActive]
+      );
+
+      res.json({
+        ok: true,
+        provider,
+        api_url: apiUrl,
+        is_active: isActive,
+        has_api_key: true,
+        masked_api_key: apiKey ? maskKey(apiKey) : "********",
+      });
+      return;
+    }
+
+    res.status(405).json({ error: "Method not allowed" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -408,29 +791,6 @@ function getPathSegments(req) {
   return cleaned.split("/").filter(Boolean);
 }
 
-// Aparência do Checkout
-async function handleAppearance(req, res) {
-  if (req.method === "GET") {
-    const result = await query("select * from checkout_appearance order by updated_at desc limit 1");
-    res.json(result.rows[0] || {});
-    return;
-  }
-  if (req.method === "POST") {
-    const body = await parseJson(req);
-    const { theme, primary_color, button_color, bg_color, font } = body;
-    await query(
-      `insert into checkout_appearance (theme, primary_color, button_color, bg_color, font, updated_at)
-       values ($1, $2, $3, $4, $5, now())
-       on conflict (id) do update set theme = $1, primary_color = $2, button_color = $3, bg_color = $4, font = $5, updated_at = now()`,
-      [theme || 'default', primary_color || '#A100FF', button_color || '#A100FF', bg_color || '#e8ebf1', font || 'Inter']
-    );
-    res.json({ success: true });
-    return;
-  }
-  res.status(405).json({ error: "Method not allowed" });
-}
-
-// Roteamento
 module.exports = async (req, res) => {
   const segments = getPathSegments(req);
   const path = segments[0] || "";
@@ -440,49 +800,38 @@ module.exports = async (req, res) => {
   }
 
   if (path === "login") {
-    await handleLogin(req, res);
+    await authLoginHandler(req, res);
     return;
   }
 
-  if (!requireAuth(req, res)) {
+  const user = requireAuth(req, res);
+  if (!user) {
     return;
   }
 
   switch (path) {
     case "items":
-      await handleItems(req, res);
+      await handleItems(req, res, user);
       return;
     case "orders":
-      await handleOrders(req, res);
+      await handleOrders(req, res, user);
       return;
     case "carts":
-      await handleCarts(req, res);
+      await handleCarts(req, res, user);
       return;
     case "uploads":
-      await handleUploads(req, res);
+      await handleUploads(req, res, user);
+      return;
+    case "themes":
+      await handleThemes(req, res);
       return;
     case "appearance":
-      await handleAppearance(req, res);
+      await handleAppearance(req, res, user);
+      return;
+    case "payment-settings":
+      await handlePaymentSettings(req, res, user);
       return;
     default:
       res.status(404).json({ error: "Not found" });
   }
 };
-
-async function handleUploads(req, res) {
-  if (req.method !== "POST") {
-    res.status(405).json({ error: "Method not allowed" });
-    return;
-  }
-  try {
-    const body = await parseJson(req);
-    if (!body?.data_url) {
-      res.status(400).json({ error: "Missing data_url" });
-      return;
-    }
-    const file = await saveProductFile({ dataUrl: body.data_url, filename: body.filename || null });
-    res.json({ file });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-}

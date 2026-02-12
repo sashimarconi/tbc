@@ -1,4 +1,4 @@
-// LIVE VIEW GLOBE (Globe.gl)
+﻿// LIVE VIEW GLOBE (Globe.gl)
 window.addEventListener('DOMContentLoaded', () => {
   const globeEl = document.getElementById('live-globe');
   if (!globeEl || typeof Globe !== 'function') return;
@@ -12,7 +12,7 @@ window.addEventListener('DOMContentLoaded', () => {
       // Renderizar lista de cidades do dia
       const listEl = document.getElementById('live-view-list');
       if (listEl) {
-        listEl.innerHTML = cityCounts.map(s => `<li><span style="color:#00FF85;font-weight:700;">●</span> ${s.count} ${s.city}</li>`).join('');
+        listEl.innerHTML = cityCounts.map(s => `<li><span style="color:#00FF85;font-weight:700;">â—</span> ${s.count} ${s.city}</li>`).join('');
       }
       // Atualizar pontos do globo
       if (window.liveGlobe && typeof window.liveGlobe.pointsData === 'function') {
@@ -53,6 +53,7 @@ const panelSection = document.getElementById("panel");
 const loginForm = document.getElementById("login-form");
 const loginBtn = document.getElementById("login-btn");
 const logoutBtn = document.getElementById("logout-btn");
+const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
 const loginError = document.getElementById("login-error");
 const panelTabs = document.querySelectorAll(".panel-tab");
@@ -211,11 +212,12 @@ async function copyToClipboard(value) {
 
 async function login() {
   loginError.textContent = "";
+  const email = emailInput?.value?.trim() || "";
   const password = passwordInput.value;
-  const res = await fetch("/api/admin/login", {
+  const res = await fetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password }),
+    body: JSON.stringify({ email, password }),
   });
 
   const data = await res.json();
@@ -310,7 +312,7 @@ function renderSummary(data = {}) {
 
   if (statsUpdated) {
     const updatedAt = new Date();
-    statsUpdated.textContent = `Atualizado às ${updatedAt.toLocaleTimeString("pt-BR", {
+    statsUpdated.textContent = `Atualizado Ã s ${updatedAt.toLocaleTimeString("pt-BR", {
       hour: "2-digit",
       minute: "2-digit",
     })}`;
@@ -332,7 +334,7 @@ function updateFunnel(data) {
   funnelValues.starts.textContent = formatNumber(starts);
   funnelValues.purchases.textContent = formatNumber(purchases);
 
-  // Calcular proporções para cada etapa
+  // Calcular proporÃ§Ãµes para cada etapa
   const v = visitors;
   const c = Math.max(0, Math.min(checkout, v));
   const s = Math.max(0, Math.min(starts, c));
@@ -354,7 +356,7 @@ function renderTimeline(rows) {
   }
 
   if (!rows.length) {
-    timelineBody.innerHTML = `<tr><td colspan="5">Sem dados nas últimas horas.</td></tr>`;
+    timelineBody.innerHTML = `<tr><td colspan="5">Sem dados nas Ãºltimas horas.</td></tr>`;
     return;
   }
 
@@ -467,7 +469,7 @@ function uploadMediaFile(file, { labelEl, onSuccess }) {
     return;
   }
   if (file.size > 2 * 1024 * 1024) {
-    alert("Envie imagens de até 2MB.");
+    alert("Envie imagens de atÃ© 2MB.");
     return;
   }
   const reader = new FileReader();
@@ -479,7 +481,7 @@ function uploadMediaFile(file, { labelEl, onSuccess }) {
       onSuccess(url);
     } catch (error) {
       console.error(error);
-      alert(error.message || "Não foi possível enviar a imagem.");
+      alert(error.message || "NÃ£o foi possÃ­vel enviar a imagem.");
     } finally {
       updateUploadState(false, labelEl);
     }
@@ -613,7 +615,7 @@ function mapCartStatus(status) {
 
 function formatStageLabel(stage) {
   const normalized = (stage || "").toLowerCase();
-  if (normalized === "address") return "Endereço";
+  if (normalized === "address") return "EndereÃ§o";
   if (normalized === "payment") return "Pagamento";
   return "Contato";
 }
@@ -774,7 +776,7 @@ async function loadOrders() {
       if (res.status === 401) {
         showLogin();
       }
-      renderTableMessage(ordersTableBody, 5, "Não foi possível carregar os pedidos.");
+      renderTableMessage(ordersTableBody, 5, "NÃ£o foi possÃ­vel carregar os pedidos.");
       return;
     }
     const data = await res.json();
@@ -797,7 +799,7 @@ async function loadCarts() {
       if (res.status === 401) {
         showLogin();
       }
-      renderTableMessage(cartsTableBody, 6, "Não foi possível carregar os carrinhos.");
+      renderTableMessage(cartsTableBody, 6, "NÃ£o foi possÃ­vel carregar os carrinhos.");
       return;
     }
     const data = await res.json();
@@ -884,7 +886,7 @@ function renderProductsTable() {
     .map((item) => {
       const image = item.image_url || fallbackProductImage;
       const typeLabel = typeMap[item.type] || item.type;
-      const formFactorLabel = item.form_factor === "digital" ? "Digital" : "Físico";
+      const formFactorLabel = item.form_factor === "digital" ? "Digital" : "FÃ­sico";
       const formFactorClass = item.form_factor === "digital" ? "pill pill--digital" : "pill";
       const priceHtml = `
         <div class="product-price">
@@ -969,7 +971,7 @@ function renderOrderBumpsList() {
     });
 
   if (!filtered.length) {
-    orderBumpsList.innerHTML = `<div class="bump-empty-row">Nenhum order bump corresponde à busca.</div>`;
+    orderBumpsList.innerHTML = `<div class="bump-empty-row">Nenhum order bump corresponde Ã  busca.</div>`;
     return;
   }
 
@@ -999,7 +1001,7 @@ function renderOrderBumpsList() {
             <img src="${image}" alt="${escapeHtml(item.name || "Order bump")}" />
             <div>
               <strong>${escapeHtml(item.name || "Order bump")}</strong>
-              <span class="muted">${escapeHtml(item.description || "Sem descrição")}</span>
+              <span class="muted">${escapeHtml(item.description || "Sem descriÃ§Ã£o")}</span>
             </div>
           </div>
           <div class="bump-meta">
@@ -1298,13 +1300,13 @@ async function handleBumpSubmit(event) {
   if (!applyAll) {
     const selectedTriggers = getSelectedTriggerIds();
     if (!selectedTriggers.length) {
-      alert("Selecione pelo menos um produto gatilho ou deixe a opção de aplicar em todos.");
+      alert("Selecione pelo menos um produto gatilho ou deixe a opÃ§Ã£o de aplicar em todos.");
       return;
     }
   }
   const payload = collectBumpPayload();
   if (!payload.name) {
-    alert("Informe o título do order bump.");
+    alert("Informe o tÃ­tulo do order bump.");
     return;
   }
   const originalText = bumpSubmitBtn?.textContent;
@@ -1328,7 +1330,7 @@ async function handleBumpSubmit(event) {
     closeBumpModal();
     loadItems();
   } catch (error) {
-    alert("Não foi possível salvar o order bump.");
+    alert("NÃ£o foi possÃ­vel salvar o order bump.");
   } finally {
     if (bumpSubmitBtn) {
       bumpSubmitBtn.disabled = false;
@@ -1344,7 +1346,7 @@ async function handleProductSubmit(event) {
   }
   const payload = collectProductPayload();
   if (!payload.name || !payload.type) {
-    alert("Preencha os campos obrigatórios.");
+    alert("Preencha os campos obrigatÃ³rios.");
     return;
   }
   const originalText = productSubmitBtn?.textContent;
@@ -1368,7 +1370,7 @@ async function handleProductSubmit(event) {
     closeProductModal();
     loadItems();
   } catch (error) {
-    alert("Não foi possível salvar o produto.");
+    alert("NÃ£o foi possÃ­vel salvar o produto.");
   } finally {
     if (productSubmitBtn) {
       productSubmitBtn.disabled = false;
@@ -1426,7 +1428,7 @@ async function openInspector(type, id) {
         showLogin();
         return;
       }
-      inspectorBody.innerHTML = '<p class="muted">Não foi possível carregar os detalhes.</p>';
+      inspectorBody.innerHTML = '<p class="muted">NÃ£o foi possÃ­vel carregar os detalhes.</p>';
       return;
     }
     const data = await res.json();
@@ -1442,7 +1444,7 @@ async function openInspector(type, id) {
 
 function renderInspectorOrder(order) {
   if (!order) {
-    inspectorBody.innerHTML = '<p class="muted">Pedido não encontrado.</p>';
+    inspectorBody.innerHTML = '<p class="muted">Pedido nÃ£o encontrado.</p>';
     return;
   }
   inspectorType.textContent = `Pedido #${order.id}`;
@@ -1480,7 +1482,7 @@ function renderInspectorOrder(order) {
   if (address) {
     const addressRows = [
       ["Rua", address.street || "--"],
-      ["Número", address.number || address.address_number || "--"],
+      ["NÃºmero", address.number || address.address_number || "--"],
       ["CEP", address.cep || "--"],
       ["Cidade", address.city || "--"],
       ["Estado", address.state || "--"],
@@ -1509,7 +1511,7 @@ function renderInspectorOrder(order) {
 
 function renderInspectorCart(cart) {
   if (!cart) {
-    inspectorBody.innerHTML = '<p class="muted">Carrinho não encontrado.</p>';
+    inspectorBody.innerHTML = '<p class="muted">Carrinho nÃ£o encontrado.</p>';
     return;
   }
   inspectorType.textContent = `Carrinho #${cart.id}`;
@@ -1520,7 +1522,7 @@ function renderInspectorCart(cart) {
     ["Status", mapCartStatus(cart.status).label],
     ["Etapa", formatStageLabel(cart.stage)],
     ["Valor", formatCurrency(cart.total_cents ?? cart.summary?.total_cents ?? 0)],
-    ["Último contato", formatDateTime(cart.last_seen)],
+    ["Ãšltimo contato", formatDateTime(cart.last_seen)],
     ["Criado em", formatDateTime(cart.created_at)],
     ["Cart ID", cart.cart_key || "--"],
   ];
@@ -1538,12 +1540,12 @@ function renderInspectorCart(cart) {
   if (cart.address) {
     const addressRows = [
       ["Rua", cart.address.street || "--"],
-      ["Número", cart.address.number || cart.address.address_number || "--"],
+      ["NÃºmero", cart.address.number || cart.address.address_number || "--"],
       ["CEP", cart.address.cep || "--"],
       ["Cidade", cart.address.city || "--"],
       ["Estado", cart.address.state || "--"],
     ];
-    inspectorBody.appendChild(createDataSection("Endereço informado", addressRows));
+    inspectorBody.appendChild(createDataSection("EndereÃ§o informado", addressRows));
   }
 
   if (Array.isArray(cart.items) && cart.items.length) {
@@ -1603,7 +1605,7 @@ function createItemsSection(items, title = "Itens") {
     name.textContent = item.name || "Item";
     const meta = document.createElement("span");
     const typeLabel = (item.type || "produto").toString().toUpperCase();
-    meta.textContent = `${typeLabel} • ${formatCurrency(item.price_cents ?? item.total_cents ?? 0)}`;
+    meta.textContent = `${typeLabel} â€¢ ${formatCurrency(item.price_cents ?? item.total_cents ?? 0)}`;
     li.append(name, meta);
     list.appendChild(li);
   });
@@ -1802,7 +1804,7 @@ if (sidebar && sidebarToggle && mainContent) {
   });
 }
 
-// Sidebar highlight ativo e navegação acessível
+// Sidebar highlight ativo e navegaÃ§Ã£o acessÃ­vel
 const navBtns = document.querySelectorAll('.sidebar__nav-btn');
 navBtns.forEach(btn => {
   btn.addEventListener('click', () => {
@@ -1824,3 +1826,5 @@ navBtns.forEach(btn => {
     }
   });
 });
+
+

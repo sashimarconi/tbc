@@ -1,5 +1,15 @@
+﻿create extension if not exists pgcrypto;
+
+create table if not exists users (
+  id uuid primary key default gen_random_uuid(),
+  email text unique not null,
+  password_hash text not null,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists products (
   id uuid primary key default gen_random_uuid(),
+  owner_user_id uuid not null references users(id) on delete cascade,
   type text not null check (type in ('base', 'bump', 'upsell', 'shipping')),
   slug text unique,
   form_factor text not null default 'physical' check (form_factor in ('physical', 'digital')),
@@ -18,8 +28,8 @@ create table if not exists products (
   created_at timestamptz not null default now()
 );
 
-create index if not exists products_type_active_sort_idx
-  on products (type, active, sort, created_at);
+create index if not exists products_owner_type_active_sort_idx
+  on products (owner_user_id, type, active, sort, created_at);
 
 create unique index if not exists products_slug_idx
   on products (slug)
@@ -27,19 +37,27 @@ create unique index if not exists products_slug_idx
 
 create table if not exists product_files (
   id uuid primary key default gen_random_uuid(),
+  owner_user_id uuid not null references users(id) on delete cascade,
   filename text,
   mime_type text not null,
   data bytea not null,
   created_at timestamptz not null default now()
 );
 
+create index if not exists product_files_owner_created_idx
+  on product_files (owner_user_id, created_at desc);
+
 create table if not exists order_bump_rules (
   bump_id uuid primary key references products(id) on delete cascade,
+  owner_user_id uuid not null references users(id) on delete cascade,
   apply_to_all boolean not null default true,
   trigger_product_ids uuid[] not null default '{}'::uuid[],
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+create index if not exists order_bump_rules_owner_idx
+  on order_bump_rules (owner_user_id, updated_at desc);
 
 create table if not exists analytics_sessions (
   session_id text primary key,
@@ -72,7 +90,8 @@ create index if not exists analytics_events_type_idx
 
 create table if not exists checkout_carts (
   id uuid primary key default gen_random_uuid(),
-  cart_key text unique not null,
+  owner_user_id uuid not null references users(id) on delete cascade,
+  cart_key text not null,
   customer jsonb,
   address jsonb,
   items jsonb,
@@ -90,15 +109,17 @@ create table if not exists checkout_carts (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   last_seen timestamptz not null default now(),
-  last_stage_at timestamptz not null default now()
+  last_stage_at timestamptz not null default now(),
+  unique(owner_user_id, cart_key)
 );
 
 create index if not exists checkout_carts_stage_idx
-  on checkout_carts (stage, status, last_seen desc);
+  on checkout_carts (owner_user_id, stage, status, last_seen desc);
 
 create table if not exists checkout_orders (
   id uuid primary key default gen_random_uuid(),
-  cart_key text unique,
+  owner_user_id uuid not null references users(id) on delete cascade,
+  cart_key text,
   customer jsonb not null,
   address jsonb,
   items jsonb,
@@ -112,24 +133,230 @@ create table if not exists checkout_orders (
   utm jsonb,
   source text,
   tracking jsonb,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  unique(owner_user_id, cart_key)
 );
 
 create index if not exists checkout_orders_created_idx
-  on checkout_orders (created_at desc);
+  on checkout_orders (owner_user_id, created_at desc);
 
--- Aparência do Checkout
-create table if not exists checkout_appearance (
+create table if not exists checkout_themes (
   id serial primary key,
-  theme text not null default 'default',
-  primary_color text not null default '#A100FF',
-  button_color text not null default '#A100FF',
-  bg_color text not null default '#e8ebf1',
-  font text not null default 'Inter',
-  updated_at timestamptz not null default now()
+  key text unique not null,
+  name text not null,
+  description text,
+  preview_image text,
+  defaults jsonb not null,
+  created_at timestamptz not null default now()
 );
 
--- Apenas uma linha, use update/insert para modificar
-insert into checkout_appearance (theme, primary_color, button_color, bg_color, font)
-values ('default', '#A100FF', '#A100FF', '#e8ebf1', 'Inter')
-on conflict do nothing;
+create table if not exists checkout_appearance (
+  id serial primary key,
+  owner_user_id uuid not null references users(id) on delete cascade,
+  theme_key text not null references checkout_themes(key),
+  overrides jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now(),
+  unique(owner_user_id)
+);
+
+create table if not exists user_payment_gateways (
+  id serial primary key,
+  owner_user_id uuid not null references users(id) on delete cascade,
+  provider text not null default 'sealpay',
+  api_url text not null,
+  api_key_encrypted text not null,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique(owner_user_id, provider)
+);
+
+create index if not exists user_payment_gateways_owner_idx
+  on user_payment_gateways (owner_user_id, provider, updated_at desc);
+
+insert into checkout_themes (key, name, description, preview_image, defaults)
+values
+(
+  'solarys',
+  'Solarys',
+  'Tema com tons quentes focado em conversao.',
+  null,
+  '{
+    "palette": {
+      "primary": "#f5a623",
+      "buttons": "#f39c12",
+      "background": "#f4f6fb",
+      "text": "#1c2431",
+      "card": "#ffffff",
+      "border": "#dde3ee"
+    },
+    "typography": {
+      "fontFamily": "Poppins"
+    },
+    "radius": {
+      "cards": "16px",
+      "buttons": "14px",
+      "fields": "12px",
+      "steps": "999px"
+    },
+    "header": {
+      "style": "logo+texto",
+      "centerLogo": false,
+      "logoUrl": "/assets/logo-blackout.png",
+      "logoWidthPx": 120,
+      "logoHeightPx": 40,
+      "bgColor": "#ffffff",
+      "textColor": "#0f5132"
+    },
+    "securitySeal": {
+      "enabled": true,
+      "style": "padrao_bolinha_texto",
+      "text": "Pagamento 100% seguro",
+      "size": "medio",
+      "textColor": "#0f5132",
+      "bgColor": "#f5f7fb",
+      "iconColor": "#1d9f55",
+      "radius": "arredondado"
+    },
+    "effects": {
+      "primaryButton": { "animation": "none", "speed": "normal" },
+      "secondaryButton": { "animation": "none", "speed": "normal" }
+    },
+    "settings": {
+      "fields": {
+        "fullName": true,
+        "email": true,
+        "phone": true,
+        "cpf": true,
+        "custom": []
+      },
+      "i18n": {
+        "language": "pt-BR",
+        "currency": "BRL"
+      }
+    }
+  }'::jsonb
+),
+(
+  'minimal',
+  'Minimal',
+  'Tema claro e minimalista.',
+  null,
+  '{
+    "palette": {
+      "primary": "#111827",
+      "buttons": "#111827",
+      "background": "#f8fafc",
+      "text": "#0f172a",
+      "card": "#ffffff",
+      "border": "#e2e8f0"
+    },
+    "typography": {
+      "fontFamily": "Inter"
+    },
+    "radius": {
+      "cards": "12px",
+      "buttons": "10px",
+      "fields": "10px",
+      "steps": "10px"
+    },
+    "header": {
+      "style": "texto",
+      "centerLogo": false,
+      "logoUrl": "/assets/logo-blackout.png",
+      "logoWidthPx": 120,
+      "logoHeightPx": 40,
+      "bgColor": "#ffffff",
+      "textColor": "#0f172a"
+    },
+    "securitySeal": {
+      "enabled": true,
+      "style": "somente_texto",
+      "text": "Ambiente de pagamento protegido",
+      "size": "pequeno",
+      "textColor": "#0f172a",
+      "bgColor": "#f1f5f9",
+      "iconColor": "#0f172a",
+      "radius": "quadrado"
+    },
+    "effects": {
+      "primaryButton": { "animation": "pulse", "speed": "normal" },
+      "secondaryButton": { "animation": "none", "speed": "normal" }
+    },
+    "settings": {
+      "fields": {
+        "fullName": true,
+        "email": true,
+        "phone": true,
+        "cpf": true,
+        "custom": []
+      },
+      "i18n": {
+        "language": "pt-BR",
+        "currency": "BRL"
+      }
+    }
+  }'::jsonb
+),
+(
+  'dark',
+  'Dark',
+  'Tema escuro com alto contraste.',
+  null,
+  '{
+    "palette": {
+      "primary": "#22c55e",
+      "buttons": "#16a34a",
+      "background": "#0b1020",
+      "text": "#e2e8f0",
+      "card": "#111827",
+      "border": "#24314b"
+    },
+    "typography": {
+      "fontFamily": "Montserrat"
+    },
+    "radius": {
+      "cards": "18px",
+      "buttons": "14px",
+      "fields": "12px",
+      "steps": "999px"
+    },
+    "header": {
+      "style": "logo",
+      "centerLogo": true,
+      "logoUrl": "/assets/logo-blackout.png",
+      "logoWidthPx": 120,
+      "logoHeightPx": 40,
+      "bgColor": "#0b1020",
+      "textColor": "#e2e8f0"
+    },
+    "securitySeal": {
+      "enabled": true,
+      "style": "somente_icone",
+      "text": "Pagamento 100% seguro",
+      "size": "medio",
+      "textColor": "#e2e8f0",
+      "bgColor": "#111827",
+      "iconColor": "#22c55e",
+      "radius": "arredondado"
+    },
+    "effects": {
+      "primaryButton": { "animation": "glow", "speed": "rapido" },
+      "secondaryButton": { "animation": "shake", "speed": "normal" }
+    },
+    "settings": {
+      "fields": {
+        "fullName": true,
+        "email": true,
+        "phone": true,
+        "cpf": true,
+        "custom": []
+      },
+      "i18n": {
+        "language": "pt-BR",
+        "currency": "BRL"
+      }
+    }
+  }'::jsonb
+)
+on conflict (key) do nothing;

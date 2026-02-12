@@ -1,4 +1,4 @@
-const { parseJson } = require("../../lib/parse-json");
+﻿const { parseJson } = require("../../lib/parse-json");
 const { query } = require("../../lib/db");
 const { ensureSalesTables } = require("../../lib/ensure-sales");
 
@@ -18,6 +18,11 @@ function asNumber(value) {
   return Number.isFinite(num) ? Math.max(0, Math.round(num)) : 0;
 }
 
+async function resolveOwnerBySlug(slug) {
+  const result = await query("select owner_user_id from products where slug = $1 and type = 'base' limit 1", [slug]);
+  return result.rows?.[0]?.owner_user_id || null;
+}
+
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
@@ -33,8 +38,19 @@ module.exports = async (req, res) => {
   }
 
   const cartKey = sanitizeText(body.cart_id || body.cartKey);
+  const slug = sanitizeText(body.slug);
   if (!cartKey) {
     res.status(400).json({ error: "Missing cart_id" });
+    return;
+  }
+  if (!slug) {
+    res.status(400).json({ error: "Missing slug" });
+    return;
+  }
+
+  const ownerUserId = await resolveOwnerBySlug(slug);
+  if (!ownerUserId) {
+    res.status(404).json({ error: "Checkout nao encontrado" });
     return;
   }
 
@@ -64,12 +80,13 @@ module.exports = async (req, res) => {
 
     const result = await query(
       `insert into checkout_orders (
-         cart_key, customer, address, items, shipping, summary,
+         owner_user_id, cart_key, customer, address, items, shipping, summary,
          status, pix, total_cents, subtotal_cents, shipping_cents,
          utm, source, tracking
-       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-       on conflict (cart_key)
+       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+       on conflict (owner_user_id, cart_key)
        do update set
+         owner_user_id = excluded.owner_user_id,
          customer = excluded.customer,
          address = excluded.address,
          items = excluded.items,
@@ -87,6 +104,7 @@ module.exports = async (req, res) => {
        returning id
       `,
       [
+        ownerUserId,
         cartKey,
         customer,
         address,
@@ -117,8 +135,8 @@ module.exports = async (req, res) => {
              shipping_cents = greatest(shipping_cents, $7),
              updated_at = now(),
              last_stage_at = now()
-       where cart_key = $1`,
-      [cartKey, summary, itemsJson, shipping, totalCents, subtotalCents, shippingCents]
+       where owner_user_id = $8 and cart_key = $1`,
+      [cartKey, summary, itemsJson, shipping, totalCents, subtotalCents, shippingCents, ownerUserId]
     );
 
     res.json({ orderId: result.rows[0]?.id || null });

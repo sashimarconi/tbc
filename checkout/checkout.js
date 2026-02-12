@@ -1,4 +1,4 @@
-const form = document.getElementById("checkout-form");
+﻿const form = document.getElementById("checkout-form");
 const payBtn = document.getElementById("pay-btn");
 const pixResult = document.getElementById("pix-result");
 const pixQr = document.getElementById("pix-qr");
@@ -18,6 +18,19 @@ const summarySubtotal = document.getElementById("summary-subtotal");
 const summaryShipping = document.getElementById("summary-shipping");
 const summaryTotal = document.getElementById("summary-total");
 const summaryCount = document.getElementById("summary-count");
+const headerWrap = document.getElementById("checkout-header");
+const headerBrandBlock = document.getElementById("header-brand-block");
+const headerLogo = document.getElementById("header-logo");
+const headerText = document.getElementById("header-text");
+const securitySeal = document.getElementById("security-seal");
+const securitySealIcon = document.getElementById("security-seal-icon");
+const securitySealText = document.getElementById("security-seal-text");
+const fieldWraps = {
+  fullName: document.getElementById("field-wrap-name"),
+  email: document.getElementById("field-wrap-email"),
+  phone: document.getElementById("field-wrap-phone"),
+  cpf: document.getElementById("field-wrap-cpf"),
+};
 const cepInput = document.getElementById("cep");
 const cepError = document.getElementById("cep-error");
 const addressCard = document.getElementById("address-card");
@@ -57,6 +70,7 @@ let cartStageLevel = 0;
 let cartSyncTimeout = null;
 let lastCartPayloadSignature = "";
 let baseRequiresAddress = true;
+let appearanceConfig = null;
 
 function resolveOfferSlug() {
   try {
@@ -75,7 +89,164 @@ function resolveOfferSlug() {
   return (params.get("offer") || "").trim();
 }
 
-function showOfferUnavailable(message = "Oferta não encontrada") {
+function loadGoogleFontIfNeeded(fontFamily) {
+  if (!fontFamily) return;
+  const builtIn = ["Inter", "Poppins", "Montserrat", "Plus Jakarta Sans"];
+  if (!builtIn.includes(fontFamily)) return;
+  const id = `google-font-${fontFamily.toLowerCase().replace(/\s+/g, "-")}`;
+  if (document.getElementById(id)) return;
+  const link = document.createElement("link");
+  link.id = id;
+  link.rel = "stylesheet";
+  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily).replace(/%20/g, "+")}:wght@400;500;600;700&display=swap`;
+  document.head.appendChild(link);
+}
+
+function applyFieldVisibility(settingsFields = {}) {
+  const map = {
+    fullName: settingsFields.fullName !== false,
+    email: settingsFields.email !== false,
+    phone: settingsFields.phone !== false,
+    cpf: settingsFields.cpf !== false,
+  };
+
+  Object.keys(fieldWraps).forEach((key) => {
+    const node = fieldWraps[key];
+    if (!node) return;
+    node.classList.toggle("hidden", !map[key]);
+    const input = node.querySelector("input");
+    if (input) {
+      input.required = map[key];
+    }
+  });
+}
+
+function applyButtonEffects(config) {
+  const primaryAnimation = config?.effects?.primaryButton?.animation || "none";
+  const secondaryAnimation = config?.effects?.secondaryButton?.animation || "none";
+  const primarySpeed = config?.effects?.primaryButton?.speed || "normal";
+  const secondarySpeed = config?.effects?.secondaryButton?.speed || "normal";
+
+  const speedMap = { normal: "3s", rapido: "1.8s", lento: "4.2s" };
+  document.documentElement.style.setProperty("--effect-primary-duration", speedMap[primarySpeed] || "3s");
+  document.documentElement.style.setProperty("--effect-secondary-duration", speedMap[secondarySpeed] || "3s");
+
+  const cleanClasses = ["anim-pulse", "anim-shake", "anim-glow"];
+  payBtn?.classList.remove(...cleanClasses);
+  copyBtn?.classList.remove(...cleanClasses);
+
+  if (primaryAnimation === "pulse") payBtn?.classList.add("anim-pulse");
+  if (primaryAnimation === "shake") payBtn?.classList.add("anim-shake");
+  if (primaryAnimation === "glow") payBtn?.classList.add("anim-glow");
+
+  if (secondaryAnimation === "pulse") copyBtn?.classList.add("anim-pulse");
+  if (secondaryAnimation === "shake") copyBtn?.classList.add("anim-shake");
+  if (secondaryAnimation === "glow") copyBtn?.classList.add("anim-glow");
+}
+
+function applyAppearanceConfig(config) {
+  if (!config || typeof config !== "object") return;
+  appearanceConfig = config;
+  const root = document.documentElement;
+
+  root.style.setProperty("--color-primary", config?.palette?.primary || "#f5a623");
+  root.style.setProperty("--color-buttons", config?.palette?.buttons || "#f39c12");
+  root.style.setProperty("--color-background", config?.palette?.background || "#f4f6fb");
+  root.style.setProperty("--color-text", config?.palette?.text || "#1c2431");
+  root.style.setProperty("--color-card", config?.palette?.card || "#ffffff");
+  root.style.setProperty("--color-border", config?.palette?.border || "#dde3ee");
+
+  root.style.setProperty("--radius-card", config?.radius?.cards || "16px");
+  root.style.setProperty("--radius-button", config?.radius?.buttons || "14px");
+  root.style.setProperty("--radius-field", config?.radius?.fields || "12px");
+  root.style.setProperty("--radius-steps", config?.radius?.steps || "999px");
+
+  const fontFamily = config?.typography?.fontFamily || "Poppins";
+  loadGoogleFontIfNeeded(fontFamily);
+  root.style.setProperty("--font-family", `"${fontFamily}", sans-serif`);
+
+  const header = config?.header || {};
+  root.style.setProperty("--header-bg", header.bgColor || "#ffffff");
+  root.style.setProperty("--header-text", header.textColor || "#0f5132");
+  if (headerWrap) {
+    headerWrap.style.background = header.bgColor || "#ffffff";
+  }
+  if (headerText) {
+    headerText.style.color = header.textColor || "#0f5132";
+  }
+
+  if (headerLogo) {
+    if (header.logoUrl) headerLogo.src = header.logoUrl;
+    headerLogo.style.width = `${Number(header.logoWidthPx || 120)}px`;
+    headerLogo.style.height = `${Number(header.logoHeightPx || 40)}px`;
+  }
+
+  const headerStyle = header.style || "logo+texto";
+  if (headerLogo) headerLogo.classList.toggle("hidden", headerStyle === "texto");
+  if (headerText) headerText.classList.toggle("hidden", headerStyle === "logo");
+  if (headerBrandBlock) {
+    headerBrandBlock.style.justifyContent = header.centerLogo ? "center" : "flex-start";
+    headerBrandBlock.style.width = header.centerLogo ? "100%" : "auto";
+  }
+
+  const seal = config?.securitySeal || {};
+  root.style.setProperty("--seal-bg", seal.bgColor || "#f5f7fb");
+  root.style.setProperty("--seal-text", seal.textColor || "#0f5132");
+  root.style.setProperty("--seal-icon", seal.iconColor || "#1d9f55");
+  root.style.setProperty("--seal-radius", seal.radius === "quadrado" ? "10px" : "999px");
+
+  if (securitySeal) {
+    securitySeal.classList.toggle("hidden", seal.enabled === false);
+    const size = seal.size || "medio";
+    securitySeal.style.transform = size === "pequeno" ? "scale(0.92)" : size === "grande" ? "scale(1.05)" : "scale(1)";
+  }
+  if (securitySealText) {
+    securitySealText.textContent = seal.text || "Pagamento 100% seguro";
+    securitySealText.classList.toggle("hidden", seal.style === "somente_icone");
+  }
+  if (securitySealIcon) {
+    securitySealIcon.classList.toggle("hidden", seal.style === "somente_texto");
+  }
+
+  applyFieldVisibility(config?.settings?.fields || {});
+  applyButtonEffects(config);
+}
+
+async function loadAppearanceBySlug(slug) {
+  if (!slug) return;
+  try {
+    const response = await fetch(`/api/public/appearance?slug=${encodeURIComponent(slug)}`);
+    if (!response.ok) return;
+    const data = await response.json();
+    if (data?.effectiveConfig) {
+      applyAppearanceConfig(data.effectiveConfig);
+    }
+  } catch (error) {
+    console.warn("Falha ao carregar aparencia", error);
+  }
+}
+
+window.addEventListener("message", (ev) => {
+  if (!ev.data) return;
+  if (ev.data.type === "appearance:preview" && ev.data.configEffective) {
+    applyAppearanceConfig(ev.data.configEffective);
+    return;
+  }
+  if (ev.data.type === "customize") {
+    applyAppearanceConfig({
+      palette: {
+        primary: ev.data.primary,
+        buttons: ev.data.button,
+        background: ev.data.bg,
+      },
+      typography: {
+        fontFamily: ev.data.font,
+      },
+    });
+  }
+});
+
+function showOfferUnavailable(message = "Oferta nÃ£o encontrada") {
   offerData = null;
   if (productTitle) {
     productTitle.textContent = message;
@@ -88,7 +259,7 @@ function showOfferUnavailable(message = "Oferta não encontrada") {
   }
   if (payBtn) {
     payBtn.disabled = true;
-    payBtn.textContent = "Indisponível";
+    payBtn.textContent = "IndisponÃ­vel";
   }
   form?.classList.add("form--disabled");
   addonsSection?.classList.add("hidden");
@@ -295,6 +466,7 @@ function buildCartPayload(stage) {
   const shipping = baseRequiresAddress ? getShippingData() : null;
   return {
     cart_id: cartId,
+    slug: activeOfferSlug,
     stage,
     status: "open",
     customer: customer || null,
@@ -362,6 +534,7 @@ async function recordOrder(pixData, checkoutPayload) {
   const summary = buildSummaryData(items);
   const orderPayload = {
     cart_id: cartId,
+    slug: activeOfferSlug,
     customer: checkoutPayload.customer,
     address: checkoutPayload.address,
     items,
@@ -389,7 +562,7 @@ async function recordOrder(pixData, checkoutPayload) {
       body: JSON.stringify(orderPayload),
     });
   } catch (error) {
-    console.warn("Não foi possível registrar o pedido", error);
+    console.warn("NÃ£o foi possÃ­vel registrar o pedido", error);
   }
 }
 
@@ -433,7 +606,7 @@ function updateSummary() {
   const total = Math.max(subtotal + shipping, 0);
   summarySubtotal.textContent = `R$ ${formatPrice(subtotal)}`;
   if (summaryShipping) {
-    summaryShipping.textContent = shipping === 0 ? "Frete Grátis" : `R$ ${formatPrice(shipping)}`;
+    summaryShipping.textContent = shipping === 0 ? "Frete GrÃ¡tis" : `R$ ${formatPrice(shipping)}`;
   }
   summaryTotal.textContent = `R$ ${formatPrice(total)}`;
   if (summaryCount) {
@@ -573,7 +746,7 @@ function renderShipping(options = []) {
     .map((option) => {
       const selected = option.id === selectedShippingId;
       const priceText = option.price_cents === 0
-        ? "Frete Grátis"
+        ? "Frete GrÃ¡tis"
         : `R$ ${formatPrice(option.price_cents)}`;
       const classes = [
         "shipping-card",
@@ -668,13 +841,13 @@ function fillAddressFields(data) {
 async function lookupCep(value) {
   const cep = normalizeCep(value);
   if (!cep) {
-    showCepError("Informe um CEP válido.");
+    showCepError("Informe um CEP vÃ¡lido.");
     resetAutoAddressFields();
     return;
   }
 
   if (cep.length !== 8) {
-    showCepError("CEP precisa ter 8 dígitos.");
+    showCepError("CEP precisa ter 8 dÃ­gitos.");
     resetAutoAddressFields();
     return;
   }
@@ -683,11 +856,11 @@ async function lookupCep(value) {
   try {
     const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
     if (!response.ok) {
-      throw new Error("CEP inválido");
+      throw new Error("CEP invÃ¡lido");
     }
     const data = await response.json();
     if (data.erro) {
-      throw new Error("CEP não encontrado");
+      throw new Error("CEP nÃ£o encontrado");
     }
     fillAddressFields(data);
     if (cepInput) {
@@ -695,11 +868,11 @@ async function lookupCep(value) {
     }
     const missingInfo = !data.logradouro || !data.localidade || !data.uf;
     setAddressReadOnly(!missingInfo);
-    showCepError(missingInfo ? "Complete os dados de endereço manualmente." : "");
+    showCepError(missingInfo ? "Complete os dados de endereÃ§o manualmente." : "");
     scheduleCartSync("address");
   } catch (error) {
     setAddressReadOnly(false);
-    showCepError("Não encontramos o CEP. Preencha os dados manualmente.");
+    showCepError("NÃ£o encontramos o CEP. Preencha os dados manualmente.");
     resetAutoAddressFields({ preserveManual: true });
     scheduleCartSync("address");
   }
@@ -729,7 +902,7 @@ function setAddressSection(open) {
   addressOpen = open;
   addressCard.classList.toggle("address--collapsed", !open);
   addressContent.classList.toggle("hidden", !open);
-  addressToggle.textContent = open ? "Editar endereço" : "Adicionar endereço";
+  addressToggle.textContent = open ? "Editar endereÃ§o" : "Adicionar endereÃ§o";
   if (open) {
     cepInput?.focus();
   }
@@ -810,7 +983,7 @@ if (cepInput) {
 
 async function loadOffer() {
   if (!activeOfferSlug) {
-    showOfferUnavailable("Link inválido");
+    showOfferUnavailable("Link invÃ¡lido");
     return;
   }
 
@@ -818,12 +991,12 @@ async function loadOffer() {
   try {
     response = await fetch(`/api/public/offer?slug=${encodeURIComponent(activeOfferSlug)}`);
   } catch (error) {
-    showOfferUnavailable("Não foi possível carregar a oferta.");
+    showOfferUnavailable("NÃ£o foi possÃ­vel carregar a oferta.");
     return;
   }
 
   if (!response.ok) {
-    let errorMessage = "Oferta indisponível";
+    let errorMessage = "Oferta indisponÃ­vel";
     try {
       const info = await response.json();
       if (info?.error) {
@@ -840,9 +1013,11 @@ async function loadOffer() {
   offerData = data;
 
   if (!offerData?.base) {
-    showOfferUnavailable("Oferta indisponível");
+    showOfferUnavailable("Oferta indisponÃ­vel");
     return;
   }
+
+  await loadAppearanceBySlug(activeOfferSlug);
 
   form?.classList.remove("form--disabled");
   if (payBtn) {
@@ -859,7 +1034,7 @@ async function loadOffer() {
   applyAddressRequirement(requiresAddressFlag);
   productTitle.textContent = base.name;
   productDescription.textContent = base.description ||
-    "Receba seu material imediatamente após a confirmação.";
+    "Receba seu material imediatamente apÃ³s a confirmaÃ§Ã£o.";
   productPrice.textContent = `R$ ${formatPrice(base.price_cents)}`;
   if (productComparePrice) {
     if (base.compare_price_cents && base.compare_price_cents > base.price_cents) {
@@ -898,17 +1073,17 @@ form.addEventListener("submit", async (event) => {
 
   if (baseRequiresAddress) {
     if (!addressOpen) {
-      alert("Abra o box de entrega e informe o endereço completo.");
+      alert("Abra o box de entrega e informe o endereÃ§o completo.");
       return;
     }
 
     if (!cep || normalizeCep(cep).length !== 8 || !street || !city || !state || !number) {
-      alert("Preencha o endereço de entrega para continuar.");
+      alert("Preencha o endereÃ§o de entrega para continuar.");
       return;
     }
 
     if (shippingOptions.length && !shippingOption) {
-      alert("Selecione uma opção de frete.");
+      alert("Selecione uma opÃ§Ã£o de frete.");
       return;
     }
   }
@@ -939,6 +1114,7 @@ form.addEventListener("submit", async (event) => {
   const payload = {
     amount: calcTotal(),
     description: offerData.base.name,
+    slug: activeOfferSlug,
     customer,
     tracking: {
       utm: getUtmParams(),
@@ -980,7 +1156,7 @@ form.addEventListener("submit", async (event) => {
     recordOrder(data, payload);
   } catch (error) {
     trackCheckout("checkout_error", { message: error.message });
-    alert(error.message || "Erro na conexão com Pix");
+    alert(error.message || "Erro na conexÃ£o com Pix");
   } finally {
     payBtn.disabled = false;
     payBtn.textContent = originalText;
@@ -992,7 +1168,7 @@ copyBtn.addEventListener("click", async () => {
   await navigator.clipboard.writeText(pixCode.value);
   copyBtn.textContent = "Copiado";
   setTimeout(() => {
-    copyBtn.textContent = "Copiar código";
+    copyBtn.textContent = "Copiar cÃ³digo";
   }, 1500);
 });
 
@@ -1036,3 +1212,7 @@ async function createPixCharge(payload) {
 
   return result.data;
 }
+
+
+
+

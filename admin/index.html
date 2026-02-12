@@ -1,11 +1,11 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="pt-BR">
   <head>
       <!-- Globe.gl CDN for 3D globe visualization -->
       <script src="https://unpkg.com/globe.gl"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>The Black Checkout – Admin</title>
+    <title>The Black Checkout â€“ Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Montserrat:wght@700;900&display=swap" rel="stylesheet" />
@@ -24,19 +24,19 @@
       </div>
       <nav class="sidebar__nav">
         <button class="sidebar__nav-btn active" data-target="dashboard-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/></svg>Dashboard</button>
-        <button class="sidebar__nav-btn" data-target="appearance-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M7 7h.01"/><path d="M12 7h.01"/><path d="M17 7h.01"/><path d="M7 12h.01"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 17h.01"/><path d="M12 17h.01"/><path d="M17 17h.01"/></svg>Aparência</button>
+        <button class="sidebar__nav-btn" data-target="appearance-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M7 7h.01"/><path d="M12 7h.01"/><path d="M17 7h.01"/><path d="M7 12h.01"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 17h.01"/><path d="M12 17h.01"/><path d="M17 17h.01"/></svg>AparÃªncia</button>
         <button class="sidebar__nav-btn" data-target="orders-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/></svg>Pedidos</button>
         <button class="sidebar__nav-btn" data-target="carts-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h2l.34 2.36a2 2 0 0 0 2 1.64h12.72a2 2 0 0 0 2-1.64L23 6H6"/></svg>Carrinhos</button>
         <button class="sidebar__nav-btn" data-target="products-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M12 12v6"/><path d="M9 15h6"/></svg>Produtos</button>
         <button class="sidebar__nav-btn" data-target="order-bumps-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>Order Bumps</button>
       </nav>
 
-            <!-- Aparência: painel centralizado -->
+            <!-- AparÃªncia: painel centralizado -->
             <main class="page" style="background:#050505;min-height:100vh;margin-left:250px;transition:margin-left 0.2s;" id="main-content">
               <section id="appearance-view" class="panel-view hidden" hidden style="max-width:420px;margin:2.5rem auto 0;">
                 <header class="view-header" style="display:flex;align-items:center;gap:1.5rem;padding-bottom:1.5rem;">
                   <div>
-                    <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.5rem;">Aparência do Checkout</h2>
+                    <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.5rem;">AparÃªncia do Checkout</h2>
                     <p style="color:var(--color-text-secondary);font-weight:500;">Personalize cores, tipografia e estilos visuais do seu checkout.</p>
                   </div>
                 </header>
@@ -46,7 +46,7 @@
                     <label style="display:block;margin-bottom:1rem;">
                       <span style="color:var(--color-text-secondary);font-weight:600;">Tema do Checkout</span>
                       <select id="appearance-theme" style="width:100%;margin-top:0.5rem;">
-                        <option value="default">Padrão</option>
+                        <option value="default">PadrÃ£o</option>
                         <option value="solarys">Solarys</option>
                         <option value="minimal">Minimal</option>
                       </select>
@@ -59,7 +59,7 @@
                       <input type="color" id="appearance-primary-color" style="margin-left:1rem;vertical-align:middle;" />
                     </label>
                     <label style="display:block;margin-bottom:1rem;">
-                      <span style="color:var(--color-text-secondary);font-weight:600;">Cor dos Botões</span>
+                      <span style="color:var(--color-text-secondary);font-weight:600;">Cor dos BotÃµes</span>
                       <input type="color" id="appearance-button-color" style="margin-left:1rem;vertical-align:middle;" />
                     </label>
                     <label style="display:block;">
@@ -79,10 +79,10 @@
                       </select>
                     </label>
                   </div>
-                  <button type="submit" class="ghost" style="width:100%;margin-top:1.2rem;font-weight:700;">Salvar Personalização</button>
+                  <button type="submit" class="ghost" style="width:100%;margin-top:1.2rem;font-weight:700;">Salvar PersonalizaÃ§Ã£o</button>
                 </form>
               </section>
-              <!-- ...demais sessões do painel... -->
+              <!-- ...demais sessÃµes do painel... -->
             </main>
       <div class="sidebar__footer">
         <button id="logout-btn" class="ghost" style="width:80%;margin-bottom:1.2rem;">Sair</button>
@@ -96,6 +96,9 @@
           <h1 style="font-family:var(--font-title);font-weight:900;font-size:2.2rem;letter-spacing:-1px;">The Black Checkout</h1>
         </div>
         <form id="login-form" class="form" style="margin-top:2rem;">
+          <label style="width:100%;color:var(--color-text-secondary);font-weight:600;">E-mail
+            <input id="email" type="email" style="width:100%;margin-top:0.5rem;" autocomplete="email" />
+          </label>
           <label style="width:100%;color:var(--color-text-secondary);font-weight:600;">Senha
             <input id="password" type="password" style="width:100%;margin-top:0.5rem;" autocomplete="current-password" />
           </label>
@@ -110,7 +113,7 @@
             <svg width="40" height="40" viewBox="0 0 64 64" fill="none" aria-hidden="true"><rect x="8" y="40" width="48" height="8" rx="4" fill="#1B1B22"/><ellipse cx="32" cy="36" rx="18" ry="8" fill="#0D0D12"/><path d="M16 36c0-8 6-18 16-18s16 10 16 18" stroke="#A100FF" stroke-width="3" stroke-linecap="round" fill="none"/></svg>
             <div>
               <h1 style="font-family:var(--font-title);font-weight:900;font-size:2rem;letter-spacing:-1px;">Painel</h1>
-              <p style="color:var(--color-text-secondary);font-weight:500;">Visão ao vivo da loja e gestão dos produtos.</p>
+              <p style="color:var(--color-text-secondary);font-weight:500;">VisÃ£o ao vivo da loja e gestÃ£o dos produtos.</p>
             </div>
           </div>
           <div class="panel-header__actions" style="display:flex;align-items:center;gap:1.5rem;">
@@ -130,7 +133,7 @@
                 <section id="live-view" class="card" style="margin-bottom:2.5rem;padding:2.5rem 2vw 2.5rem 2vw;display:flex;align-items:center;gap:3vw;background:#0D0D12;border:1.5px solid #232336;box-shadow:0 2px 32px 0 #00FF8511;">
                   <div style="flex:1;min-width:320px;max-width:520px;display:flex;flex-direction:column;gap:1.2rem;">
                     <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.5rem;margin:0 0 0.7rem 0;color:#00FF85;letter-spacing:-1px;">Live View</h2>
-                    <p style="color:var(--color-text-secondary);font-size:1.08rem;max-width:420px;">Veja em tempo real onde há pessoas online na sua loja. Os pontos verdes representam sessões ativas.</p>
+                    <p style="color:var(--color-text-secondary);font-size:1.08rem;max-width:420px;">Veja em tempo real onde hÃ¡ pessoas online na sua loja. Os pontos verdes representam sessÃµes ativas.</p>
                     <ul id="live-view-list" style="margin:1.2rem 0 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:0.7rem;font-size:1.08rem;color:#EDEDED;"></ul>
                   </div>
                   <div style="flex:2;min-width:320px;display:flex;justify-content:center;align-items:center;">
@@ -146,17 +149,17 @@
             <article class="stat-card card" style="padding:2.2rem 1.5rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 24px 0 #A100FF11;">
               <p style="color:var(--color-text-secondary);font-weight:600;">Visitantes no dia</p>
               <strong id="stat-visitors" style="font-size:2.3rem;font-family:var(--font-title);font-weight:900;letter-spacing:-1px;">0</strong>
-              <small style="color:var(--color-text-secondary);">Únicos</small>
+              <small style="color:var(--color-text-secondary);">Ãšnicos</small>
             </article>
             <article class="stat-card card" style="padding:2.2rem 1.5rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 24px 0 #A100FF11;">
               <p style="color:var(--color-text-secondary);font-weight:600;">Foram ao checkout</p>
               <strong id="stat-checkout-visits" style="font-size:2.3rem;font-family:var(--font-title);font-weight:900;letter-spacing:-1px;">0</strong>
-              <small style="color:var(--color-text-secondary);">Visitantes únicos</small>
+              <small style="color:var(--color-text-secondary);">Visitantes Ãºnicos</small>
             </article>
             <article class="stat-card card" style="padding:2.2rem 1.5rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 24px 0 #A100FF11;">
               <p style="color:var(--color-text-secondary);font-weight:600;">Checkout iniciado</p>
               <strong id="stat-checkout-starts" style="font-size:2.3rem;font-family:var(--font-title);font-weight:900;letter-spacing:-1px;">0</strong>
-              <small style="color:var(--color-text-secondary);">Cliques no botão pagar</small>
+              <small style="color:var(--color-text-secondary);">Cliques no botÃ£o pagar</small>
             </article>
             <article class="stat-card card" style="padding:2.2rem 1.5rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 24px 0 #A100FF11;">
               <p style="color:var(--color-text-secondary);font-weight:600;">Pix gerados</p>
@@ -166,12 +169,12 @@
             <article class="stat-card card" style="padding:2.2rem 1.5rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 24px 0 #A100FF11;">
               <p style="color:var(--color-text-secondary);font-weight:600;">Compras</p>
               <strong id="stat-purchases" style="font-size:2.3rem;font-family:var(--font-title);font-weight:900;letter-spacing:-1px;">0</strong>
-              <small style="color:var(--color-text-secondary);">Clientes únicos</small>
+              <small style="color:var(--color-text-secondary);">Clientes Ãºnicos</small>
             </article>
             <article class="stat-card card stat-card--accent" style="padding:2.2rem 1.5rem;text-align:center;background:linear-gradient(120deg,#181825 60%,#A100FF22 100%);border:1.5px solid #A100FF;box-shadow:0 2px 32px 0 #A100FF33;">
-              <p style="color:var(--color-brand);font-weight:700;">Conversão do checkout</p>
+              <p style="color:var(--color-brand);font-weight:700;">ConversÃ£o do checkout</p>
               <strong id="stat-conversion" style="font-size:2.3rem;font-family:var(--font-title);font-weight:900;letter-spacing:-1px;">0%</strong>
-              <small style="color:var(--color-text-secondary);">Compras ÷ Inícios</small>
+              <small style="color:var(--color-text-secondary);">Compras Ã· InÃ­cios</small>
             </article>
           </div>
 
@@ -196,7 +199,7 @@
           <section class="timeline-card">
             <header>
               <div>
-                <h2>Últimas 12 horas</h2>
+                <h2>Ãšltimas 12 horas</h2>
                 <p>Comparativo de visitas, checkout e Pix.</p>
               </div>
               <small id="stats-updated">--</small>
@@ -254,8 +257,8 @@
           <section class="table-card card" style="margin-top:2rem;padding:0.5rem 0.5rem 1.5rem 0.5rem;background:#181825;border-radius:18px;border:1.5px solid #232336;box-shadow:0 4px 24px 0 #0008;">
             <header style="padding:1.2rem 1.2rem 0.5rem 1.2rem;background:transparent;">
               <div>
-                <h3 style="font-family:var(--font-title);font-weight:900;font-size:1.1rem;">Últimos pedidos</h3>
-                <p style="color:var(--color-text-secondary);font-size:0.95em;">Mostrando até 150 registros</p>
+                <h3 style="font-family:var(--font-title);font-weight:900;font-size:1.1rem;">Ãšltimos pedidos</h3>
+                <p style="color:var(--color-text-secondary);font-size:0.95em;">Mostrando atÃ© 150 registros</p>
               </div>
             </header>
             <div class="table-scroll" style="background:transparent;border-radius:14px;">
@@ -311,8 +314,8 @@
           <section class="table-card card" style="margin-top:2rem;padding:0.5rem 0.5rem 1.5rem 0.5rem;background:#181825;border-radius:18px;border:1.5px solid #232336;box-shadow:0 4px 24px 0 #0008;">
             <header style="padding:1.2rem 1.2rem 0.5rem 1.2rem;background:transparent;">
               <div>
-                <h3 style="font-family:var(--font-title);font-weight:900;font-size:1.1rem;">Últimas interações</h3>
-                <p style="color:var(--color-text-secondary);font-size:0.95em;">Ordenado pelo último contato</p>
+                <h3 style="font-family:var(--font-title);font-weight:900;font-size:1.1rem;">Ãšltimas interaÃ§Ãµes</h3>
+                <p style="color:var(--color-text-secondary);font-size:0.95em;">Ordenado pelo Ãºltimo contato</p>
               </div>
             </header>
             <div class="table-scroll" style="background:transparent;border-radius:14px;">
@@ -323,7 +326,7 @@
                     <th>Etapa</th>
                     <th>Status</th>
                     <th>Valor</th>
-                    <th>Último contato</th>
+                    <th>Ãšltimo contato</th>
                     <th>Criado em</th>
                   </tr>
                 </thead>
@@ -341,7 +344,7 @@
           <header class="products-head" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:1.5rem;">
             <div>
               <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.5rem;">Produtos</h2>
-              <p style="color:var(--color-text-secondary);font-weight:500;">Gerencie o catálogo e os links de checkout.</p>
+              <p style="color:var(--color-text-secondary);font-weight:500;">Gerencie o catÃ¡logo e os links de checkout.</p>
             </div>
             <button id="create-product-btn" type="button" class="ghost" style="font-weight:700;">Criar novo produto</button>
           </header>
@@ -365,12 +368,12 @@
                     <th>Tipo</th>
                     <th>Valor</th>
                     <th>Status</th>
-                    <th>Ações</th>
+                    <th>AÃ§Ãµes</th>
                   </tr>
                 </thead>
                 <tbody id="products-table-body">
                   <tr>
-                    <td colspan="5">Carregando catálogo...</td>
+                    <td colspan="5">Carregando catÃ¡logo...</td>
                   </tr>
                 </tbody>
               </table>
@@ -382,7 +385,7 @@
           <header class="bumps-head" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:1.5rem;">
             <div>
               <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.5rem;">Order Bumps</h2>
-              <p style="color:var(--color-text-secondary);font-weight:500;">Configure ofertas adicionais para aumentar o ticket médio.</p>
+              <p style="color:var(--color-text-secondary);font-weight:500;">Configure ofertas adicionais para aumentar o ticket mÃ©dio.</p>
             </div>
             <button id="create-bump-btn" type="button" class="ghost" style="font-weight:700;">Novo order bump</button>
           </header>
@@ -392,7 +395,7 @@
               <svg viewBox="0 0 20 20" aria-hidden="true" style="width:1.2em;height:1.2em;color:var(--color-brand);">
                 <path d="M9 3a6 6 0 104.47 10.03l3.75 3.75 1.42-1.42-3.75-3.75A6 6 0 009 3zm0 2a4 4 0 110 8 4 4 0 010-8z" fill="currentColor" />
               </svg>
-              <input id="order-bumps-search" type="search" placeholder="Buscar por nome ou descrição..." style="background:transparent;border:none;color:var(--color-text-main);outline:none;" />
+              <input id="order-bumps-search" type="search" placeholder="Buscar por nome ou descriÃ§Ã£o..." style="background:transparent;border:none;color:var(--color-text-main);outline:none;" />
             </label>
             <div class="bumps-counters" style="display:flex;gap:1.2rem;">
               <span><strong id="bumps-active-count">0</strong> ativos</span>
@@ -473,10 +476,10 @@
             <div class="product-type__group">
               <label>Formato</label>
               <div class="toggle">
-                <button type="button" data-form-factor="physical" class="is-active">Físico</button>
+                <button type="button" data-form-factor="physical" class="is-active">FÃ­sico</button>
                 <button type="button" data-form-factor="digital">Digital</button>
               </div>
-              <small>Escolha se este produto exige endereço de entrega.</small>
+              <small>Escolha se este produto exige endereÃ§o de entrega.</small>
             </div>
           </section>
 
@@ -484,7 +487,7 @@
             <header>
               <div>
                 <h4>Imagem do produto</h4>
-                <p>Faça upload ou utilize uma URL pública.</p>
+                <p>FaÃ§a upload ou utilize uma URL pÃºblica.</p>
               </div>
               <div class="media-tabs">
                 <button type="button" data-image-mode="upload" class="is-active">Upload</button>
@@ -505,8 +508,8 @@
               </label>
             </div>
             <figure class="media-preview" id="product-image-preview">
-              <img alt="Pré-visualização" />
-              <figcaption>Pré-visualização</figcaption>
+              <img alt="PrÃ©-visualizaÃ§Ã£o" />
+              <figcaption>PrÃ©-visualizaÃ§Ã£o</figcaption>
             </figure>
           </section>
 
@@ -516,11 +519,11 @@
               <input id="product-name" name="name" required placeholder="Digite o nome" />
             </label>
             <label>
-              Preço original (R$)
+              PreÃ§o original (R$)
               <input id="product-price" name="price" inputmode="decimal" placeholder="0,00" />
             </label>
             <label>
-              Preço promocional (R$)
+              PreÃ§o promocional (R$)
               <input id="product-compare" name="compare_price" inputmode="decimal" placeholder="Opcional" />
             </label>
             <label>
@@ -537,17 +540,17 @@
           </section>
 
           <label>
-            Descrição breve
-            <textarea id="product-description" rows="3" placeholder="Conte por que seu produto é incrível."></textarea>
+            DescriÃ§Ã£o breve
+            <textarea id="product-description" rows="3" placeholder="Conte por que seu produto Ã© incrÃ­vel."></textarea>
           </label>
 
           <section id="logistics-section" class="logistics-card">
             <header>
               <div>
-                <h4>Informações de logística</h4>
-                <p>Utilizadas para cálculo de frete.</p>
+                <h4>InformaÃ§Ãµes de logÃ­stica</h4>
+                <p>Utilizadas para cÃ¡lculo de frete.</p>
               </div>
-              <span class="chip">Aparece apenas para produtos físicos</span>
+              <span class="chip">Aparece apenas para produtos fÃ­sicos</span>
             </header>
             <div class="logistics-grid">
               <label>
@@ -597,12 +600,12 @@
 
           <section class="bump-basic">
             <label>
-              Título do order bump
+              TÃ­tulo do order bump
               <input id="bump-title" placeholder="Ex: Oferta complementar" required />
             </label>
             <label>
-              Descrição
-              <textarea id="bump-description" rows="3" placeholder="Texto curto para explicar o benefício."></textarea>
+              DescriÃ§Ã£o
+              <textarea id="bump-description" rows="3" placeholder="Texto curto para explicar o benefÃ­cio."></textarea>
             </label>
           </section>
 
@@ -631,19 +634,19 @@
               </label>
             </div>
             <figure class="media-preview" id="bump-image-preview">
-              <img alt="Pré-visualização" />
-              <figcaption>Pré-visualização</figcaption>
+              <img alt="PrÃ©-visualizaÃ§Ã£o" />
+              <figcaption>PrÃ©-visualizaÃ§Ã£o</figcaption>
             </figure>
           </section>
 
           <section class="bump-pricing">
             <label>
-              Preço da oferta (R$)
+              PreÃ§o da oferta (R$)
               <input id="bump-price" inputmode="decimal" placeholder="0,00" />
             </label>
             <label>
-              Preço riscado (opcional)
-              <input id="bump-compare" inputmode="decimal" placeholder="Exibe âncora de preço" />
+              PreÃ§o riscado (opcional)
+              <input id="bump-compare" inputmode="decimal" placeholder="Exibe Ã¢ncora de preÃ§o" />
             </label>
           </section>
 
@@ -679,7 +682,7 @@
           <button id="inspector-close" type="button" class="ghost">Fechar</button>
         </header>
         <div id="inspector-body" class="inspector__body">
-          <p class="muted">Escolha um pedido ou carrinho para ver as informações completas.</p>
+          <p class="muted">Escolha um pedido ou carrinho para ver as informaÃ§Ãµes completas.</p>
         </div>
       </div>
     </aside>
@@ -687,3 +690,5 @@
     <script src="/admin/admin.js"></script>
   </body>
 </html>
+
+
