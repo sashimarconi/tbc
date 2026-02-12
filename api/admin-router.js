@@ -192,7 +192,6 @@ function normalizeItemPayload(body = {}) {
         ? null
         : Number(body.compare_price_cents),
     active: body.active !== false,
-    sort: Number(body.sort || 0),
     image_url: body.image_url || "",
     form_factor: formFactor,
     requires_address: requiresAddress,
@@ -202,6 +201,14 @@ function normalizeItemPayload(body = {}) {
     height_cm: Number(body.height_cm || 0),
     bump_rule: bumpRule,
   };
+}
+
+function sanitizeProductRow(row) {
+  if (!row || typeof row !== "object") {
+    return row;
+  }
+  const { sort, display_order, vitrine_order, ...safe } = row;
+  return safe;
 }
 
 function mapRuleRow(row) {
@@ -525,14 +532,15 @@ async function handleItems(req, res, user) {
     try {
       await ensureBaseSlugs(user.id);
       const result = await query(
-        "select * from products where owner_user_id = $1 order by type asc, sort asc, created_at asc",
+        "select * from products where owner_user_id = $1 order by created_at desc",
         [user.id]
       );
       const items = result.rows || [];
       const bumpIds = items.filter((item) => item.type === "bump").map((item) => item.id);
       const rulesMap = await fetchBumpRulesFor(user.id, bumpIds);
-      const enriched = items.map((item) =>
-        item.type === "bump"
+      const enriched = items.map((rawItem) => {
+        const item = sanitizeProductRow(rawItem);
+        return item.type === "bump"
           ? {
               ...item,
               bump_rule: rulesMap.get(item.id) || {
@@ -540,8 +548,8 @@ async function handleItems(req, res, user) {
                 trigger_product_ids: [],
               },
             }
-          : item
-      );
+          : item;
+      });
       res.json({ items: enriched });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -567,7 +575,6 @@ async function handleItems(req, res, user) {
            price_cents,
            compare_price_cents,
            active,
-           sort,
            image_url,
            slug,
            form_factor,
@@ -576,7 +583,7 @@ async function handleItems(req, res, user) {
            length_cm,
            width_cm,
            height_cm
-         ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) returning *`,
+         ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) returning *`,
         [
           user.id,
           item.type,
@@ -585,7 +592,6 @@ async function handleItems(req, res, user) {
           item.price_cents,
           item.compare_price_cents,
           item.active,
-          item.sort,
           item.image_url,
           slug,
           item.form_factor,
@@ -596,7 +602,7 @@ async function handleItems(req, res, user) {
           item.height_cm,
         ]
       );
-      const saved = result.rows[0];
+      const saved = sanitizeProductRow(result.rows[0]);
       if (saved?.type === "bump") {
         await upsertBumpRule(user.id, saved.id, item.bump_rule);
         saved.bump_rule = await getBumpRule(user.id, saved.id);
@@ -624,15 +630,14 @@ async function handleItems(req, res, user) {
            price_cents = $4,
            compare_price_cents = $5,
            active = $6,
-           sort = $7,
-           image_url = $8,
-           form_factor = $9,
-           requires_address = $10,
-           weight_grams = $11,
-           length_cm = $12,
-           width_cm = $13,
-           height_cm = $14
-         where id = $15 and owner_user_id = $16 returning *`,
+           image_url = $7,
+           form_factor = $8,
+           requires_address = $9,
+           weight_grams = $10,
+           length_cm = $11,
+           width_cm = $12,
+           height_cm = $13
+         where id = $14 and owner_user_id = $15 returning *`,
         [
           updates.type,
           updates.name,
@@ -640,7 +645,6 @@ async function handleItems(req, res, user) {
           updates.price_cents,
           updates.compare_price_cents,
           updates.active,
-          updates.sort,
           updates.image_url,
           updates.form_factor,
           updates.requires_address,
@@ -652,7 +656,7 @@ async function handleItems(req, res, user) {
           user.id,
         ]
       );
-      const saved = result.rows[0];
+      const saved = sanitizeProductRow(result.rows[0]);
       if (!saved) {
         res.status(404).json({ error: "Item not found" });
         return;

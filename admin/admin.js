@@ -113,7 +113,6 @@ const productDescriptionInput = document.getElementById("product-description");
 const productPriceInput = document.getElementById("product-price");
 const productCompareInput = document.getElementById("product-compare");
 const productActiveSelect = document.getElementById("product-active");
-const productSortInput = document.getElementById("product-sort");
 const formFactorButtons = document.querySelectorAll("[data-form-factor]");
 const logisticsSection = document.getElementById("logistics-section");
 const logHeightInput = document.getElementById("log-height");
@@ -179,7 +178,6 @@ let bumpModalMode = "create";
 let editingBumpId = null;
 let currentBumpImageMode = "upload";
 let currentBumpImageValue = "";
-let editingBumpSort = 0;
 const fallbackProductImage = "https://dummyimage.com/200x200/ede9df/8a8277&text=Produto";
 
 function setAuthHeader() {
@@ -862,13 +860,15 @@ function renderProductsTable() {
   }
   const searchTerm = (productsSearchInput?.value || "").trim().toLowerCase();
   const bases = getBaseProducts();
-  const filtered = bases.filter((product) => {
-    if (!searchTerm) {
-      return true;
-    }
-    const haystack = `${product.name || ""} ${product.description || ""}`.toLowerCase();
-    return haystack.includes(searchTerm);
-  });
+  const filtered = bases
+    .filter((product) => {
+      if (!searchTerm) {
+        return true;
+      }
+      const haystack = `${product.name || ""} ${product.description || ""}`.toLowerCase();
+      return haystack.includes(searchTerm);
+    })
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
   if (!filtered.length) {
     productsTableBody.innerHTML = `<tr><td colspan="5">Nenhum produto base encontrado.</td></tr>`;
@@ -963,12 +963,7 @@ function renderOrderBumpsList() {
       const haystack = `${item.name || ""} ${item.description || ""}`.toLowerCase();
       return haystack.includes(searchTerm);
     })
-    .sort((a, b) => {
-      if (a.sort !== b.sort) {
-        return Number(a.sort || 0) - Number(b.sort || 0);
-      }
-      return new Date(a.created_at || 0) - new Date(b.created_at || 0);
-    });
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
   if (!filtered.length) {
     orderBumpsList.innerHTML = `<div class="bump-empty-row">Nenhum order bump corresponde à busca.</div>`;
@@ -1028,7 +1023,6 @@ function resetProductForm() {
   }
   productForm.reset();
   productDescriptionInput.value = "";
-  productSortInput.value = "0";
   productCompareInput.value = "";
   editingProductType = "base";
   if (productImageUrl) {
@@ -1059,7 +1053,6 @@ function fillProductForm(item) {
     ? formatCentsForField(item.compare_price_cents)
     : "";
   productActiveSelect.value = item.active ? "true" : "false";
-  productSortInput.value = Number(item.sort || 0);
   logHeightInput.value = Number(item.height_cm || 0) || "";
   logWidthInput.value = Number(item.width_cm || 0) || "";
   logLengthInput.value = Number(item.length_cm || 0) || "";
@@ -1127,7 +1120,6 @@ function collectProductPayload() {
     price_cents: priceCents,
     compare_price_cents: compareCents,
     active: productActiveSelect.value !== "false",
-    sort: Number(productSortInput.value || 0),
     image_url: resolveImageValue(),
     form_factor: selectedFormFactor,
     requires_address: selectedFormFactor !== "digital",
@@ -1150,7 +1142,6 @@ function resetBumpForm() {
   bumpCompareInput.value = "";
   bumpActiveInput.checked = true;
   bumpApplyAllInput.checked = true;
-  editingBumpSort = 0;
   currentBumpImageValue = "";
   if (bumpImageUpload) {
     bumpImageUpload.value = "";
@@ -1222,7 +1213,6 @@ function fillBumpForm(item) {
     ? formatCentsForField(item.compare_price_cents)
     : "";
   bumpActiveInput.checked = item.active !== false;
-  editingBumpSort = Number(item.sort || 0);
   const rule = item.bump_rule || { apply_to_all: true, trigger_product_ids: [] };
   bumpApplyAllInput.checked = rule.apply_to_all !== false;
   renderBumpTriggerOptions(rule.trigger_product_ids || []);
@@ -1276,7 +1266,6 @@ function collectBumpPayload() {
     price_cents: priceCents,
     compare_price_cents: compareCents,
     active: bumpActiveInput?.checked !== false,
-    sort: editingBumpSort || 0,
     image_url: resolveBumpImageValue(),
     form_factor: "digital",
     requires_address: false,

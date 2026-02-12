@@ -19,7 +19,6 @@ create table if not exists products (
   price_cents integer not null check (price_cents >= 0),
   compare_price_cents integer check (compare_price_cents >= 0),
   active boolean not null default true,
-  sort integer not null default 0,
   image_url text,
   weight_grams integer default 0,
   length_cm integer default 0,
@@ -28,8 +27,8 @@ create table if not exists products (
   created_at timestamptz not null default now()
 );
 
-create index if not exists products_owner_type_active_sort_idx
-  on products (owner_user_id, type, active, sort, created_at);
+create index if not exists products_owner_type_active_created_idx
+  on products (owner_user_id, type, active, created_at desc);
 
 create unique index if not exists products_slug_idx
   on products (slug)
