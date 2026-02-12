@@ -10,7 +10,7 @@ const {
 const { saveProductFile } = require("../lib/product-files");
 const { ensurePaymentGatewayTable } = require("../lib/ensure-payment-gateway");
 const { encryptText } = require("../lib/credentials-crypto");
-const authLoginHandler = require("./auth/login");
+const authHandler = require("./auth/[[...path]]");
 
 function deepMerge(base, override) {
   if (Array.isArray(base)) {
@@ -800,7 +800,9 @@ module.exports = async (req, res) => {
   }
 
   if (path === "login") {
-    await authLoginHandler(req, res);
+    req.query = req.query || {};
+    req.query.path = ["login"];
+    await authHandler(req, res);
     return;
   }
 
