@@ -1,0 +1,712 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+  <head>
+      <!-- Globe.gl CDN for 3D globe visualization -->
+      <script src="https://unpkg.com/globe.gl"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Black Checkout – Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Montserrat:wght@700;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/admin/theme.css" />
+    <link rel="stylesheet" href="/dashboard/dashboard.css" />
+    <link rel="stylesheet" href="/admin/sidebar.css" />
+    <style>
+      .hidden { display: none !important; }
+      body { min-height: 100vh; }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar__logo">
+        <img src="/assets/logo.png" alt="Blackout Logo" class="sidebar-logo-img-full" />
+      </div>
+      <nav class="sidebar__nav">
+        <button class="sidebar__nav-btn active" data-target="dashboard-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/></svg>Dashboard</button>
+        <button class="sidebar__nav-btn" data-target="appearance-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M7 7h.01"/><path d="M12 7h.01"/><path d="M17 7h.01"/><path d="M7 12h.01"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 17h.01"/><path d="M12 17h.01"/><path d="M17 17h.01"/></svg>Aparência</button>
+        <button class="sidebar__nav-btn" data-target="orders-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/></svg>Pedidos</button>
+        <button class="sidebar__nav-btn" data-target="carts-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h2l.34 2.36a2 2 0 0 0 2 1.64h12.72a2 2 0 0 0 2-1.64L23 6H6"/></svg>Carrinhos</button>
+        <button class="sidebar__nav-btn" data-target="products-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M12 12v6"/><path d="M9 15h6"/></svg>Produtos</button>
+        <button class="sidebar__nav-btn" data-target="order-bumps-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>Order Bumps</button>
+      </nav>
+
+            <!-- Aparência: painel centralizado -->
+            <main class="page" style="background:#050505;min-height:100vh;margin-left:250px;transition:margin-left 0.2s;" id="main-content">
+              <section id="appearance-view" class="panel-view hidden" hidden style="max-width:420px;margin:2.5rem auto 0;">
+                <header class="view-header" style="display:flex;align-items:center;gap:1.5rem;padding-bottom:1.5rem;">
+                  <div>
+                    <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.5rem;">Aparência do Checkout</h2>
+                    <p style="color:var(--color-text-secondary);font-weight:500;">Personalize cores, tipografia e estilos visuais do seu checkout.</p>
+                  </div>
+                </header>
+                <form id="appearance-form" style="display:flex;flex-direction:column;gap:1.5rem;">
+                  <div class="card" style="padding:1.5rem 1.5rem 1.2rem 1.5rem;background:#181825;">
+                    <h3 style="font-family:var(--font-title);font-weight:900;font-size:1.1rem;margin-bottom:1.2rem;">Tema / Layout</h3>
+                    <label style="display:block;margin-bottom:1rem;">
+                      <span style="color:var(--color-text-secondary);font-weight:600;">Tema do Checkout</span>
+                      <select id="appearance-theme" style="width:100%;margin-top:0.5rem;">
+                        <option value="default">Padrão</option>
+                        <option value="solarys">Solarys</option>
+                        <option value="minimal">Minimal</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div class="card" style="padding:1.5rem 1.5rem 1.2rem 1.5rem;background:#181825;">
+                    <h3 style="font-family:var(--font-title);font-weight:900;font-size:1.1rem;margin-bottom:1.2rem;">Esquema de Cores</h3>
+                    <label style="display:block;margin-bottom:1rem;">
+                      <span style="color:var(--color-text-secondary);font-weight:600;">Cor Principal</span>
+                      <input type="color" id="appearance-primary-color" style="margin-left:1rem;vertical-align:middle;" />
+                    </label>
+                    <label style="display:block;margin-bottom:1rem;">
+                      <span style="color:var(--color-text-secondary);font-weight:600;">Cor dos Botões</span>
+                      <input type="color" id="appearance-button-color" style="margin-left:1rem;vertical-align:middle;" />
+                    </label>
+                    <label style="display:block;">
+                      <span style="color:var(--color-text-secondary);font-weight:600;">Cor de Fundo</span>
+                      <input type="color" id="appearance-bg-color" style="margin-left:1rem;vertical-align:middle;" />
+                    </label>
+                  </div>
+                  <div class="card" style="padding:1.5rem 1.5rem 1.2rem 1.5rem;background:#181825;">
+                    <h3 style="font-family:var(--font-title);font-weight:900;font-size:1.1rem;margin-bottom:1.2rem;">Tipografia</h3>
+                    <label style="display:block;">
+                      <span style="color:var(--color-text-secondary);font-weight:600;">Fonte Principal</span>
+                      <select id="appearance-font" style="width:100%;margin-top:0.5rem;">
+                        <option value="Inter">Inter</option>
+                        <option value="Montserrat">Montserrat</option>
+                        <option value="Poppins">Poppins</option>
+                        <option value="Roboto">Roboto</option>
+                      </select>
+                    </label>
+                  </div>
+                  <button type="submit" class="ghost" style="width:100%;margin-top:1.2rem;font-weight:700;">Salvar Personalização</button>
+                </form>
+              </section>
+              <!-- ...demais sessões do painel... -->
+            </main>
+      <div class="sidebar__footer">
+        <button id="logout-btn" class="ghost" style="width:80%;margin-bottom:1.2rem;">Sair</button>
+        <button class="sidebar__toggle" id="sidebar-toggle" title="Minimizar sidebar"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z" fill="currentColor"/></svg></button>
+      </div>
+    </div>
+    <main class="page" style="background:#050505;min-height:100vh;margin-left:250px;transition:margin-left 0.2s;" id="main-content">
+      <section id="login" class="card" style="max-width:400px;margin:4rem auto 0;box-shadow:var(--shadow-dark);">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2rem;">
+          <img src="/assets/logo.png" alt="Blackout Logo" style="width:64px;height:64px;margin-bottom:1rem;" />
+          <h1 style="font-family:var(--font-title);font-weight:900;font-size:2.2rem;letter-spacing:-1px;">The Black Checkout</h1>
+        </div>
+        <form id="login-form" class="form" style="margin-top:2rem;">
+          <label style="width:100%;color:var(--color-text-secondary);font-weight:600;">E-mail
+            <input id="email" type="email" style="width:100%;margin-top:0.5rem;" autocomplete="email" />
+          </label>
+          <label style="width:100%;color:var(--color-text-secondary);font-weight:600;">Senha
+            <input id="password" type="password" style="width:100%;margin-top:0.5rem;" autocomplete="current-password" />
+          </label>
+          <button id="login-btn" type="submit" style="width:100%;margin-top:1.5rem;">Entrar</button>
+          <p id="login-error" class="error" style="color:var(--color-error);"></p>
+        </form>
+      </section>
+
+      <section id="panel" class="panel-main hidden" hidden style="padding:3.5rem 4vw 2.5rem 4vw;max-width:100vw;background:transparent;border:none;box-shadow:none;">
+        <header class="panel-header" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:1.5rem;background:#0D0D12;">
+          <div style="display:flex;align-items:center;gap:1.5rem;">
+            <svg width="40" height="40" viewBox="0 0 64 64" fill="none" aria-hidden="true"><rect x="8" y="40" width="48" height="8" rx="4" fill="#1B1B22"/><ellipse cx="32" cy="36" rx="18" ry="8" fill="#0D0D12"/><path d="M16 36c0-8 6-18 16-18s16 10 16 18" stroke="#A100FF" stroke-width="3" stroke-linecap="round" fill="none"/></svg>
+            <div>
+              <h1 style="font-family:var(--font-title);font-weight:900;font-size:2rem;letter-spacing:-1px;">Painel</h1>
+              <p style="color:var(--color-text-secondary);font-weight:500;">Visão ao vivo da loja e gestão dos produtos.</p>
+            </div>
+          </div>
+          <div class="panel-header__actions" style="display:flex;align-items:center;gap:1.5rem;">
+            <div class="panel-tabs" role="tablist" style="display:flex;gap:0.5rem;">
+              <button type="button" class="panel-tab is-active" data-target="dashboard-view">Dashboard</button>
+              <button type="button" class="panel-tab" data-target="orders-view">Pedidos</button>
+              <button type="button" class="panel-tab" data-target="carts-view">Carrinhos</button>
+              <button type="button" class="panel-tab" data-target="products-view">Produtos</button>
+              <button type="button" class="panel-tab" data-target="order-bumps-view">Order Bumps</button>
+            </div>
+            <button id="logout-btn" class="ghost" style="font-weight:700;">Sair</button>
+          </div>
+        </header>
+
+        <section id="dashboard-view" class="panel-view">
+                <!-- LIVE VIEW SECTION -->
+                <section id="live-view" class="card" style="margin-bottom:2.5rem;padding:2.5rem 2vw 2.5rem 2vw;display:flex;align-items:center;gap:3vw;background:#0D0D12;border:1.5px solid #232336;box-shadow:0 2px 32px 0 #00FF8511;">
+                  <div style="flex:1;min-width:320px;max-width:520px;display:flex;flex-direction:column;gap:1.2rem;">
+                    <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.5rem;margin:0 0 0.7rem 0;color:#00FF85;letter-spacing:-1px;">Live View</h2>
+                    <p style="color:var(--color-text-secondary);font-size:1.08rem;max-width:420px;">Veja em tempo real onde há pessoas online na sua loja. Os pontos verdes representam sessões ativas.</p>
+                    <ul id="live-view-list" style="margin:1.2rem 0 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:0.7rem;font-size:1.08rem;color:#EDEDED;"></ul>
+                  </div>
+                  <div style="flex:2;min-width:320px;display:flex;justify-content:center;align-items:center;">
+                    <div id="live-globe" style="width:380px;height:380px;max-width:100%;background:transparent;border-radius:50%;box-shadow:0 0 32px 0 #00FF8533;"></div>
+                  </div>
+                </section>
+          <div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:2.2rem;">
+            <article class="stat-card card" style="padding:2.2rem 1.5rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 24px 0 #A100FF11;">
+              <p style="color:var(--color-text-secondary);font-weight:600;">Pessoas ao vivo</p>
+              <strong id="stat-online" style="font-size:2.3rem;font-family:var(--font-title);font-weight:900;letter-spacing:-1px;">0</strong>
+              <small style="color:var(--color-text-secondary);">Atualiza a cada 20s</small>
+            </article>
+            <article class="stat-card card" style="padding:2.2rem 1.5rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 24px 0 #A100FF11;">
+              <p style="color:var(--color-text-secondary);font-weight:600;">Visitantes no dia</p>
+              <strong id="stat-visitors" style="font-size:2.3rem;font-family:var(--font-title);font-weight:900;letter-spacing:-1px;">0</strong>
+              <small style="color:var(--color-text-secondary);">Únicos</small>
+            </article>
+            <article class="stat-card card" style="padding:2.2rem 1.5rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 24px 0 #A100FF11;">
+              <p style="color:var(--color-text-secondary);font-weight:600;">Foram ao checkout</p>
+              <strong id="stat-checkout-visits" style="font-size:2.3rem;font-family:var(--font-title);font-weight:900;letter-spacing:-1px;">0</strong>
+              <small style="color:var(--color-text-secondary);">Visitantes únicos</small>
+            </article>
+            <article class="stat-card card" style="padding:2.2rem 1.5rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 24px 0 #A100FF11;">
+              <p style="color:var(--color-text-secondary);font-weight:600;">Checkout iniciado</p>
+              <strong id="stat-checkout-starts" style="font-size:2.3rem;font-family:var(--font-title);font-weight:900;letter-spacing:-1px;">0</strong>
+              <small style="color:var(--color-text-secondary);">Cliques no botão pagar</small>
+            </article>
+            <article class="stat-card card" style="padding:2.2rem 1.5rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 24px 0 #A100FF11;">
+              <p style="color:var(--color-text-secondary);font-weight:600;">Pix gerados</p>
+              <strong id="stat-pix" style="font-size:2.3rem;font-family:var(--font-title);font-weight:900;letter-spacing:-1px;">0</strong>
+              <small style="color:var(--color-text-secondary);">Total do dia</small>
+            </article>
+            <article class="stat-card card" style="padding:2.2rem 1.5rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 24px 0 #A100FF11;">
+              <p style="color:var(--color-text-secondary);font-weight:600;">Compras</p>
+              <strong id="stat-purchases" style="font-size:2.3rem;font-family:var(--font-title);font-weight:900;letter-spacing:-1px;">0</strong>
+              <small style="color:var(--color-text-secondary);">Clientes únicos</small>
+            </article>
+            <article class="stat-card card stat-card--accent" style="padding:2.2rem 1.5rem;text-align:center;background:linear-gradient(120deg,#181825 60%,#A100FF22 100%);border:1.5px solid #A100FF;box-shadow:0 2px 32px 0 #A100FF33;">
+              <p style="color:var(--color-brand);font-weight:700;">Conversão do checkout</p>
+              <strong id="stat-conversion" style="font-size:2.3rem;font-family:var(--font-title);font-weight:900;letter-spacing:-1px;">0%</strong>
+              <small style="color:var(--color-text-secondary);">Compras ÷ Inícios</small>
+            </article>
+          </div>
+
+          <section class="funnel-card card" style="margin-top:2.5rem;padding:2rem;">
+            <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.3rem;margin-bottom:1.5rem;">Funil do dia</h2>
+            <div class="funnel-bar-visual">
+              <div class="funnel-bar-labels">
+                <div>Visitantes<br><span id="funnel-visitors" class="funnel-bar-value">0</span></div>
+                <div>Checkout<br><span id="funnel-checkout" class="funnel-bar-value">0</span></div>
+                <div>Checkout iniciado<br><span id="funnel-starts" class="funnel-bar-value">0</span></div>
+                <div>Compras<br><span id="funnel-purchases" class="funnel-bar-value">0</span></div>
+              </div>
+              <div class="funnel-bar-track">
+                <div id="funnel-bar-segment-visitors" class="funnel-bar-segment"></div>
+                <div id="funnel-bar-segment-checkout" class="funnel-bar-segment"></div>
+                <div id="funnel-bar-segment-starts" class="funnel-bar-segment"></div>
+                <div id="funnel-bar-segment-purchases" class="funnel-bar-segment"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="timeline-card">
+            <header>
+              <div>
+                <h2>Últimas 12 horas</h2>
+                <p>Comparativo de visitas, checkout e Pix.</p>
+              </div>
+              <small id="stats-updated">--</small>
+            </header>
+            <div class="timeline-table__wrap">
+              <table class="timeline-table">
+                <thead>
+                  <tr>
+                    <th>Hora</th>
+                    <th>Visitantes</th>
+                    <th>Checkout</th>
+                    <th>Checkout iniciado</th>
+                    <th>Pix</th>
+                  </tr>
+                </thead>
+                <tbody id="timeline-body">
+                  <tr>
+                    <td colspan="5">Carregando...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="orders-view" class="panel-view hidden" hidden>
+          <header class="view-header" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:1.5rem;">
+            <div>
+              <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.5rem;">Pedidos</h2>
+              <p style="color:var(--color-text-secondary);font-weight:500;">Acompanhe os Pix gerados e o status financeiro de cada pedido.</p>
+            </div>
+            <div class="view-header__actions">
+              <button id="orders-refresh" type="button" class="ghost">Atualizar</button>
+            </div>
+          </header>
+          <div class="stats-grid stats-grid--compact" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:2rem;">
+            <article class="stat-card card" style="padding:1.5rem 1.2rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 16px 0 #A100FF22;">
+              <p style="color:var(--color-text-secondary);font-weight:600;">Pedidos totais</p>
+              <strong id="orders-total" style="font-size:1.5rem;font-family:var(--font-title);font-weight:900;">0</strong>
+            </article>
+            <article class="stat-card card" style="padding:1.5rem 1.2rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 16px 0 #A100FF22;">
+              <p style="color:var(--color-text-secondary);font-weight:600;">Pix pendentes</p>
+              <strong id="orders-pending" style="font-size:1.5rem;font-family:var(--font-title);font-weight:900;">0</strong>
+            </article>
+            <article class="stat-card card" style="padding:1.5rem 1.2rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 16px 0 #A100FF22;">
+              <p style="color:var(--color-text-secondary);font-weight:600;">Pix compensados</p>
+              <strong id="orders-paid" style="font-size:1.5rem;font-family:var(--font-title);font-weight:900;">0</strong>
+            </article>
+            <article class="stat-card card stat-card--accent" style="padding:1.5rem 1.2rem;text-align:center;background:linear-gradient(90deg,#181825 60%,#A100FF22 100%);border:1.5px solid #A100FF;box-shadow:0 2px 32px 0 #A100FF33;">
+              <p style="color:var(--color-brand);font-weight:700;">Faturamento potencial</p>
+              <strong id="orders-amount" style="font-size:1.5rem;font-family:var(--font-title);font-weight:900;">R$ 0,00</strong>
+              <small style="color:var(--color-text-secondary);">Total bruto registrado</small>
+            </article>
+          </div>
+          <section class="table-card card" style="margin-top:2rem;padding:0.5rem 0.5rem 1.5rem 0.5rem;background:#181825;border-radius:18px;border:1.5px solid #232336;box-shadow:0 4px 24px 0 #0008;">
+            <header style="padding:1.2rem 1.2rem 0.5rem 1.2rem;background:transparent;">
+              <div>
+                <h3 style="font-family:var(--font-title);font-weight:900;font-size:1.1rem;">Últimos pedidos</h3>
+                <p style="color:var(--color-text-secondary);font-size:0.95em;">Mostrando até 150 registros</p>
+              </div>
+            </header>
+            <div class="table-scroll" style="background:transparent;border-radius:14px;">
+              <table class="data-table" style="width:100%;background:transparent;">
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>Pix</th>
+                    <th>Criado em</th>
+                  </tr>
+                </thead>
+                <tbody id="orders-table-body">
+                  <tr>
+                    <td colspan="5">Carregando pedidos...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="carts-view" class="panel-view hidden" hidden>
+          <header class="view-header" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:1.5rem;">
+            <div>
+              <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.5rem;">Carrinhos abandonados</h2>
+              <p style="color:var(--color-text-secondary);font-weight:500;">Veja em que etapa os leads pararam e recupere oportunidades.</p>
+            </div>
+            <div class="view-header__actions">
+              <button id="carts-refresh" type="button" class="ghost">Atualizar</button>
+            </div>
+          </header>
+          <div class="stats-grid stats-grid--compact" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:2rem;">
+            <article class="stat-card card" style="padding:1.5rem 1.2rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 16px 0 #A100FF22;">
+              <p style="color:var(--color-text-secondary);font-weight:600;">Total capturado</p>
+              <strong id="carts-total" style="font-size:1.5rem;font-family:var(--font-title);font-weight:900;">0</strong>
+            </article>
+            <article class="stat-card card" style="padding:1.5rem 1.2rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 16px 0 #A100FF22;">
+              <p style="color:var(--color-text-secondary);font-weight:600;">Abertos</p>
+              <strong id="carts-open" style="font-size:1.5rem;font-family:var(--font-title);font-weight:900;">0</strong>
+            </article>
+            <article class="stat-card card" style="padding:1.5rem 1.2rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 16px 0 #A100FF22;">
+              <p style="color:var(--color-text-secondary);font-weight:600;">Convertidos</p>
+              <strong id="carts-converted" style="font-size:1.5rem;font-family:var(--font-title);font-weight:900;">0</strong>
+            </article>
+            <article class="stat-card card stat-card--accent" style="padding:1.5rem 1.2rem;text-align:center;background:linear-gradient(90deg,#181825 60%,#A100FF22 100%);border:1.5px solid #A100FF;box-shadow:0 2px 32px 0 #A100FF33;">
+              <p style="color:var(--color-brand);font-weight:700;">Valor em jogo</p>
+              <strong id="carts-value" style="font-size:1.5rem;font-family:var(--font-title);font-weight:900;">R$ 0,00</strong>
+              <small style="color:var(--color-text-secondary);">Soma dos carrinhos</small>
+            </article>
+          </div>
+          <section class="table-card card" style="margin-top:2rem;padding:0.5rem 0.5rem 1.5rem 0.5rem;background:#181825;border-radius:18px;border:1.5px solid #232336;box-shadow:0 4px 24px 0 #0008;">
+            <header style="padding:1.2rem 1.2rem 0.5rem 1.2rem;background:transparent;">
+              <div>
+                <h3 style="font-family:var(--font-title);font-weight:900;font-size:1.1rem;">Últimas interações</h3>
+                <p style="color:var(--color-text-secondary);font-size:0.95em;">Ordenado pelo último contato</p>
+              </div>
+            </header>
+            <div class="table-scroll" style="background:transparent;border-radius:14px;">
+              <table class="data-table" style="width:100%;background:transparent;">
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Etapa</th>
+                    <th>Status</th>
+                    <th>Valor</th>
+                    <th>Último contato</th>
+                    <th>Criado em</th>
+                  </tr>
+                </thead>
+                <tbody id="carts-table-body">
+                  <tr>
+                    <td colspan="6">Carregando carrinhos...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="products-view" class="panel-view hidden">
+          <header class="products-head" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:1.5rem;">
+            <div>
+              <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.5rem;">Produtos</h2>
+              <p style="color:var(--color-text-secondary);font-weight:500;">Gerencie o catálogo e os links de checkout.</p>
+            </div>
+            <button id="create-product-btn" type="button" class="ghost" style="font-weight:700;">Criar novo produto</button>
+          </header>
+
+          <div class="products-toolbar" style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1.5rem;">
+            <label class="products-search" aria-label="Buscar produtos" style="display:flex;align-items:center;gap:0.5rem;background:var(--color-bg-card);border-radius:var(--radius-btn);padding:0.5rem 1rem;">
+              <svg viewBox="0 0 20 20" aria-hidden="true" style="width:1.2em;height:1.2em;color:var(--color-brand);">
+                <path d="M9 3a6 6 0 104.47 10.03l3.75 3.75 1.42-1.42-3.75-3.75A6 6 0 009 3zm0 2a4 4 0 110 8 4 4 0 010-8z" fill="currentColor" />
+              </svg>
+              <input id="products-search" type="search" placeholder="Buscar produtos..." style="background:transparent;border:none;color:var(--color-text-main);outline:none;" />
+            </label>
+            <button id="products-filters" type="button" class="ghost" disabled>Filtros</button>
+          </div>
+
+          <div class="products-table-card card" style="padding:0.5rem 0.5rem 1.5rem 0.5rem;background:#181825;border-radius:18px;border:1.5px solid #232336;box-shadow:0 2px 16px 0 #A100FF22;">
+            <div style="background:transparent;border-radius:14px;">
+              <table class="products-table" style="width:100%;background:transparent;">
+                <thead>
+                  <tr>
+                    <th>Produto</th>
+                    <th>Tipo</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="products-table-body">
+                  <tr>
+                    <td colspan="5">Carregando catálogo...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section id="order-bumps-view" class="panel-view hidden" hidden>
+          <header class="bumps-head" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:1.5rem;">
+            <div>
+              <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.5rem;">Order Bumps</h2>
+              <p style="color:var(--color-text-secondary);font-weight:500;">Configure ofertas adicionais para aumentar o ticket médio.</p>
+            </div>
+            <button id="create-bump-btn" type="button" class="ghost" style="font-weight:700;">Novo order bump</button>
+          </header>
+
+          <div class="bumps-toolbar" style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1.5rem;">
+            <label class="products-search" aria-label="Buscar order bumps" style="display:flex;align-items:center;gap:0.5rem;background:var(--color-bg-card);border-radius:var(--radius-btn);padding:0.5rem 1rem;">
+              <svg viewBox="0 0 20 20" aria-hidden="true" style="width:1.2em;height:1.2em;color:var(--color-brand);">
+                <path d="M9 3a6 6 0 104.47 10.03l3.75 3.75 1.42-1.42-3.75-3.75A6 6 0 009 3zm0 2a4 4 0 110 8 4 4 0 010-8z" fill="currentColor" />
+              </svg>
+              <input id="order-bumps-search" type="search" placeholder="Buscar por nome ou descrição..." style="background:transparent;border:none;color:var(--color-text-main);outline:none;" />
+            </label>
+            <div class="bumps-counters" style="display:flex;gap:1.2rem;">
+              <span><strong id="bumps-active-count">0</strong> ativos</span>
+              <span><strong id="bumps-inactive-count">0</strong> inativos</span>
+              <span><strong id="bumps-total-count">0</strong> total</span>
+            </div>
+          </div>
+
+          <div id="order-bumps-empty" class="bumps-empty" style="margin-bottom:2rem;">
+            <div class="bumps-empty__card card" style="text-align:center;padding:2.5rem 1.5rem;background:#181825;border-radius:18px;border:1.5px solid #232336;box-shadow:0 2px 16px 0 #A100FF22;">
+              <p style="font-size:1.1rem;font-weight:700;color:#A100FF;">Nenhum order bump cadastrado</p>
+              <small style="color:var(--color-text-secondary);">Crie seu primeiro order bump para oferecer ofertas complementares.</small>
+              <button type="button" id="order-bumps-empty-btn" class="ghost" style="margin-top:1.5rem;color:#A100FF;border:1.5px solid #A100FF;">Criar order bump</button>
+            </div>
+          </div>
+
+          <div id="order-bumps-list" class="bumps-grid"></div>
+        <style>
+          /* Order Bumps visual premium/clean */
+          #order-bumps-list .bump-card {
+            background: #181825;
+            border: 1.5px solid #232336;
+            border-radius: 18px;
+            box-shadow: 0 4px 24px 0 #0008;
+            padding: 1.5rem 1.2rem;
+            margin-bottom: 1.2rem;
+            font-family: var(--font-title);
+            font-weight: 700;
+            color: var(--color-text-main);
+            transition: box-shadow .18s;
+          }
+          #order-bumps-list .bump-card:hover {
+            box-shadow: 0 8px 32px 0 #A100FF33;
+            border-color: #A100FF;
+          }
+          #order-bumps-list .bump-card .bump-title {
+            font-size: 1.1rem;
+            font-weight: 900;
+            margin-bottom: 0.3rem;
+          }
+          #order-bumps-list .bump-card .bump-status {
+            color: var(--color-brand);
+            font-weight: 700;
+            font-size: 0.98rem;
+            margin-bottom: 0.5rem;
+          }
+          #order-bumps-list .bump-card .bump-actions button {
+            background: #232336;
+            border-radius: 8px;
+            color: var(--color-brand);
+            border: none;
+            font-weight: 700;
+            padding: 0.4em 1em;
+            margin-right: 0.5em;
+            cursor: pointer;
+            transition: background .15s;
+          }
+          #order-bumps-list .bump-card .bump-actions button:hover {
+            background: #A100FF22;
+          }
+        </style>
+        </section>
+      </section>
+    </main>
+
+    <aside id="product-modal" class="modal hidden" hidden role="dialog" aria-modal="true">
+      <div class="modal__panel modal__panel--product">
+        <header class="modal__header modal__header--product">
+          <div>
+            <p class="modal__eyebrow">Produtos</p>
+            <h3 id="product-modal-title">Criar produto</h3>
+            <p class="modal__subtitle">Preencha os dados para publicar no checkout.</p>
+          </div>
+          <button type="button" class="ghost modal-close-btn" data-close-product>Fechar</button>
+        </header>
+
+        <form id="product-form" class="product-form product-form--premium">
+          <div class="product-form__body">
+            <section class="product-card product-card--format">
+              <div class="product-type single">
+                <div class="product-type__group">
+                  <label>Formato</label>
+                  <div class="toggle">
+                    <button type="button" data-form-factor="physical" class="is-active">Físico</button>
+                    <button type="button" data-form-factor="digital">Digital</button>
+                  </div>
+                  <small>Escolha se este produto exige endereço de entrega.</small>
+                </div>
+              </div>
+            </section>
+
+            <section class="product-main-grid">
+              <section class="product-card media-card product-media-card">
+                <header>
+                  <div>
+                    <h4>Imagem do produto</h4>
+                    <p>Envie um arquivo ou use uma URL pública.</p>
+                  </div>
+                  <div class="media-tabs">
+                    <button type="button" data-image-mode="upload" class="is-active">Upload</button>
+                    <button type="button" data-image-mode="url">URL</button>
+                  </div>
+                </header>
+
+                <div data-image-panel="upload" class="media-panel">
+                  <label class="upload-tile" id="product-upload-tile">
+                    <input id="product-image-upload" type="file" accept="image/*" style="display:none" />
+                    <span>Arraste ou clique para enviar (PNG, JPG ou WEBP)</span>
+                    <small>Imagem principal do produto</small>
+                    <em class="upload-tile__btn">Selecionar arquivo</em>
+                  </label>
+                </div>
+
+                <div data-image-panel="url" class="media-panel hidden">
+                  <label>
+                    <span>Link da imagem</span>
+                    <input id="product-image-url" type="url" placeholder="https://..." />
+                  </label>
+                </div>
+
+                <figure class="media-preview" id="product-image-preview">
+                  <img alt="Pré-visualização" />
+                  <figcaption>Pré-visualização</figcaption>
+                </figure>
+              </section>
+
+              <section class="product-card product-data-card">
+                <header>
+                  <h4>Dados do produto</h4>
+                  <p>Defina preço, status e exibição na vitrine.</p>
+                </header>
+                <div class="product-grid">
+                  <label>
+                    Nome do produto
+                    <input id="product-name" name="name" required placeholder="Digite o nome" />
+                  </label>
+                  <label>
+                    Preço original (R$)
+                    <input id="product-price" name="price" inputmode="decimal" placeholder="0,00" />
+                  </label>
+                  <label>
+                    Preço promocional (R$)
+                    <input id="product-compare" name="compare_price" inputmode="decimal" placeholder="Opcional" />
+                  </label>
+                  <label>
+                    Status
+                    <select id="product-active" name="active">
+                      <option value="true">Publicado</option>
+                      <option value="false">Rascunho</option>
+                    </select>
+                  </label>
+                </div>
+              </section>
+            </section>
+
+            <section class="product-card product-description-card">
+              <label>
+                Descrição breve
+                <textarea id="product-description" rows="4" placeholder="Conte por que seu produto é incrível."></textarea>
+              </label>
+            </section>
+
+            <section id="logistics-section" class="product-card logistics-card">
+              <header>
+                <div>
+                  <h4>Logística</h4>
+                  <p>Utilizada para cálculo de frete.</p>
+                </div>
+                <span class="chip">Aparece apenas para produtos físicos</span>
+              </header>
+              <div class="logistics-grid">
+                <label>
+                  Altura (cm)
+                  <input id="log-height" type="number" min="0" step="1" />
+                </label>
+                <label>
+                  Largura (cm)
+                  <input id="log-width" type="number" min="0" step="1" />
+                </label>
+                <label>
+                  Comprimento (cm)
+                  <input id="log-length" type="number" min="0" step="1" />
+                </label>
+                <label>
+                  Peso (g)
+                  <input id="log-weight" type="number" min="0" step="10" />
+                </label>
+              </div>
+            </section>
+          </div>
+
+          <footer class="modal__footer modal__footer--sticky">
+            <button type="button" class="ghost" data-close-product>Cancelar</button>
+            <button type="submit" id="product-submit">Salvar produto</button>
+          </footer>
+        </form>
+      </div>
+    </aside>
+
+    <aside id="order-bump-modal" class="modal hidden" hidden role="dialog" aria-modal="true">
+      <div class="modal__panel">
+        <header class="modal__header">
+          <div>
+            <p class="modal__eyebrow">Order Bumps</p>
+            <h3 id="order-bump-modal-title">Criar order bump</h3>
+          </div>
+          <button type="button" class="ghost" data-close-bump>Fechar</button>
+        </header>
+
+        <form id="order-bump-form" class="bump-form">
+          <section class="bump-toggle">
+            <label class="switch">
+              <input id="bump-active" type="checkbox" checked />
+              <span>Oferta ativa</span>
+            </label>
+          </section>
+
+          <section class="bump-basic">
+            <label>
+              Título do order bump
+              <input id="bump-title" placeholder="Ex: Oferta complementar" required />
+            </label>
+            <label>
+              Descrição
+              <textarea id="bump-description" rows="3" placeholder="Texto curto para explicar o benefício."></textarea>
+            </label>
+          </section>
+
+          <section class="media-card bump-media">
+            <header>
+              <div>
+                <h4>Imagem exibida no checkout</h4>
+                <p>Use o mesmo estilo do produto principal.</p>
+              </div>
+              <div class="media-tabs">
+                <button type="button" data-bump-image-mode="upload" class="is-active">Upload</button>
+                <button type="button" data-bump-image-mode="url">URL</button>
+              </div>
+            </header>
+            <div data-bump-image-panel="upload" class="media-panel">
+              <label class="upload-tile" id="bump-upload-tile">
+                <input id="bump-image-upload" type="file" accept="image/*" style="display:none" />
+                <span>Arraste ou clique para enviar</span>
+                <small>Formatos PNG, JPG ou WEBP</small>
+              </label>
+            </div>
+            <div data-bump-image-panel="url" class="media-panel hidden">
+              <label>
+                <span>Link da imagem</span>
+                <input id="bump-image-url" type="url" placeholder="https://..." />
+              </label>
+            </div>
+            <figure class="media-preview" id="bump-image-preview">
+              <img alt="Pré-visualização" />
+              <figcaption>Pré-visualização</figcaption>
+            </figure>
+          </section>
+
+          <section class="bump-pricing">
+            <label>
+              Preço da oferta (R$)
+              <input id="bump-price" inputmode="decimal" placeholder="0,00" />
+            </label>
+            <label>
+              Preço riscado (opcional)
+              <input id="bump-compare" inputmode="decimal" placeholder="Exibe âncora de preço" />
+            </label>
+          </section>
+
+          <section class="bump-triggers">
+            <header>
+              <div>
+                <h4>Produtos gatilho</h4>
+                <p>Escolha em quais checkouts este bump aparece.</p>
+              </div>
+              <label class="switch small">
+                <input type="checkbox" id="bump-apply-all" checked />
+                <span>Aplicar em todos</span>
+              </label>
+            </header>
+            <div id="bump-triggers-list" class="trigger-grid"></div>
+          </section>
+
+          <footer class="modal__footer">
+            <button type="button" class="ghost" data-close-bump>Cancelar</button>
+            <button type="submit" id="bump-submit">Salvar order bump</button>
+          </footer>
+        </form>
+      </div>
+    </aside>
+
+    <aside id="inspector" class="inspector hidden" hidden role="dialog" aria-modal="true">
+      <div class="inspector__panel">
+        <header class="inspector__header">
+          <div>
+            <p id="inspector-type" class="inspector__eyebrow">Detalhes</p>
+            <h3 id="inspector-title">Selecione um registro</h3>
+          </div>
+          <button id="inspector-close" type="button" class="ghost">Fechar</button>
+        </header>
+        <div id="inspector-body" class="inspector__body">
+          <p class="muted">Escolha um pedido ou carrinho para ver as informações completas.</p>
+        </div>
+      </div>
+    </aside>
+
+    <script src="/dashboard/dashboard.js"></script>
+  </body>
+</html>
+
+
+
+
+

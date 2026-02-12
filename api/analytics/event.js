@@ -28,6 +28,33 @@ function asObject(value) {
   return value;
 }
 
+function extractSlugFromContext(body = {}, page = "", href = "") {
+  const direct = sanitizeString(body.slug || body.offer_slug || "");
+  if (direct) {
+    return direct;
+  }
+
+  const candidates = [page, href, sanitizeString(body.href || "")].filter(Boolean);
+  for (const raw of candidates) {
+    const match = String(raw).match(/\/checkout\/([^/?#]+)/i);
+    if (match?.[1]) {
+      return match[1].trim();
+    }
+  }
+  return "";
+}
+
+async function resolveOwnerUserIdBySlug(slug) {
+  if (!slug) {
+    return null;
+  }
+  const result = await query(
+    "select owner_user_id from products where type = 'base' and slug = $1 limit 1",
+    [slug]
+  );
+  return result.rows?.[0]?.owner_user_id || null;
+}
+
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
@@ -53,6 +80,8 @@ module.exports = async (req, res) => {
   const sessionId = sanitizeString(body.session_id || body.sessionId);
   const eventType = normalizeEventType(body.type || body.event_type);
   const page = sanitizeString(body.page, FALLBACK_PAGE) || FALLBACK_PAGE;
+  const href = sanitizeString(body.href || "");
+  const slug = extractSlugFromContext(body, page, href);
 
   if (!sessionId) {
     res.status(400).json({ error: "Missing session_id" });
@@ -74,17 +103,20 @@ module.exports = async (req, res) => {
   const userAgent = sanitizeString(body.user_agent || req.headers["user-agent"] || "");
 
   try {
+    const ownerUserId = await resolveOwnerUserIdBySlug(slug);
+
     await query(
-      "insert into analytics_events (session_id, event_type, page, payload) values ($1, $2, $3, $4)",
-      [sessionId, eventType, page, payload]
+      "insert into analytics_events (owner_user_id, session_id, event_type, page, payload) values ($1, $2, $3, $4, $5)",
+      [ownerUserId, sessionId, eventType, page, payload]
     );
 
     await query(
-      `insert into analytics_sessions (session_id, last_page, last_event, source, user_agent, utm, city, lat, lng)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `insert into analytics_sessions (session_id, owner_user_id, last_page, last_event, source, user_agent, utm, city, lat, lng)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        on conflict (session_id)
        do update set
          last_seen = now(),
+         owner_user_id = coalesce(analytics_sessions.owner_user_id, excluded.owner_user_id),
          last_page = excluded.last_page,
          last_event = excluded.last_event,
          source = coalesce(analytics_sessions.source, excluded.source),
@@ -98,7 +130,18 @@ module.exports = async (req, res) => {
          lat = coalesce(excluded.lat, analytics_sessions.lat),
          lng = coalesce(excluded.lng, analytics_sessions.lng)
       `,
-      [sessionId, page, eventType, source || null, userAgent || null, utm, geo?.city || null, geo?.lat || null, geo?.lng || null]
+      [
+        sessionId,
+        ownerUserId,
+        page,
+        eventType,
+        source || null,
+        userAgent || null,
+        utm,
+        geo?.city || null,
+        geo?.lat || null,
+        geo?.lng || null,
+      ]
     );
 
     res.status(201).json({ ok: true });

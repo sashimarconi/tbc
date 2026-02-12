@@ -1,0 +1,403 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Builder de Checkout</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/admin/theme.css" />
+    <link rel="stylesheet" href="/dashboard/builder.css" />
+  </head>
+  <body>
+    <div class="builder-root">
+      <aside class="editor-sidebar">
+        <div class="editor-head">
+          <h1>Editor</h1>
+          <p>Personalize seu checkout</p>
+        </div>
+        <a class="back-main-link" href="/dashboard/index.html">← Voltar ao menu principal</a>
+
+        <label class="search-box" for="menu-search">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M10.5 3a7.5 7.5 0 0 1 5.94 12.08l4.24 4.23-1.42 1.42-4.23-4.24A7.5 7.5 0 1 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z" fill="currentColor"></path>
+          </svg>
+          <input id="menu-search" type="search" placeholder="Buscar configurações" />
+        </label>
+
+        <nav id="menu-list" class="editor-menu" aria-label="Menu do editor">
+          <button class="menu-item is-active" data-section="modelos" type="button">Modelos</button>
+          <button class="menu-item" data-section="aparencia" type="button">Aparência</button>
+          <button class="menu-item" data-section="conversao" type="button">Conversão</button>
+          <button class="menu-item" data-section="pagamentos" type="button">Pagamentos</button>
+          <button class="menu-item" data-section="layout" type="button">Layout</button>
+          <button class="menu-item" data-section="elementos" type="button">Elementos</button>
+          <button class="menu-item" data-section="efeitos" type="button">Efeitos</button>
+          <button class="menu-item" data-section="configuracoes" type="button">Configurações</button>
+        </nav>
+      </aside>
+
+      <section class="builder-main">
+        <header class="builder-topbar">
+          <div class="device-switch" role="group" aria-label="Visualização por dispositivo">
+            <button class="device-btn is-active" data-device="mobile" aria-label="Mobile" type="button">M</button>
+            <button class="device-btn" data-device="tablet" aria-label="Tablet" type="button">T</button>
+            <button class="device-btn" data-device="desktop" aria-label="Desktop" type="button">D</button>
+          </div>
+
+          <div class="topbar-actions">
+            <span id="dirty-badge" class="status-badge">Sem alterações</span>
+            <button id="publish-btn" class="publish-btn" disabled type="button">Publicar</button>
+          </div>
+        </header>
+
+        <div class="builder-columns">
+          <main class="content-column">
+            <header class="section-header">
+              <h2 id="section-title">Modelos</h2>
+              <p id="section-subtitle">Escolha o modelo visual base do seu checkout</p>
+            </header>
+
+            <section class="builder-section" data-section="modelos" data-search="modelos temas layout checkout">
+              <article class="card">
+                <header class="card-head">
+                  <h3>Layout do Checkout</h3>
+                  <p>Escolha entre os temas disponíveis</p>
+                </header>
+
+                <div class="field-group">
+                  <label for="theme-select">Tema</label>
+                  <select id="theme-select"></select>
+                  <small id="theme-description"></small>
+                </div>
+
+                <div class="theme-meta">
+                  <span id="current-theme-pill" class="pill">-</span>
+                  <button id="apply-theme-btn" class="ghost-btn" type="button">Aplicar</button>
+                </div>
+              </article>
+            </section>
+
+            <section class="builder-section hidden" data-section="aparencia" data-search="aparencia cores tipografia arredondamento cabecalho selo seguranca">
+              <article class="card">
+                <header class="card-head">
+                  <h3>Esquema de Cores</h3>
+                  <p>Ajuste a paleta principal do checkout</p>
+                </header>
+                <div class="inline-fields">
+                  <label>Cor Principal<input id="color-primary" type="color" /></label>
+                  <label>Cor dos Botões<input id="color-buttons" type="color" /></label>
+                  <label>Cor do Fundo<input id="color-background" type="color" /></label>
+                </div>
+                <div class="inline-fields">
+                  <label>Cor do Card<input id="color-card" type="color" /></label>
+                  <label>Cor da Borda<input id="color-border" type="color" /></label>
+                  <label>Cor do Texto<input id="color-text" type="color" /></label>
+                </div>
+              </article>
+
+              <article class="card">
+                <header class="card-head">
+                  <h3>Tipografia</h3>
+                  <p>Defina a fonte principal</p>
+                </header>
+                <div class="field-group">
+                  <label for="font-family">Fonte Principal</label>
+                  <select id="font-family">
+                    <option value="Poppins">Poppins</option>
+                    <option value="Inter">Inter</option>
+                    <option value="Montserrat">Montserrat</option>
+                  </select>
+                </div>
+              </article>
+
+              <article class="card">
+                <header class="card-head">
+                  <h3>Arredondamento</h3>
+                  <p>Defina o arredondamento de cada elemento</p>
+                </header>
+                <div class="inline-fields">
+                  <label>Cards
+                    <select id="radius-cards">
+                      <option value="sm">Pequeno</option>
+                      <option value="md">Médio</option>
+                      <option value="lg">Grande</option>
+                      <option value="xl">Extra Grande</option>
+                    </select>
+                  </label>
+                  <label>Botões
+                    <select id="radius-buttons">
+                      <option value="sm">Pequeno</option>
+                      <option value="md">Médio</option>
+                      <option value="lg">Grande</option>
+                      <option value="xl">Extra Grande</option>
+                    </select>
+                  </label>
+                  <label>Campos
+                    <select id="radius-fields">
+                      <option value="sm">Pequeno</option>
+                      <option value="md">Médio</option>
+                      <option value="lg">Grande</option>
+                      <option value="xl">Extra Grande</option>
+                    </select>
+                  </label>
+                  <label>Etapas
+                    <select id="radius-steps">
+                      <option value="square">Quadrado</option>
+                      <option value="rounded">Arredondado</option>
+                    </select>
+                  </label>
+                </div>
+              </article>
+
+              <article class="card">
+                <header class="card-head">
+                  <h3>Cabeçalho</h3>
+                  <p>Escolha o estilo do seu cabeçalho</p>
+                </header>
+                <div class="inline-fields">
+                  <label>Estilo
+                    <select id="header-style">
+                      <option value="logo">Logo</option>
+                      <option value="texto">Texto</option>
+                      <option value="logo+texto">Logo + Texto</option>
+                    </select>
+                  </label>
+                  <label class="toggle-label">Centralizar Logo
+                    <input id="header-center-logo" type="checkbox" />
+                  </label>
+                </div>
+                <div class="inline-fields">
+                  <label>URL do Logo<input id="header-logo-url" type="url" placeholder="https://" /></label>
+                  <label>Largura (px)<input id="header-logo-width" type="number" min="1" placeholder="120" /></label>
+                  <label>Altura (px)<input id="header-logo-height" type="number" min="1" placeholder="40" /></label>
+                </div>
+                <div class="inline-fields">
+                  <div class="field-group logo-upload-group">
+                    <label>Upload de Logo</label>
+                    <input id="header-logo-file" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" hidden />
+                    <button id="header-logo-upload-btn" class="ghost-btn" type="button">Enviar logo</button>
+                    <small>Formatos: PNG, JPG, JPEG ou WEBP. Maximo 4MB.</small>
+                  </div>
+                  <div class="logo-preview-wrap">
+                    <span>Preview</span>
+                    <img id="header-logo-preview" class="logo-preview hidden" alt="Preview da logo" />
+                  </div>
+                </div>
+                <div class="inline-fields">
+                  <label>Cor de Fundo<input id="header-bg-color" type="color" /></label>
+                  <label>Cor do Texto<input id="header-text-color" type="color" /></label>
+                </div>
+              </article>
+
+              <article class="card">
+                <header class="card-head">
+                  <h3>Selo de Segurança</h3>
+                  <p>Configure exibição e estilo do selo</p>
+                </header>
+                <div class="inline-fields">
+                  <label class="toggle-label">Exibir selo
+                    <input id="seal-enabled" type="checkbox" />
+                  </label>
+                  <label>Estilo
+                    <select id="seal-style">
+                      <option value="padrao_bolinha_texto">Padrão (Bolinha + Texto)</option>
+                      <option value="somente_texto">Somente texto</option>
+                      <option value="somente_icone">Somente ícone</option>
+                    </select>
+                  </label>
+                  <label>Tamanho
+                    <select id="seal-size">
+                      <option value="pequeno">Pequeno</option>
+                      <option value="medio">Médio</option>
+                      <option value="grande">Grande</option>
+                    </select>
+                  </label>
+                  <label>Arredondamento
+                    <select id="seal-radius">
+                      <option value="quadrado">Quadrado</option>
+                      <option value="arredondado">Arredondado</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="inline-fields">
+                  <label>Texto do selo<input id="seal-text" type="text" placeholder="Pagamento 100% seguro" /></label>
+                </div>
+                <div class="inline-fields">
+                  <label>Cor do texto<input id="seal-text-color" type="color" /></label>
+                  <label>Cor do fundo<input id="seal-bg-color" type="color" /></label>
+                  <label>Cor do ícone<input id="seal-icon-color" type="color" /></label>
+                </div>
+              </article>
+            </section>
+
+            <section class="builder-section hidden" data-section="efeitos" data-search="efeitos animacoes botoes conversao">
+              <article class="card">
+                <header class="card-head">
+                  <h3>Animações de Botões</h3>
+                  <p>Configure o comportamento visual dos botões</p>
+                </header>
+                <div class="inline-fields">
+                  <label>Botão Primário
+                    <select id="effect-primary-animation">
+                      <option value="none">Nenhuma</option>
+                      <option value="pulse">Pulse</option>
+                      <option value="shake">Shake leve</option>
+                      <option value="glow">Glow</option>
+                    </select>
+                  </label>
+                  <label>Velocidade
+                    <select id="effect-primary-speed">
+                      <option value="normal">Normal (3s)</option>
+                      <option value="rapido">Rápido</option>
+                      <option value="lento">Lento</option>
+                    </select>
+                  </label>
+                </div>
+                <div class="inline-fields">
+                  <label>Botão Secundário
+                    <select id="effect-secondary-animation">
+                      <option value="none">Nenhuma</option>
+                      <option value="pulse">Pulse</option>
+                      <option value="shake">Shake leve</option>
+                      <option value="glow">Glow</option>
+                    </select>
+                  </label>
+                  <label>Velocidade
+                    <select id="effect-secondary-speed">
+                      <option value="normal">Normal (3s)</option>
+                      <option value="rapido">Rápido</option>
+                      <option value="lento">Lento</option>
+                    </select>
+                  </label>
+                </div>
+              </article>
+            </section>
+
+            <section class="builder-section hidden" data-section="configuracoes" data-search="configuracoes campos identificacao internacionalizacao idioma moeda">
+              <article class="card">
+                <header class="card-head">
+                  <h3>Campos de Identificação</h3>
+                  <p>Campos ocultos serão preenchidos automaticamente</p>
+                </header>
+                <div class="inline-fields">
+                  <label class="toggle-label">Nome Completo<input id="field-full-name" type="checkbox" /></label>
+                  <label class="toggle-label">E-mail<input id="field-email" type="checkbox" /></label>
+                  <label class="toggle-label">Telefone<input id="field-phone" type="checkbox" /></label>
+                  <label class="toggle-label">CPF<input id="field-cpf" type="checkbox" /></label>
+                </div>
+                <div class="field-group">
+                  <label>Campos Personalizados</label>
+                  <button id="add-custom-field" type="button" class="ghost-btn">+ Adicionar</button>
+                </div>
+              </article>
+
+              <article class="card">
+                <header class="card-head">
+                  <h3>Internacionalização</h3>
+                  <p>Padrões de idioma e moeda</p>
+                </header>
+                <div class="inline-fields">
+                  <label>Idioma
+                    <select id="setting-language">
+                      <option value="pt-BR">Português (Brasil)</option>
+                    </select>
+                  </label>
+                  <label>Moeda
+                    <select id="setting-currency">
+                      <option value="BRL">BRL</option>
+                    </select>
+                  </label>
+                </div>
+              </article>
+            </section>
+
+            <section class="builder-section hidden" data-section="conversao" data-search="conversao">
+              <article class="card placeholder-card">
+                <header class="card-head"><h3>Conversão</h3><p>Em breve.</p></header>
+              </article>
+            </section>
+
+            <section class="builder-section hidden" data-section="pagamentos" data-search="pagamentos sealpay api key gateway pix">
+              <article class="card">
+                <header class="card-head">
+                  <div class="card-head-inline">
+                    <h3>Gateway SealPay</h3>
+                    <span class="sealpay-badge" aria-label="SealPay">
+                      <svg viewBox="0 0 120 28" role="img" aria-hidden="true">
+                        <rect x="0.5" y="0.5" width="119" height="27" rx="8" fill="rgba(91,0,181,0.16)" stroke="rgba(161,0,255,0.42)"></rect>
+                        <circle cx="16" cy="14" r="5" fill="#a100ff"></circle>
+                        <text x="28" y="18" fill="#ededed" font-size="12" font-family="Inter, sans-serif" font-weight="700">SealPay</text>
+                      </svg>
+                    </span>
+                  </div>
+                  <p>Configure somente a API Key da sua própria conta. A URL padrão já é aplicada automaticamente.</p>
+                </header>
+                <div class="field-group">
+                  <label for="payment-api-key">API Key</label>
+                  <input id="payment-api-key" type="password" placeholder="Cole sua chave (não exibimos novamente)" />
+                  <small id="payment-key-hint"></small>
+                </div>
+                <div class="payment-actions">
+                  <label class="toggle-label">Ativo<input id="payment-active" type="checkbox" checked /></label>
+                  <button id="save-payment-settings" class="ghost-btn" type="button">Salvar credenciais</button>
+                </div>
+              </article>
+            </section>
+
+            <section class="builder-section hidden" data-section="layout" data-search="layout">
+              <article class="card">
+                <header class="card-head">
+                  <h3>Tipo de Layout</h3>
+                  <p>Escolha como os blocos do checkout serao distribuídos.</p>
+                </header>
+                <div class="field-group">
+                  <label for="layout-type">Tipo de layout</label>
+                  <select id="layout-type">
+                    <option value="singleColumn">Uma coluna</option>
+                    <option value="twoColumn">Duas colunas</option>
+                  </select>
+                </div>
+              </article>
+            </section>
+
+            <section class="builder-section hidden" data-section="elementos" data-search="elementos ordem blocos toggles">
+              <article class="card">
+                <header class="card-head">
+                  <h3>Exibicao de Elementos</h3>
+                  <p>Ligue/desligue blocos visuais do checkout.</p>
+                </header>
+                <div class="inline-fields">
+                  <label class="toggle-label">Seletor de Pais<input id="el-show-country" type="checkbox" /></label>
+                  <label class="toggle-label">Imagem do Produto<input id="el-show-product-image" type="checkbox" /></label>
+                  <label class="toggle-label">Order Bumps<input id="el-show-bumps" type="checkbox" /></label>
+                  <label class="toggle-label">Frete<input id="el-show-shipping" type="checkbox" /></label>
+                  <label class="toggle-label">Texto de Seguranca<input id="el-show-footer-security" type="checkbox" /></label>
+                </div>
+              </article>
+
+              <article class="card">
+                <header class="card-head">
+                  <h3>Ordem dos Blocos</h3>
+                  <p>Use as setas para reordenar os blocos.</p>
+                </header>
+                <ul id="elements-order-list" class="elements-order-list"></ul>
+              </article>
+            </section>
+          </main>
+
+          <aside class="preview-column">
+            <div class="preview-glow" aria-hidden="true"></div>
+            <div id="preview-shell" class="preview-shell" data-device="mobile">
+              <iframe id="preview-iframe" title="Preview checkout"></iframe>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </div>
+
+    <script src="/dashboard/builder.js"></script>
+  </body>
+</html>
+

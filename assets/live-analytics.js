@@ -92,10 +92,14 @@
         ? options.metadata
         : null) || null;
 
+    const checkoutMatch = window.location.pathname.match(/\/checkout\/([^/?#]+)/i);
+    const slug = checkoutMatch?.[1] || "";
+
     return {
       type,
       session_id: getSessionId(),
       page: options.page || document.body?.dataset.analyticsPage || window.location.pathname,
+      slug,
       metadata,
       utm: options.utm || getUtm(),
       source: options.source || document.referrer || "",

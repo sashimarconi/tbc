@@ -17,9 +17,11 @@ async function ensureUsersTable() {
       id uuid primary key default gen_random_uuid(),
       email text unique not null,
       password_hash text not null,
+      is_admin boolean not null default false,
       created_at timestamptz not null default now()
     )
   `);
+  await query("alter table users add column if not exists is_admin boolean not null default false");
 }
 
 function getPathSegments(req) {
@@ -61,7 +63,7 @@ async function handleSignup(req, res) {
 
     const passwordHash = await bcrypt.hash(password, 12);
     const result = await query(
-      "insert into users (email, password_hash) values ($1, $2) returning id, email",
+      "insert into users (email, password_hash, is_admin) values ($1, $2, false) returning id, email, is_admin",
       [email, passwordHash]
     );
     const user = result.rows?.[0];
@@ -95,7 +97,10 @@ async function handleLogin(req, res) {
 
   try {
     await ensureUsersTable();
-    const result = await query("select id, email, password_hash from users where email = $1 limit 1", [email]);
+    const result = await query(
+      "select id, email, password_hash, is_admin from users where email = $1 limit 1",
+      [email]
+    );
     const user = result.rows?.[0];
     if (!user) {
       res.status(401).json({ error: "Credenciais invalidas" });
@@ -108,7 +113,7 @@ async function handleLogin(req, res) {
       return;
     }
 
-    const authUser = { id: user.id, email: user.email };
+    const authUser = { id: user.id, email: user.email, is_admin: user.is_admin === true };
     const token = signAuthToken(authUser);
     res.json({ token, user: authUser });
   } catch (error) {
@@ -126,7 +131,9 @@ async function handleMe(req, res) {
   if (!authUser) return;
 
   try {
-    const result = await query("select id, email, created_at from users where id = $1 limit 1", [authUser.id]);
+    const result = await query("select id, email, is_admin, created_at from users where id = $1 limit 1", [
+      authUser.id,
+    ]);
     const user = result.rows?.[0];
     if (!user) {
       res.status(401).json({ error: "Unauthorized" });
@@ -156,4 +163,3 @@ module.exports = async (req, res) => {
 
   res.status(404).json({ error: "Not found" });
 };
-

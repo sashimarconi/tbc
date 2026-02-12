@@ -1,0 +1,37 @@
+﻿:root {
+  --accent: #a100ff;
+  --accent2: #5b00b5;
+  --bg: #050505;
+  --surface: #0d0d12;
+  --text: #ededed;
+  --muted: rgba(237, 237, 237, 0.7);
+  --border: 1px solid rgba(237, 237, 237, 0.1);
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Inter, system-ui, sans-serif; background: radial-gradient(circle at top right, rgba(161,0,255,.18), transparent 45%), var(--bg); color: var(--text); }
+.shell { max-width: 1240px; margin: 0 auto; padding: 24px; }
+.hidden { display: none !important; }
+.card { background: var(--surface); border: var(--border); border-radius: 16px; padding: 16px; box-shadow: 0 12px 30px rgba(0,0,0,.35); }
+.auth-card { max-width: 420px; margin: 56px auto; }
+.muted { color: var(--muted); margin: 4px 0 0; }
+.form-grid { display: grid; gap: 12px; margin-top: 16px; }
+label { display: grid; gap: 8px; font-size: 14px; }
+input { height: 44px; border-radius: 12px; border: var(--border); background: #111118; color: var(--text); padding: 0 12px; }
+input:focus { outline: none; border-color: rgba(161,0,255,.7); box-shadow: 0 0 0 3px rgba(161,0,255,.18); }
+.btn-primary, .btn-ghost { height: 42px; border-radius: 12px; cursor: pointer; transition: all .15s ease; }
+.btn-primary { border: 1px solid var(--accent); background: var(--accent); color: #050505; font-weight: 700; }
+.btn-primary:hover { box-shadow: 0 0 18px rgba(161,0,255,.35); }
+.btn-ghost { border: var(--border); background: transparent; color: var(--text); }
+.btn-ghost:hover { border-color: rgba(161,0,255,.7); color: var(--accent); }
+.error { min-height: 20px; color: #ff6b6b; margin: 0; }
+.topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; }
+.topbar-actions { display: flex; gap: 8px; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.stat { background: var(--surface); border: var(--border); border-radius: 14px; padding: 12px; }
+.stat b { display: block; font-size: 24px; margin-top: 6px; }
+.table-wrap { overflow: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 10px; border-bottom: var(--border); text-align: left; font-size: 13px; }
+th { color: var(--muted); font-weight: 600; }
+.role { padding: 4px 10px; border-radius: 999px; border: var(--border); }
+.role.admin { border-color: rgba(161,0,255,.5); color: var(--accent); }

@@ -950,7 +950,7 @@ function getPathSegments(req) {
     return raw.split("/").filter(Boolean);
   }
   const url = req.url || "";
-  const cleaned = url.split("?")[0].replace(/^\/api\/admin\/?/, "");
+  const cleaned = url.split("?")[0].replace(/^\/api\/(?:admin|dashboard)\/?/, "");
   if (!cleaned) {
     return [];
   }

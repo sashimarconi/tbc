@@ -32,7 +32,7 @@ module.exports = async (req, res) => {
     const ownerUserId = baseProduct.owner_user_id;
 
     const bumpRes = await query(
-      "select * from products where owner_user_id = $1 and type = $2 and active = true order by sort asc, created_at asc",
+      "select * from products where owner_user_id = $1 and type = $2 and active = true order by created_at desc",
       [ownerUserId, "bump"]
     );
     const bumpRows = bumpRes.rows || [];
@@ -56,11 +56,11 @@ module.exports = async (req, res) => {
     }
 
     const upsellRes = await query(
-      "select * from products where owner_user_id = $1 and type = $2 and active = true order by sort asc, created_at asc",
+      "select * from products where owner_user_id = $1 and type = $2 and active = true order by created_at desc",
       [ownerUserId, "upsell"]
     );
     const shippingRes = await query(
-      "select * from products where owner_user_id = $1 and type = $2 and active = true order by sort asc, created_at asc",
+      "select * from products where owner_user_id = $1 and type = $2 and active = true order by created_at desc",
       [ownerUserId, "shipping"]
     );
 
