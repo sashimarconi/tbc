@@ -1453,3 +1453,369 @@ button.ghost {
     justify-content: center;
   }
 }
+
+/* === Product Modal UI Refresh === */
+#product-modal.modal {
+  background: rgba(5, 5, 5, 0.78);
+  backdrop-filter: blur(8px);
+  align-items: center;
+  padding: 24px;
+}
+
+#product-modal .modal__panel--product {
+  width: min(920px, 100%);
+  max-height: 85vh;
+  padding: 0;
+  border-radius: 20px;
+  border: 1px solid rgba(237, 237, 237, 0.1);
+  background: linear-gradient(180deg, #0f0f16 0%, #0a0a10 100%);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+#product-modal .modal__header--product {
+  margin: 0;
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid rgba(237, 237, 237, 0.08);
+}
+
+#product-modal .modal__eyebrow {
+  color: rgba(237, 237, 237, 0.65);
+  letter-spacing: 0.16em;
+  margin-bottom: 8px;
+}
+
+#product-modal .modal__header h3 {
+  margin: 0;
+  color: #ededed;
+  font-size: 1.45rem;
+  font-weight: 700;
+}
+
+#product-modal .modal__subtitle {
+  margin: 8px 0 0;
+  color: rgba(237, 237, 237, 0.68);
+  font-size: 0.95rem;
+}
+
+#product-modal .modal-close-btn {
+  border-radius: 10px;
+  border: 1px solid rgba(237, 237, 237, 0.16);
+  background: transparent;
+  color: #ededed;
+  min-height: 38px;
+  padding: 0 14px;
+}
+
+#product-modal .product-form--premium {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+#product-modal .product-form__body {
+  display: grid;
+  gap: 16px;
+  padding: 16px 24px 24px;
+  overflow-y: auto;
+  max-height: calc(85vh - 146px);
+  scroll-behavior: smooth;
+}
+
+#product-modal .product-form__body::-webkit-scrollbar {
+  width: 10px;
+}
+
+#product-modal .product-form__body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#product-modal .product-form__body::-webkit-scrollbar-thumb {
+  background: rgba(91, 0, 181, 0.35);
+  border-radius: 999px;
+}
+
+#product-modal .product-card {
+  border: 1px solid rgba(237, 237, 237, 0.08);
+  border-radius: 16px;
+  background: #0d0d12;
+  padding: 16px;
+  transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+#product-modal .product-card:hover {
+  border-color: rgba(161, 0, 255, 0.35);
+}
+
+#product-modal .product-card h4 {
+  margin: 0;
+  color: #ededed;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+#product-modal .product-card p {
+  margin: 6px 0 0;
+  color: rgba(237, 237, 237, 0.65);
+  font-size: 0.92rem;
+}
+
+#product-modal .product-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 16px;
+}
+
+#product-modal .product-data-card {
+  display: grid;
+  gap: 14px;
+}
+
+#product-modal .product-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+#product-modal .product-grid label:first-child {
+  grid-column: 1 / -1;
+}
+
+#product-modal .media-card {
+  display: grid;
+  gap: 14px;
+  background: #0d0d12;
+  border-color: rgba(237, 237, 237, 0.08);
+}
+
+#product-modal .media-card header,
+#product-modal .logistics-card header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+#product-modal .media-tabs {
+  background: rgba(237, 237, 237, 0.06);
+  border-radius: 999px;
+  border: 1px solid rgba(237, 237, 237, 0.08);
+  padding: 4px;
+}
+
+#product-modal .media-tabs button {
+  border: 0;
+  box-shadow: none;
+  border-radius: 999px;
+  padding: 8px 14px;
+  min-height: auto;
+  color: rgba(237, 237, 237, 0.75);
+  transition: all 150ms ease;
+}
+
+#product-modal .media-tabs button.is-active {
+  color: #050505;
+  background: #a100ff;
+}
+
+#product-modal .media-panel {
+  border: 1px dashed rgba(237, 237, 237, 0.24);
+  border-radius: 12px;
+  padding: 14px;
+  background: rgba(237, 237, 237, 0.02);
+}
+
+#product-modal .upload-tile {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  min-height: 128px;
+  text-align: center;
+  color: #ededed;
+}
+
+#product-modal .upload-tile span {
+  font-weight: 600;
+  color: #ededed;
+}
+
+#product-modal .upload-tile small {
+  color: rgba(237, 237, 237, 0.6);
+}
+
+#product-modal .upload-tile__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(237, 237, 237, 0.16);
+  color: #ededed;
+  font-style: normal;
+  font-weight: 600;
+  background: rgba(237, 237, 237, 0.03);
+  transition: all 150ms ease;
+}
+
+#product-modal .upload-tile:hover .upload-tile__btn {
+  border-color: rgba(161, 0, 255, 0.42);
+  color: #a100ff;
+}
+
+#product-modal .media-preview {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+#product-modal .media-preview img {
+  width: 100%;
+  max-width: 220px;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  border: 1px solid rgba(237, 237, 237, 0.12);
+  background: #11111a;
+}
+
+#product-modal .media-preview figcaption {
+  color: rgba(237, 237, 237, 0.62);
+  font-size: 0.85rem;
+}
+
+#product-modal .product-form--premium label {
+  display: grid;
+  gap: 8px;
+  color: #ededed;
+  font-weight: 500;
+}
+
+#product-modal .product-form--premium input,
+#product-modal .product-form--premium select,
+#product-modal .product-form--premium textarea {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(237, 237, 237, 0.1);
+  background: #0d0d12;
+  color: #ededed;
+  padding: 10px 12px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+#product-modal .product-form--premium textarea {
+  min-height: 112px;
+  resize: vertical;
+}
+
+#product-modal .product-form--premium input::placeholder,
+#product-modal .product-form--premium textarea::placeholder {
+  color: rgba(237, 237, 237, 0.45);
+}
+
+#product-modal .product-form--premium input:focus,
+#product-modal .product-form--premium select:focus,
+#product-modal .product-form--premium textarea:focus {
+  outline: none;
+  border-color: rgba(161, 0, 255, 0.7);
+  box-shadow: 0 0 0 3px rgba(161, 0, 255, 0.14);
+}
+
+#product-modal .toggle {
+  border: 1px solid rgba(237, 237, 237, 0.1);
+  background: #0d0d12;
+}
+
+#product-modal .toggle button {
+  min-height: 42px;
+  color: rgba(237, 237, 237, 0.75);
+  transition: all 150ms ease;
+}
+
+#product-modal .toggle button.is-active {
+  background: #a100ff;
+  color: #050505;
+}
+
+#product-modal .logistics-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+#product-modal .chip {
+  background: rgba(91, 0, 181, 0.18);
+  border: 1px solid rgba(91, 0, 181, 0.45);
+  color: #dcb9ff;
+}
+
+#product-modal .modal__footer--sticky {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 0;
+  padding: 12px 24px;
+  border-top: 1px solid rgba(237, 237, 237, 0.08);
+  background: linear-gradient(180deg, rgba(10, 10, 16, 0.92), #0a0a10);
+}
+
+#product-modal .modal__footer--sticky .ghost {
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(237, 237, 237, 0.18);
+  background: transparent;
+  color: #ededed;
+}
+
+#product-modal .modal__footer--sticky #product-submit {
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1px solid #a100ff;
+  background: #a100ff;
+  color: #050505;
+  font-weight: 700;
+  transition: transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
+}
+
+#product-modal .modal__footer--sticky #product-submit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 18px rgba(161, 0, 255, 0.35);
+}
+
+#product-modal .modal__footer--sticky #product-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+@media (max-width: 1024px) {
+  #product-modal .product-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  #product-modal.modal {
+    padding: 12px;
+    align-items: flex-end;
+  }
+
+  #product-modal .modal__panel--product {
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 16px;
+  }
+
+  #product-modal .modal__header--product,
+  #product-modal .product-form__body,
+  #product-modal .modal__footer--sticky {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  #product-modal .product-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #product-modal .logistics-grid {
+    grid-template-columns: 1fr;
+  }
+}
