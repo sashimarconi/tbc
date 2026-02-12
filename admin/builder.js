@@ -249,7 +249,15 @@ function setFieldValue(id, value, fallback = "") {
   if (field.type === "checkbox") {
     field.checked = Boolean(value);
   } else {
-    field.value = value ?? fallback;
+    const fallbackValue = fallback ?? "";
+    const nextValue =
+      value === null ||
+      value === undefined ||
+      value === "null" ||
+      value === "undefined"
+        ? fallbackValue
+        : value;
+    field.value = nextValue;
   }
 }
 

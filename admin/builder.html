@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Builder de Checkout</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/admin/theme.css" />
     <link rel="stylesheet" href="/admin/builder.css" />
   </head>
@@ -15,32 +18,36 @@
           <p>Personalize seu checkout</p>
         </div>
 
-        <label class="search-box">
-          <input id="menu-search" type="search" placeholder="Buscar configuracoes" />
+        <label class="search-box" for="menu-search">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M10.5 3a7.5 7.5 0 0 1 5.94 12.08l4.24 4.23-1.42 1.42-4.23-4.24A7.5 7.5 0 1 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z" fill="currentColor"></path>
+          </svg>
+          <input id="menu-search" type="search" placeholder="Buscar configurações" />
         </label>
 
-        <nav id="menu-list" class="editor-menu">
-          <button class="menu-item is-active" data-section="modelos">Modelos</button>
-          <button class="menu-item" data-section="aparencia">Aparencia</button>
-          <button class="menu-item" data-section="conversao">Conversao</button>
-          <button class="menu-item" data-section="pagamentos">Pagamentos</button>
-          <button class="menu-item" data-section="layout">Layout</button>
-          <button class="menu-item" data-section="elementos">Elementos</button>
-          <button class="menu-item" data-section="efeitos">Efeitos</button>
-          <button class="menu-item" data-section="configuracoes">Configuracoes</button>
+        <nav id="menu-list" class="editor-menu" aria-label="Menu do editor">
+          <button class="menu-item is-active" data-section="modelos" type="button">Modelos</button>
+          <button class="menu-item" data-section="aparencia" type="button">Aparência</button>
+          <button class="menu-item" data-section="conversao" type="button">Conversão</button>
+          <button class="menu-item" data-section="pagamentos" type="button">Pagamentos</button>
+          <button class="menu-item" data-section="layout" type="button">Layout</button>
+          <button class="menu-item" data-section="elementos" type="button">Elementos</button>
+          <button class="menu-item" data-section="efeitos" type="button">Efeitos</button>
+          <button class="menu-item" data-section="configuracoes" type="button">Configurações</button>
         </nav>
       </aside>
 
       <section class="builder-main">
         <header class="builder-topbar">
-          <div class="device-switch">
-            <button class="device-btn is-active" data-device="mobile" aria-label="Mobile">M</button>
-            <button class="device-btn" data-device="tablet" aria-label="Tablet">T</button>
-            <button class="device-btn" data-device="desktop" aria-label="Desktop">D</button>
+          <div class="device-switch" role="group" aria-label="Visualização por dispositivo">
+            <button class="device-btn is-active" data-device="mobile" aria-label="Mobile" type="button">M</button>
+            <button class="device-btn" data-device="tablet" aria-label="Tablet" type="button">T</button>
+            <button class="device-btn" data-device="desktop" aria-label="Desktop" type="button">D</button>
           </div>
+
           <div class="topbar-actions">
-            <span id="dirty-badge" class="status-badge">Sem alteracoes</span>
-            <button id="publish-btn" class="publish-btn" disabled>Publicar</button>
+            <span id="dirty-badge" class="status-badge">Sem alterações</span>
+            <button id="publish-btn" class="publish-btn" disabled type="button">Publicar</button>
           </div>
         </header>
 
@@ -53,13 +60,17 @@
 
             <section class="builder-section" data-section="modelos" data-search="modelos temas layout checkout">
               <article class="card">
-                <h3>Layout do Checkout</h3>
-                <p>Escolha entre os temas disponiveis</p>
+                <header class="card-head">
+                  <h3>Layout do Checkout</h3>
+                  <p>Escolha entre os temas disponíveis</p>
+                </header>
+
                 <div class="field-group">
                   <label for="theme-select">Tema</label>
                   <select id="theme-select"></select>
                   <small id="theme-description"></small>
                 </div>
+
                 <div class="theme-meta">
                   <span id="current-theme-pill" class="pill">-</span>
                   <button id="apply-theme-btn" class="ghost-btn" type="button">Aplicar</button>
@@ -69,23 +80,27 @@
 
             <section class="builder-section hidden" data-section="aparencia" data-search="aparencia cores tipografia arredondamento cabecalho selo seguranca">
               <article class="card">
-                <h3>Esquema de Cores</h3>
-                <p>Ajuste a paleta principal do checkout</p>
+                <header class="card-head">
+                  <h3>Esquema de Cores</h3>
+                  <p>Ajuste a paleta principal do checkout</p>
+                </header>
                 <div class="inline-fields">
-                  <label>Cor Principal <input id="color-primary" type="color" /></label>
-                  <label>Cor dos Botoes <input id="color-buttons" type="color" /></label>
-                  <label>Cor do Fundo <input id="color-background" type="color" /></label>
+                  <label>Cor Principal<input id="color-primary" type="color" /></label>
+                  <label>Cor dos Botões<input id="color-buttons" type="color" /></label>
+                  <label>Cor do Fundo<input id="color-background" type="color" /></label>
                 </div>
                 <div class="inline-fields">
-                  <label>Cor do Card <input id="color-card" type="color" /></label>
-                  <label>Cor da Borda <input id="color-border" type="color" /></label>
-                  <label>Cor do Texto <input id="color-text" type="color" /></label>
+                  <label>Cor do Card<input id="color-card" type="color" /></label>
+                  <label>Cor da Borda<input id="color-border" type="color" /></label>
+                  <label>Cor do Texto<input id="color-text" type="color" /></label>
                 </div>
               </article>
 
               <article class="card">
-                <h3>Tipografia</h3>
-                <p>Defina a fonte principal</p>
+                <header class="card-head">
+                  <h3>Tipografia</h3>
+                  <p>Defina a fonte principal</p>
+                </header>
                 <div class="field-group">
                   <label for="font-family">Fonte Principal</label>
                   <select id="font-family">
@@ -97,21 +112,23 @@
               </article>
 
               <article class="card">
-                <h3>Arredondamento</h3>
-                <p>Defina o arredondamento de cada elemento</p>
+                <header class="card-head">
+                  <h3>Arredondamento</h3>
+                  <p>Defina o arredondamento de cada elemento</p>
+                </header>
                 <div class="inline-fields">
                   <label>Cards
                     <select id="radius-cards">
                       <option value="sm">Pequeno</option>
-                      <option value="md">Medio</option>
+                      <option value="md">Médio</option>
                       <option value="lg">Grande</option>
                       <option value="xl">Extra Grande</option>
                     </select>
                   </label>
-                  <label>Botoes
+                  <label>Botões
                     <select id="radius-buttons">
                       <option value="sm">Pequeno</option>
-                      <option value="md">Medio</option>
+                      <option value="md">Médio</option>
                       <option value="lg">Grande</option>
                       <option value="xl">Extra Grande</option>
                     </select>
@@ -119,7 +136,7 @@
                   <label>Campos
                     <select id="radius-fields">
                       <option value="sm">Pequeno</option>
-                      <option value="md">Medio</option>
+                      <option value="md">Médio</option>
                       <option value="lg">Grande</option>
                       <option value="xl">Extra Grande</option>
                     </select>
@@ -134,8 +151,10 @@
               </article>
 
               <article class="card">
-                <h3>Cabecalho</h3>
-                <p>Escolha o estilo do seu cabecalho</p>
+                <header class="card-head">
+                  <h3>Cabeçalho</h3>
+                  <p>Escolha o estilo do seu cabeçalho</p>
+                </header>
                 <div class="inline-fields">
                   <label>Estilo
                     <select id="header-style">
@@ -149,34 +168,36 @@
                   </label>
                 </div>
                 <div class="inline-fields">
-                  <label>URL do Logo <input id="header-logo-url" type="url" placeholder="https://" /></label>
-                  <label>Largura (px) <input id="header-logo-width" type="number" min="1" /></label>
-                  <label>Altura (px) <input id="header-logo-height" type="number" min="1" /></label>
+                  <label>URL do Logo<input id="header-logo-url" type="url" placeholder="https://" /></label>
+                  <label>Largura (px)<input id="header-logo-width" type="number" min="1" placeholder="120" /></label>
+                  <label>Altura (px)<input id="header-logo-height" type="number" min="1" placeholder="40" /></label>
                 </div>
                 <div class="inline-fields">
-                  <label>Cor de Fundo <input id="header-bg-color" type="color" /></label>
-                  <label>Cor do Texto <input id="header-text-color" type="color" /></label>
+                  <label>Cor de Fundo<input id="header-bg-color" type="color" /></label>
+                  <label>Cor do Texto<input id="header-text-color" type="color" /></label>
                 </div>
               </article>
 
               <article class="card">
-                <h3>Selo de Seguranca</h3>
-                <p>Configure exibicao e estilo do selo</p>
+                <header class="card-head">
+                  <h3>Selo de Segurança</h3>
+                  <p>Configure exibição e estilo do selo</p>
+                </header>
                 <div class="inline-fields">
                   <label class="toggle-label">Exibir selo
                     <input id="seal-enabled" type="checkbox" />
                   </label>
                   <label>Estilo
                     <select id="seal-style">
-                      <option value="padrao_bolinha_texto">Padrao (Bolinha + Texto)</option>
+                      <option value="padrao_bolinha_texto">Padrão (Bolinha + Texto)</option>
                       <option value="somente_texto">Somente texto</option>
-                      <option value="somente_icone">Somente icone</option>
+                      <option value="somente_icone">Somente ícone</option>
                     </select>
                   </label>
                   <label>Tamanho
                     <select id="seal-size">
                       <option value="pequeno">Pequeno</option>
-                      <option value="medio">Medio</option>
+                      <option value="medio">Médio</option>
                       <option value="grande">Grande</option>
                     </select>
                   </label>
@@ -188,24 +209,24 @@
                   </label>
                 </div>
                 <div class="inline-fields">
-                  <label>Texto do selo
-                    <input id="seal-text" type="text" placeholder="Pagamento 100% seguro" />
-                  </label>
+                  <label>Texto do selo<input id="seal-text" type="text" placeholder="Pagamento 100% seguro" /></label>
                 </div>
                 <div class="inline-fields">
-                  <label>Cor do texto <input id="seal-text-color" type="color" /></label>
-                  <label>Cor do fundo <input id="seal-bg-color" type="color" /></label>
-                  <label>Cor do icone <input id="seal-icon-color" type="color" /></label>
+                  <label>Cor do texto<input id="seal-text-color" type="color" /></label>
+                  <label>Cor do fundo<input id="seal-bg-color" type="color" /></label>
+                  <label>Cor do ícone<input id="seal-icon-color" type="color" /></label>
                 </div>
               </article>
             </section>
 
             <section class="builder-section hidden" data-section="efeitos" data-search="efeitos animacoes botoes conversao">
               <article class="card">
-                <h3>Animacoes de Botoes</h3>
-                <p>Configure o comportamento visual dos botoes</p>
+                <header class="card-head">
+                  <h3>Animações de Botões</h3>
+                  <p>Configure o comportamento visual dos botões</p>
+                </header>
                 <div class="inline-fields">
-                  <label>Botao Primario
+                  <label>Botão Primário
                     <select id="effect-primary-animation">
                       <option value="none">Nenhuma</option>
                       <option value="pulse">Pulse</option>
@@ -216,13 +237,13 @@
                   <label>Velocidade
                     <select id="effect-primary-speed">
                       <option value="normal">Normal (3s)</option>
-                      <option value="rapido">Rapido</option>
+                      <option value="rapido">Rápido</option>
                       <option value="lento">Lento</option>
                     </select>
                   </label>
                 </div>
                 <div class="inline-fields">
-                  <label>Botao Secundario
+                  <label>Botão Secundário
                     <select id="effect-secondary-animation">
                       <option value="none">Nenhuma</option>
                       <option value="pulse">Pulse</option>
@@ -233,7 +254,7 @@
                   <label>Velocidade
                     <select id="effect-secondary-speed">
                       <option value="normal">Normal (3s)</option>
-                      <option value="rapido">Rapido</option>
+                      <option value="rapido">Rápido</option>
                       <option value="lento">Lento</option>
                     </select>
                   </label>
@@ -243,13 +264,15 @@
 
             <section class="builder-section hidden" data-section="configuracoes" data-search="configuracoes campos identificacao internacionalizacao idioma moeda">
               <article class="card">
-                <h3>Campos de Identificacao</h3>
-                <p>Campos ocultos serao preenchidos automaticamente</p>
+                <header class="card-head">
+                  <h3>Campos de Identificação</h3>
+                  <p>Campos ocultos serão preenchidos automaticamente</p>
+                </header>
                 <div class="inline-fields">
-                  <label class="toggle-label">Nome Completo <input id="field-full-name" type="checkbox" /></label>
-                  <label class="toggle-label">E-mail <input id="field-email" type="checkbox" /></label>
-                  <label class="toggle-label">Telefone <input id="field-phone" type="checkbox" /></label>
-                  <label class="toggle-label">CPF <input id="field-cpf" type="checkbox" /></label>
+                  <label class="toggle-label">Nome Completo<input id="field-full-name" type="checkbox" /></label>
+                  <label class="toggle-label">E-mail<input id="field-email" type="checkbox" /></label>
+                  <label class="toggle-label">Telefone<input id="field-phone" type="checkbox" /></label>
+                  <label class="toggle-label">CPF<input id="field-cpf" type="checkbox" /></label>
                 </div>
                 <div class="field-group">
                   <label>Campos Personalizados</label>
@@ -258,12 +281,14 @@
               </article>
 
               <article class="card">
-                <h3>Internacionalizacao</h3>
-                <p>Padroes de idioma e moeda</p>
+                <header class="card-head">
+                  <h3>Internacionalização</h3>
+                  <p>Padrões de idioma e moeda</p>
+                </header>
                 <div class="inline-fields">
                   <label>Idioma
                     <select id="setting-language">
-                      <option value="pt-BR">Portugues (Brasil)</option>
+                      <option value="pt-BR">Português (Brasil)</option>
                     </select>
                   </label>
                   <label>Moeda
@@ -276,34 +301,44 @@
             </section>
 
             <section class="builder-section hidden" data-section="conversao" data-search="conversao">
-              <article class="card placeholder-card"><h3>Conversao</h3><p>Em breve.</p></article>
+              <article class="card placeholder-card">
+                <header class="card-head"><h3>Conversão</h3><p>Em breve.</p></header>
+              </article>
             </section>
+
             <section class="builder-section hidden" data-section="pagamentos" data-search="pagamentos sealpay api key gateway pix">
               <article class="card">
-                <h3>Gateway SealPay</h3>
-                <p>Configure somente a API Key da sua propria conta. A URL padrao da SealPay ja e usada automaticamente.</p>
+                <header class="card-head">
+                  <h3>Gateway SealPay</h3>
+                  <p>Configure somente a API Key da sua própria conta. A URL padrão já é aplicada automaticamente.</p>
+                </header>
                 <div class="field-group">
                   <label for="payment-api-key">API Key</label>
-                  <input id="payment-api-key" type="password" placeholder="Cole sua chave (nao exibimos novamente)" />
+                  <input id="payment-api-key" type="password" placeholder="Cole sua chave (não exibimos novamente)" />
                   <small id="payment-key-hint"></small>
                 </div>
-                <div class="inline-fields">
-                  <label class="toggle-label">Ativo
-                    <input id="payment-active" type="checkbox" checked />
-                  </label>
+                <div class="payment-actions">
+                  <label class="toggle-label">Ativo<input id="payment-active" type="checkbox" checked /></label>
                   <button id="save-payment-settings" class="ghost-btn" type="button">Salvar credenciais</button>
                 </div>
               </article>
             </section>
+
             <section class="builder-section hidden" data-section="layout" data-search="layout">
-              <article class="card placeholder-card"><h3>Layout</h3><p>Em breve.</p></article>
+              <article class="card placeholder-card">
+                <header class="card-head"><h3>Layout</h3><p>Em breve.</p></header>
+              </article>
             </section>
+
             <section class="builder-section hidden" data-section="elementos" data-search="elementos">
-              <article class="card placeholder-card"><h3>Elementos</h3><p>Em breve.</p></article>
+              <article class="card placeholder-card">
+                <header class="card-head"><h3>Elementos</h3><p>Em breve.</p></header>
+              </article>
             </section>
           </main>
 
           <aside class="preview-column">
+            <div class="preview-glow" aria-hidden="true"></div>
             <div id="preview-shell" class="preview-shell" data-device="mobile">
               <iframe id="preview-iframe" title="Preview checkout"></iframe>
             </div>
