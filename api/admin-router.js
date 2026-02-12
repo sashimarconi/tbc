@@ -396,6 +396,18 @@ async function ensureThemesAndAppearanceSchema() {
     )
   );
 
+  await query(`
+    delete from checkout_themes t
+    using checkout_themes d
+    where t.key = d.key
+      and t.id > d.id
+  `);
+  await query(`
+    delete from checkout_appearance a
+    using checkout_appearance b
+    where a.owner_user_id = b.owner_user_id
+      and a.id > b.id
+  `);
   await query("create unique index if not exists checkout_themes_key_uidx on checkout_themes (key)");
   await query(
     "create unique index if not exists checkout_appearance_owner_uidx on checkout_appearance (owner_user_id)"

@@ -205,9 +205,15 @@ async function apiFetch(path, options = {}) {
     throw new Error("Unauthorized");
   }
 
-  const data = await res.json().catch(() => ({}));
+  const raw = await res.text();
+  let data = {};
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch (_error) {
+    data = {};
+  }
   if (!res.ok) {
-    throw new Error(data.error || "Erro na requisicao");
+    throw new Error(data.error || raw || `Erro na requisicao (HTTP ${res.status})`);
   }
   return data;
 }
