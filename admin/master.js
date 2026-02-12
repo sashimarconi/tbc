@@ -18,8 +18,7 @@ function authHeaders() {
 }
 
 function showLogin() {
-  loginCard.classList.remove("hidden");
-  panel.classList.add("hidden");
+  window.location.href = "/admin/index.html";
 }
 
 function showPanel() {
@@ -166,7 +165,7 @@ loginForm.addEventListener("submit", login);
 logoutBtn?.addEventListener("click", () => {
   token = "";
   localStorage.removeItem(tokenKey);
-  showLogin();
+  window.location.href = "/admin/index.html";
 });
 refreshBtn?.addEventListener("click", () => loadData().catch(() => {}));
 

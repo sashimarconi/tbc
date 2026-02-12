@@ -1,0 +1,81 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Black Checkout - Admin Master</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/admin/master.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section id="login-card" class="card auth-card">
+        <h1>Admin Master</h1>
+        <p class="muted">Acesso global da plataforma</p>
+        <form id="login-form" class="form-grid">
+          <label>E-mail<input id="email" type="email" autocomplete="email" required /></label>
+          <label>Senha<input id="password" type="password" autocomplete="current-password" required /></label>
+          <button type="submit" class="btn-primary">Entrar</button>
+          <p id="login-error" class="error"></p>
+        </form>
+      </section>
+
+      <section id="panel" class="hidden">
+        <header class="topbar">
+          <div>
+            <h1>Admin Master</h1>
+            <p class="muted">Visão global de usuários, pedidos e analytics</p>
+          </div>
+          <div class="topbar-actions">
+            <button id="refresh-btn" class="btn-ghost" type="button">Atualizar</button>
+            <button id="logout-btn" class="btn-ghost" type="button">Sair</button>
+          </div>
+        </header>
+
+        <section class="stats-grid" id="summary-cards"></section>
+
+        <section class="card">
+          <h2>Usuários</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Criado em</th>
+                  <th>Visitors</th>
+                  <th>Orders</th>
+                  <th>Paid</th>
+                  <th>Conversão</th>
+                  <th>Role</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="users-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Pedidos globais</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Owner</th>
+                  <th>Status</th>
+                  <th>Total</th>
+                  <th>Criado</th>
+                </tr>
+              </thead>
+              <tbody id="orders-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+    <script src="/admin/master.js"></script>
+  </body>
+</html>

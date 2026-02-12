@@ -2,7 +2,9 @@
 
 create table if not exists users (
   id uuid primary key default gen_random_uuid(),
+  name text not null,
   email text unique not null,
+  phone text,
   password_hash text not null,
   is_admin boolean not null default false,
   created_at timestamptz not null default now()

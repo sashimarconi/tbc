@@ -15,12 +15,18 @@ async function ensureUsersTable() {
   await query(`
     create table if not exists users (
       id uuid primary key default gen_random_uuid(),
+      name text not null,
       email text unique not null,
+      phone text,
       password_hash text not null,
       is_admin boolean not null default false,
       created_at timestamptz not null default now()
     )
   `);
+  await query("alter table users add column if not exists name text");
+  await query("alter table users add column if not exists phone text");
+  await query("update users set name = 'Usuario' where name is null or btrim(name) = ''");
+  await query("alter table users alter column name set not null");
   await query("alter table users add column if not exists is_admin boolean not null default false");
 }
 
@@ -47,9 +53,11 @@ async function handleSignup(req, res) {
   }
 
   const email = normalizeEmail(body.email);
+  const name = String(body.name || "").trim();
+  const phone = String(body.phone || "").trim();
   const password = body.password || "";
-  if (!email || !validatePassword(password)) {
-    res.status(400).json({ error: "Email valido e senha minima de 6 caracteres sao obrigatorios" });
+  if (!name || !phone || !email || !validatePassword(password)) {
+    res.status(400).json({ error: "Nome, telefone, email valido e senha minima de 6 caracteres sao obrigatorios" });
     return;
   }
 
@@ -63,8 +71,8 @@ async function handleSignup(req, res) {
 
     const passwordHash = await bcrypt.hash(password, 12);
     const result = await query(
-      "insert into users (email, password_hash, is_admin) values ($1, $2, false) returning id, email, is_admin",
-      [email, passwordHash]
+      "insert into users (name, email, phone, password_hash, is_admin) values ($1, $2, $3, $4, false) returning id, name, email, phone, is_admin",
+      [name, email, phone, passwordHash]
     );
     const user = result.rows?.[0];
     const token = signAuthToken(user);
@@ -98,7 +106,7 @@ async function handleLogin(req, res) {
   try {
     await ensureUsersTable();
     const result = await query(
-      "select id, email, password_hash, is_admin from users where email = $1 limit 1",
+      "select id, name, email, phone, password_hash, is_admin from users where email = $1 limit 1",
       [email]
     );
     const user = result.rows?.[0];
@@ -113,7 +121,13 @@ async function handleLogin(req, res) {
       return;
     }
 
-    const authUser = { id: user.id, email: user.email, is_admin: user.is_admin === true };
+    const authUser = {
+      id: user.id,
+      name: user.name || "",
+      email: user.email,
+      phone: user.phone || "",
+      is_admin: user.is_admin === true,
+    };
     const token = signAuthToken(authUser);
     res.json({ token, user: authUser });
   } catch (error) {
@@ -131,7 +145,7 @@ async function handleMe(req, res) {
   if (!authUser) return;
 
   try {
-    const result = await query("select id, email, is_admin, created_at from users where id = $1 limit 1", [
+    const result = await query("select id, name, email, phone, is_admin, created_at from users where id = $1 limit 1", [
       authUser.id,
     ]);
     const user = result.rows?.[0];

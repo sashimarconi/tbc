@@ -3,79 +3,45 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>The Black Checkout - Admin Master</title>
+    <title>Blackout - Login</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/admin/master.css" />
+    <link rel="stylesheet" href="/admin/auth.css" />
   </head>
-  <body>
-    <main class="shell">
-      <section id="login-card" class="card auth-card">
-        <h1>Admin Master</h1>
-        <p class="muted">Acesso global da plataforma</p>
-        <form id="login-form" class="form-grid">
-          <label>E-mail<input id="email" type="email" autocomplete="email" required /></label>
-          <label>Senha<input id="password" type="password" autocomplete="current-password" required /></label>
-          <button type="submit" class="btn-primary">Entrar</button>
-          <p id="login-error" class="error"></p>
+  <body data-auth-page="login">
+    <main class="auth-wrap">
+      <section class="auth-card" aria-label="Entrar">
+        <img class="auth-logo" src="/assets/logo-blackout.png" alt="Blackout" />
+        <h1>Entrar na plataforma</h1>
+        <p class="auth-subtitle">Acesse sua conta para gerenciar seu checkout.</p>
+
+        <form id="login-form" class="auth-form" novalidate>
+          <label class="field">
+            <span class="field-label">E-mail</span>
+            <span class="input-wrap">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m4 8 8 6 8-6" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+              <input id="login-email" type="email" autocomplete="email" placeholder="voce@empresa.com" required />
+            </span>
+            <small id="error-login-email" class="field-error"></small>
+          </label>
+
+          <label class="field">
+            <span class="field-label">Senha</span>
+            <span class="input-wrap">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 11V8a4 4 0 1 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+              <input id="login-password" type="password" autocomplete="current-password" placeholder="Digite sua senha" required />
+            </span>
+            <small id="error-login-password" class="field-error"></small>
+          </label>
+
+          <button class="btn-primary" id="login-submit" type="submit">Entrar</button>
+          <p id="login-global-error" class="global-error"></p>
         </form>
-      </section>
 
-      <section id="panel" class="hidden">
-        <header class="topbar">
-          <div>
-            <h1>Admin Master</h1>
-            <p class="muted">Visão global de usuários, pedidos e analytics</p>
-          </div>
-          <div class="topbar-actions">
-            <button id="refresh-btn" class="btn-ghost" type="button">Atualizar</button>
-            <button id="logout-btn" class="btn-ghost" type="button">Sair</button>
-          </div>
-        </header>
-
-        <section class="stats-grid" id="summary-cards"></section>
-
-        <section class="card">
-          <h2>Usuários</h2>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Email</th>
-                  <th>Criado em</th>
-                  <th>Visitors</th>
-                  <th>Orders</th>
-                  <th>Paid</th>
-                  <th>Conversão</th>
-                  <th>Role</th>
-                  <th>Ação</th>
-                </tr>
-              </thead>
-              <tbody id="users-body"></tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="card">
-          <h2>Pedidos globais</h2>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Owner</th>
-                  <th>Status</th>
-                  <th>Total</th>
-                  <th>Criado</th>
-                </tr>
-              </thead>
-              <tbody id="orders-body"></tbody>
-            </table>
-          </div>
-        </section>
+        <p class="auth-switch">Ainda não tem conta? <a href="/admin/signup.html">Criar conta</a></p>
       </section>
     </main>
-    <script src="/admin/master.js"></script>
+    <script src="/admin/auth.js"></script>
   </body>
 </html>
