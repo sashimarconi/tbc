@@ -43,6 +43,54 @@ function deepMerge(base, override) {
   return result;
 }
 
+function normalizeThemeDefaults(defaults = {}) {
+  const merged = deepMerge(
+    {
+      palette: {},
+      typography: {},
+      radius: {},
+      header: {},
+      securitySeal: {},
+      effects: {
+        primaryButton: { animation: "none", speed: "normal" },
+        secondaryButton: { animation: "none", speed: "normal" },
+      },
+      settings: {
+        fields: { fullName: true, email: true, phone: true, cpf: true, custom: [] },
+        i18n: { language: "pt-BR", currency: "BRL" },
+      },
+      layout: { type: "singleColumn" },
+      elements: {
+        showCountrySelector: true,
+        showProductImage: true,
+        showOrderBumps: true,
+        showShipping: true,
+        showFooterSecurityText: true,
+        order: ["header", "country", "offer", "form", "bumps", "shipping", "payment", "footer"],
+      },
+    },
+    defaults
+  );
+
+  if (!merged.header || typeof merged.header !== "object") {
+    merged.header = {};
+  }
+  if (!merged.header.style || !["logo", "texto", "logo+texto"].includes(merged.header.style)) {
+    merged.header.style = "logo";
+  }
+  if (merged.header.style === "logo+texto") {
+    merged.header.style = "logo";
+  }
+  if (typeof merged.header.text !== "string") {
+    merged.header.text = "";
+  }
+  if (!merged.layout?.type) {
+    merged.layout = { type: "singleColumn" };
+  }
+
+  return merged;
+}
+
 async function ensureThemesAndAppearanceSchema() {
   await query(`
     create table if not exists checkout_themes (
@@ -67,7 +115,7 @@ async function ensureThemesAndAppearanceSchema() {
     )
   `);
 
-  const solarysDefaults = {
+  const solarysDefaults = normalizeThemeDefaults({
     palette: {
       primary: "#f5a623",
       buttons: "#f39c12",
@@ -79,7 +127,8 @@ async function ensureThemesAndAppearanceSchema() {
     typography: { fontFamily: "Poppins" },
     radius: { cards: "16px", buttons: "14px", fields: "12px", steps: "999px" },
     header: {
-      style: "logo+texto",
+      style: "logo",
+      text: "",
       centerLogo: false,
       logoUrl: "/assets/logo-blackout.png",
       logoWidthPx: 120,
@@ -105,7 +154,7 @@ async function ensureThemesAndAppearanceSchema() {
       fields: { fullName: true, email: true, phone: true, cpf: true, custom: [] },
       i18n: { language: "pt-BR", currency: "BRL" },
     },
-  };
+  });
 
   await query(
     `insert into checkout_themes (key, name, description, defaults)
@@ -113,6 +162,18 @@ async function ensureThemesAndAppearanceSchema() {
      on conflict (key) do nothing`,
     ["solarys", "Solarys", "Tema Solarys", JSON.stringify(solarysDefaults)]
   );
+
+  const themes = await query("select id, defaults from checkout_themes");
+  for (const row of themes.rows || []) {
+    const currentDefaults = row.defaults || {};
+    const normalizedDefaults = normalizeThemeDefaults(currentDefaults);
+    if (JSON.stringify(currentDefaults) !== JSON.stringify(normalizedDefaults)) {
+      await query("update checkout_themes set defaults = $1::jsonb where id = $2", [
+        JSON.stringify(normalizedDefaults),
+        row.id,
+      ]);
+    }
+  }
 }
 
 module.exports = async (req, res) => {

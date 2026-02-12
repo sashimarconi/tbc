@@ -173,6 +173,18 @@
                   <label>Altura (px)<input id="header-logo-height" type="number" min="1" placeholder="40" /></label>
                 </div>
                 <div class="inline-fields">
+                  <div class="field-group logo-upload-group">
+                    <label>Upload de Logo</label>
+                    <input id="header-logo-file" type="file" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" hidden />
+                    <button id="header-logo-upload-btn" class="ghost-btn" type="button">Enviar logo</button>
+                    <small>Formatos: PNG, JPG, JPEG ou WEBP. Maximo 2MB.</small>
+                  </div>
+                  <div class="logo-preview-wrap">
+                    <span>Preview</span>
+                    <img id="header-logo-preview" class="logo-preview hidden" alt="Preview da logo" />
+                  </div>
+                </div>
+                <div class="inline-fields">
                   <label>Cor de Fundo<input id="header-bg-color" type="color" /></label>
                   <label>Cor do Texto<input id="header-text-color" type="color" /></label>
                 </div>
@@ -309,7 +321,16 @@
             <section class="builder-section hidden" data-section="pagamentos" data-search="pagamentos sealpay api key gateway pix">
               <article class="card">
                 <header class="card-head">
-                  <h3>Gateway SealPay</h3>
+                  <div class="card-head-inline">
+                    <h3>Gateway SealPay</h3>
+                    <span class="sealpay-badge" aria-label="SealPay">
+                      <svg viewBox="0 0 120 28" role="img" aria-hidden="true">
+                        <rect x="0.5" y="0.5" width="119" height="27" rx="8" fill="rgba(91,0,181,0.16)" stroke="rgba(161,0,255,0.42)"></rect>
+                        <circle cx="16" cy="14" r="5" fill="#a100ff"></circle>
+                        <text x="28" y="18" fill="#ededed" font-size="12" font-family="Inter, sans-serif" font-weight="700">SealPay</text>
+                      </svg>
+                    </span>
+                  </div>
                   <p>Configure somente a API Key da sua própria conta. A URL padrão já é aplicada automaticamente.</p>
                 </header>
                 <div class="field-group">
@@ -325,14 +346,42 @@
             </section>
 
             <section class="builder-section hidden" data-section="layout" data-search="layout">
-              <article class="card placeholder-card">
-                <header class="card-head"><h3>Layout</h3><p>Em breve.</p></header>
+              <article class="card">
+                <header class="card-head">
+                  <h3>Tipo de Layout</h3>
+                  <p>Escolha como os blocos do checkout serao distribuídos.</p>
+                </header>
+                <div class="field-group">
+                  <label for="layout-type">Tipo de layout</label>
+                  <select id="layout-type">
+                    <option value="singleColumn">Uma coluna</option>
+                    <option value="twoColumn">Duas colunas</option>
+                  </select>
+                </div>
               </article>
             </section>
 
-            <section class="builder-section hidden" data-section="elementos" data-search="elementos">
-              <article class="card placeholder-card">
-                <header class="card-head"><h3>Elementos</h3><p>Em breve.</p></header>
+            <section class="builder-section hidden" data-section="elementos" data-search="elementos ordem blocos toggles">
+              <article class="card">
+                <header class="card-head">
+                  <h3>Exibicao de Elementos</h3>
+                  <p>Ligue/desligue blocos visuais do checkout.</p>
+                </header>
+                <div class="inline-fields">
+                  <label class="toggle-label">Seletor de Pais<input id="el-show-country" type="checkbox" /></label>
+                  <label class="toggle-label">Imagem do Produto<input id="el-show-product-image" type="checkbox" /></label>
+                  <label class="toggle-label">Order Bumps<input id="el-show-bumps" type="checkbox" /></label>
+                  <label class="toggle-label">Frete<input id="el-show-shipping" type="checkbox" /></label>
+                  <label class="toggle-label">Texto de Seguranca<input id="el-show-footer-security" type="checkbox" /></label>
+                </div>
+              </article>
+
+              <article class="card">
+                <header class="card-head">
+                  <h3>Ordem dos Blocos</h3>
+                  <p>Use as setas para reordenar os blocos.</p>
+                </header>
+                <ul id="elements-order-list" class="elements-order-list"></ul>
               </article>
             </section>
           </main>

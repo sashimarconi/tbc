@@ -7,7 +7,7 @@ const {
   ensureBaseSlugs,
   generateUniqueSlug,
 } = require("../lib/ensure-products");
-const { saveProductFile } = require("../lib/product-files");
+const { saveProductFile, saveProductFileBuffer } = require("../lib/product-files");
 const { ensurePaymentGatewayTable } = require("../lib/ensure-payment-gateway");
 const { encryptText } = require("../lib/credentials-crypto");
 const DEFAULT_SEALPAY_API_URL =
@@ -55,6 +55,107 @@ function deepMerge(base, override) {
   });
 
   return result;
+}
+
+function normalizeThemeDefaults(defaults = {}) {
+  const next = deepMerge(
+    {
+      palette: {},
+      typography: {},
+      radius: {},
+      header: {},
+      securitySeal: {},
+      effects: {
+        primaryButton: { animation: "none", speed: "normal" },
+        secondaryButton: { animation: "none", speed: "normal" },
+      },
+      settings: {
+        fields: { fullName: true, email: true, phone: true, cpf: true, custom: [] },
+        i18n: { language: "pt-BR", currency: "BRL" },
+      },
+      layout: { type: "singleColumn" },
+      elements: {
+        showCountrySelector: true,
+        showProductImage: true,
+        showOrderBumps: true,
+        showShipping: true,
+        showFooterSecurityText: true,
+        order: ["header", "country", "offer", "form", "bumps", "shipping", "payment", "footer"],
+      },
+    },
+    defaults
+  );
+
+  if (!next.header || typeof next.header !== "object") {
+    next.header = {};
+  }
+  if (!next.header.style || !["logo", "texto", "logo+texto"].includes(next.header.style)) {
+    next.header.style = "logo";
+  }
+  if (next.header.style === "logo+texto") {
+    next.header.style = "logo";
+  }
+  if (typeof next.header.text !== "string") {
+    next.header.text = "";
+  }
+  if (!next.layout || typeof next.layout !== "object") {
+    next.layout = { type: "singleColumn" };
+  }
+  if (!next.layout.type) {
+    next.layout.type = "singleColumn";
+  }
+  return next;
+}
+
+function readRawBody(req, maxBytes = 2.5 * 1024 * 1024) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let total = 0;
+    req.on("data", (chunk) => {
+      total += chunk.length;
+      if (total > maxBytes) {
+        reject(new Error("Arquivo excede o limite de 2MB"));
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+}
+
+function parseMultipartFile(bodyBuffer, boundary, fieldName = "logo") {
+  const boundaryText = `--${boundary}`;
+  const raw = bodyBuffer.toString("binary");
+  const parts = raw.split(boundaryText);
+
+  for (const part of parts) {
+    if (!part || part === "--\r\n" || part === "--") continue;
+    const [headersRaw, bodyRawWithSuffix] = part.split("\r\n\r\n");
+    if (!headersRaw || !bodyRawWithSuffix) continue;
+    const headers = headersRaw.toLowerCase();
+    if (!headers.includes(`name=\"${fieldName}\"`)) continue;
+    if (!headers.includes("filename=\"")) continue;
+
+    const filenameMatch = /filename=\"([^\"]*)\"/i.exec(headersRaw);
+    const mimeMatch = /content-type:\s*([^\r\n;]+)/i.exec(headersRaw);
+    const filename = filenameMatch?.[1] || "logo";
+    const mimeType = (mimeMatch?.[1] || "").trim().toLowerCase();
+
+    const cleanedBody = bodyRawWithSuffix.replace(/\r\n--$/, "").replace(/\r\n$/, "");
+    const fileBuffer = Buffer.from(cleanedBody, "binary");
+    if (!fileBuffer.length) {
+      throw new Error("Arquivo vazio");
+    }
+
+    return {
+      filename,
+      mimeType,
+      buffer: fileBuffer,
+    };
+  }
+
+  throw new Error("Arquivo de logo nao encontrado no campo 'logo'");
 }
 
 function normalizeBumpRule(rule) {
@@ -187,7 +288,7 @@ async function ensureThemesAndAppearanceSchema() {
     )
   `);
 
-  const minimalDefaults = {
+  const minimalDefaults = normalizeThemeDefaults({
     palette: {
       primary: "#f5a623",
       buttons: "#f39c12",
@@ -204,7 +305,8 @@ async function ensureThemesAndAppearanceSchema() {
       steps: "999px",
     },
     header: {
-      style: "logo+texto",
+      style: "logo",
+      text: "",
       centerLogo: false,
       logoUrl: "/assets/logo-blackout.png",
       logoWidthPx: 120,
@@ -230,7 +332,7 @@ async function ensureThemesAndAppearanceSchema() {
       fields: { fullName: true, email: true, phone: true, cpf: true, custom: [] },
       i18n: { language: "pt-BR", currency: "BRL" },
     },
-  };
+  });
 
   await query(
     `insert into checkout_themes (key, name, description, defaults)
@@ -247,7 +349,8 @@ async function ensureThemesAndAppearanceSchema() {
       "minimal",
       "Minimal",
       "Tema Minimal",
-      JSON.stringify({
+      JSON.stringify(
+        normalizeThemeDefaults({
         ...minimalDefaults,
         palette: {
           primary: "#111827",
@@ -258,7 +361,8 @@ async function ensureThemesAndAppearanceSchema() {
           border: "#e2e8f0",
         },
         typography: { fontFamily: "Inter" },
-      }),
+        })
+      ),
     ]
   );
 
@@ -270,7 +374,8 @@ async function ensureThemesAndAppearanceSchema() {
       "dark",
       "Dark",
       "Tema escuro",
-      JSON.stringify({
+      JSON.stringify(
+        normalizeThemeDefaults({
         ...minimalDefaults,
         palette: {
           primary: "#22c55e",
@@ -281,9 +386,22 @@ async function ensureThemesAndAppearanceSchema() {
           border: "#24314b",
         },
         typography: { fontFamily: "Montserrat" },
-      }),
+        })
+      ),
     ]
   );
+
+  const themesResult = await query("select id, defaults from checkout_themes");
+  for (const row of themesResult.rows || []) {
+    const currentDefaults = row.defaults || {};
+    const normalizedDefaults = normalizeThemeDefaults(currentDefaults);
+    if (JSON.stringify(currentDefaults) !== JSON.stringify(normalizedDefaults)) {
+      await query("update checkout_themes set defaults = $1::jsonb where id = $2", [
+        JSON.stringify(normalizedDefaults),
+        row.id,
+      ]);
+    }
+  }
 }
 
 async function getThemeByKey(key) {
@@ -687,6 +805,36 @@ async function handleUploads(req, res, user) {
   }
 }
 
+async function handleLogoUpload(req, res, user) {
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
+
+  try {
+    const contentType = String(req.headers["content-type"] || "");
+    const boundaryMatch = /boundary=(?:"([^"]+)"|([^;]+))/i.exec(contentType);
+    const boundary = boundaryMatch?.[1] || boundaryMatch?.[2];
+    if (!contentType.includes("multipart/form-data") || !boundary) {
+      res.status(400).json({ error: "Use multipart/form-data com o campo 'logo'" });
+      return;
+    }
+
+    const body = await readRawBody(req);
+    const file = parseMultipartFile(body, boundary, "logo");
+    const saved = await saveProductFileBuffer({
+      ownerUserId: user.id,
+      buffer: file.buffer,
+      mimeType: file.mimeType,
+      filename: file.filename,
+    });
+
+    res.json({ ok: true, url: saved.url, file: saved });
+  } catch (error) {
+    res.status(400).json({ error: error.message || "Falha no upload do logo" });
+  }
+}
+
 function maskKey(value = "") {
   if (!value) return "";
   if (value.length <= 8) return "********";
@@ -820,6 +968,13 @@ module.exports = async (req, res) => {
       return;
     case "uploads":
       await handleUploads(req, res, user);
+      return;
+    case "upload":
+      if (req.query?.id === "logo") {
+        await handleLogoUpload(req, res, user);
+        return;
+      }
+      res.status(404).json({ error: "Not found" });
       return;
     case "themes":
       await handleThemes(req, res);

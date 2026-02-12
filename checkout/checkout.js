@@ -25,6 +25,17 @@ const headerText = document.getElementById("header-text");
 const securitySeal = document.getElementById("security-seal");
 const securitySealIcon = document.getElementById("security-seal-icon");
 const securitySealText = document.getElementById("security-seal-text");
+const checkoutLayout = document.getElementById("checkout-layout");
+const checkoutPrimary = document.getElementById("checkout-primary");
+const checkoutSide = document.getElementById("checkout-side");
+const countrySwitcher = document.getElementById("country-switcher");
+const productCard = document.getElementById("product-card");
+const productImageWrap = document.getElementById("product-image-wrap");
+const formFieldsBlock = document.getElementById("form-fields-block");
+const paymentBlock = document.getElementById("payment-block");
+const footerBlock = document.getElementById("footer-block");
+const footerSecurityText = document.getElementById("footer-security-text");
+const summaryCard = document.getElementById("summary-card");
 const fieldWraps = {
   fullName: document.getElementById("field-wrap-name"),
   email: document.getElementById("field-wrap-email"),
@@ -71,6 +82,15 @@ let cartSyncTimeout = null;
 let lastCartPayloadSignature = "";
 let baseRequiresAddress = true;
 let appearanceConfig = null;
+let layoutType = "singleColumn";
+let elementsConfig = {
+  showCountrySelector: true,
+  showProductImage: true,
+  showOrderBumps: true,
+  showShipping: true,
+  showFooterSecurityText: true,
+  order: ["header", "country", "offer", "form", "bumps", "shipping", "payment", "footer"],
+};
 
 function resolveOfferSlug() {
   try {
@@ -144,6 +164,106 @@ function applyButtonEffects(config) {
   if (secondaryAnimation === "glow") copyBtn?.classList.add("anim-glow");
 }
 
+function normalizeElementsConfig(next = {}) {
+  const orderDefault = ["header", "country", "offer", "form", "bumps", "shipping", "payment", "footer"];
+  const incomingOrder = Array.isArray(next.order) ? next.order : [];
+  const order = incomingOrder.filter((id) => orderDefault.includes(id));
+  orderDefault.forEach((id) => {
+    if (!order.includes(id)) {
+      order.push(id);
+    }
+  });
+  return {
+    showCountrySelector: next.showCountrySelector !== false,
+    showProductImage: next.showProductImage !== false,
+    showOrderBumps: next.showOrderBumps !== false,
+    showShipping: next.showShipping !== false,
+    showFooterSecurityText: next.showFooterSecurityText !== false,
+    order,
+  };
+}
+
+function applyLayoutType(nextLayoutType) {
+  layoutType = nextLayoutType === "twoColumn" ? "twoColumn" : "singleColumn";
+  if (checkoutLayout) {
+    checkoutLayout.dataset.layout = layoutType;
+  }
+  if (layoutType === "twoColumn") {
+    if (checkoutSide && productCard) {
+      checkoutSide.prepend(productCard);
+    }
+    if (checkoutSide && summaryCard) {
+      checkoutSide.appendChild(summaryCard);
+    }
+  }
+}
+
+function applyElementOrder() {
+  if (!form) return;
+  const order = elementsConfig.order || [];
+  const formBlocks = {
+    form: formFieldsBlock,
+    bumps: addonsSection,
+    shipping: shippingSection,
+    payment: paymentBlock,
+    footer: footerBlock,
+  };
+
+  order
+    .filter((id) => formBlocks[id])
+    .forEach((id) => {
+      const node = formBlocks[id];
+      if (node) {
+        form.appendChild(node);
+      }
+    });
+
+  if (layoutType === "singleColumn" && checkoutPrimary) {
+    const topBlocks = {
+      country: countrySwitcher,
+      offer: productCard,
+    };
+    order
+      .filter((id) => topBlocks[id])
+      .forEach((id) => {
+        const node = topBlocks[id];
+        if (node) {
+          checkoutPrimary.insertBefore(node, form);
+        }
+      });
+  } else if (layoutType === "twoColumn") {
+    if (countrySwitcher && checkoutPrimary.firstElementChild !== countrySwitcher) {
+      checkoutPrimary.insertBefore(countrySwitcher, form);
+    }
+    if (productCard && checkoutSide && checkoutSide.firstElementChild !== productCard) {
+      checkoutSide.prepend(productCard);
+    }
+  }
+}
+
+function applyElementsConfig(nextElements) {
+  elementsConfig = normalizeElementsConfig(nextElements);
+  if (countrySwitcher) {
+    countrySwitcher.classList.toggle("hidden", !elementsConfig.showCountrySelector);
+  }
+  if (productImageWrap) {
+    productImageWrap.classList.toggle("hidden", !elementsConfig.showProductImage);
+  }
+  if (footerSecurityText) {
+    footerSecurityText.classList.toggle("hidden", !elementsConfig.showFooterSecurityText);
+  }
+  if (addonsSection) {
+    const shouldHideBumps = !elementsConfig.showOrderBumps || !(bumpMap?.size > 0);
+    addonsSection.classList.toggle("hidden", shouldHideBumps);
+  }
+  if (shippingSection) {
+    const shouldHideShipping =
+      !elementsConfig.showShipping || !baseRequiresAddress || !(shippingOptions?.length > 0);
+    shippingSection.classList.toggle("hidden", shouldHideShipping);
+  }
+  applyElementOrder();
+}
+
 function applyAppearanceConfig(config) {
   if (!config || typeof config !== "object") return;
   appearanceConfig = config;
@@ -181,9 +301,16 @@ function applyAppearanceConfig(config) {
     headerLogo.style.height = `${Number(header.logoHeightPx || 40)}px`;
   }
 
-  const headerStyle = header.style || "logo+texto";
+  const headerStyle = header.style || "logo";
+  const hasCustomHeaderText = typeof header.text === "string";
+  const resolvedHeaderText = hasCustomHeaderText ? header.text.trim() : "";
+  if (headerText && hasCustomHeaderText) {
+    headerText.textContent = resolvedHeaderText;
+  }
+  const shouldShowTextByStyle = headerStyle === "texto" || headerStyle === "logo+texto";
+  const canShowText = shouldShowTextByStyle && resolvedHeaderText.length > 0;
   if (headerLogo) headerLogo.classList.toggle("hidden", headerStyle === "texto");
-  if (headerText) headerText.classList.toggle("hidden", headerStyle === "logo");
+  if (headerText) headerText.classList.toggle("hidden", !canShowText);
   if (headerBrandBlock) {
     headerBrandBlock.style.justifyContent = header.centerLogo ? "center" : "flex-start";
     headerBrandBlock.style.width = header.centerLogo ? "100%" : "auto";
@@ -210,6 +337,8 @@ function applyAppearanceConfig(config) {
 
   applyFieldVisibility(config?.settings?.fields || {});
   applyButtonEffects(config);
+  applyLayoutType(config?.layout?.type || "singleColumn");
+  applyElementsConfig(config?.elements || {});
 }
 
 async function loadAppearanceBySlug(slug) {
@@ -643,7 +772,11 @@ function renderBumps(bumps = []) {
     return;
   }
 
-  addonsSection?.classList.remove("hidden");
+  if (!elementsConfig.showOrderBumps) {
+    addonsSection?.classList.add("hidden");
+  } else {
+    addonsSection?.classList.remove("hidden");
+  }
   addonsList.innerHTML = bumps
     .map((bump) => {
       bumpMap.set(bump.id, bump);
@@ -737,7 +870,11 @@ function renderShipping(options = []) {
     return;
   }
 
-  shippingSection.classList.remove("hidden");
+  if (!elementsConfig.showShipping) {
+    shippingSection.classList.add("hidden");
+  } else {
+    shippingSection.classList.remove("hidden");
+  }
   if (!selectedShippingId || !options.some((opt) => opt.id === selectedShippingId)) {
     selectedShippingId = options[0].id;
   }

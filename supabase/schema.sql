@@ -200,7 +200,8 @@ values
       "steps": "999px"
     },
     "header": {
-      "style": "logo+texto",
+      "style": "logo",
+      "text": "",
       "centerLogo": false,
       "logoUrl": "/assets/logo-blackout.png",
       "logoWidthPx": 120,
@@ -234,6 +235,17 @@ values
         "language": "pt-BR",
         "currency": "BRL"
       }
+    },
+    "layout": {
+      "type": "singleColumn"
+    },
+    "elements": {
+      "showCountrySelector": true,
+      "showProductImage": true,
+      "showOrderBumps": true,
+      "showShipping": true,
+      "showFooterSecurityText": true,
+      "order": ["header", "country", "offer", "form", "bumps", "shipping", "payment", "footer"]
     }
   }'::jsonb
 ),
@@ -261,7 +273,8 @@ values
       "steps": "10px"
     },
     "header": {
-      "style": "texto",
+      "style": "logo",
+      "text": "",
       "centerLogo": false,
       "logoUrl": "/assets/logo-blackout.png",
       "logoWidthPx": 120,
@@ -295,6 +308,17 @@ values
         "language": "pt-BR",
         "currency": "BRL"
       }
+    },
+    "layout": {
+      "type": "singleColumn"
+    },
+    "elements": {
+      "showCountrySelector": true,
+      "showProductImage": true,
+      "showOrderBumps": true,
+      "showShipping": true,
+      "showFooterSecurityText": true,
+      "order": ["header", "country", "offer", "form", "bumps", "shipping", "payment", "footer"]
     }
   }'::jsonb
 ),
@@ -323,6 +347,7 @@ values
     },
     "header": {
       "style": "logo",
+      "text": "",
       "centerLogo": true,
       "logoUrl": "/assets/logo-blackout.png",
       "logoWidthPx": 120,
@@ -356,6 +381,17 @@ values
         "language": "pt-BR",
         "currency": "BRL"
       }
+    },
+    "layout": {
+      "type": "singleColumn"
+    },
+    "elements": {
+      "showCountrySelector": true,
+      "showProductImage": true,
+      "showOrderBumps": true,
+      "showShipping": true,
+      "showFooterSecurityText": true,
+      "order": ["header", "country", "offer", "form", "bumps", "shipping", "payment", "footer"]
     }
   }'::jsonb
 )

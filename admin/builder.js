@@ -52,6 +52,28 @@ const sectionMeta = {
   },
 };
 
+const DEFAULT_ELEMENTS_ORDER = [
+  "header",
+  "country",
+  "offer",
+  "form",
+  "bumps",
+  "shipping",
+  "payment",
+  "footer",
+];
+
+const ELEMENT_LABELS = {
+  header: "Cabecalho",
+  country: "Pais",
+  offer: "Oferta",
+  form: "Formulario",
+  bumps: "Order Bumps",
+  shipping: "Frete",
+  payment: "Pagamento",
+  footer: "Rodape",
+};
+
 function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -261,6 +283,56 @@ function setFieldValue(id, value, fallback = "") {
   }
 }
 
+function getElementsOrder(config = state.effectiveDraft) {
+  const order = config?.elements?.order;
+  if (!Array.isArray(order) || !order.length) {
+    return DEFAULT_ELEMENTS_ORDER.slice();
+  }
+  const known = order.filter((item) => DEFAULT_ELEMENTS_ORDER.includes(item));
+  DEFAULT_ELEMENTS_ORDER.forEach((item) => {
+    if (!known.includes(item)) {
+      known.push(item);
+    }
+  });
+  return known;
+}
+
+function renderElementsOrderList() {
+  const list = document.getElementById("elements-order-list");
+  if (!list) return;
+  const order = getElementsOrder();
+  list.innerHTML = order
+    .map(
+      (item, index) => `
+        <li class="elements-order-item" data-order-item="${item}">
+          <span class="elements-order-label">${ELEMENT_LABELS[item] || item}</span>
+          <div class="elements-order-actions">
+            <button class="order-btn" type="button" data-order-move="up" data-order-index="${index}" aria-label="Mover para cima">↑</button>
+            <button class="order-btn" type="button" data-order-move="down" data-order-index="${index}" aria-label="Mover para baixo">↓</button>
+          </div>
+        </li>
+      `
+    )
+    .join("");
+
+  list.querySelectorAll("button[data-order-move]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const index = Number(btn.getAttribute("data-order-index"));
+      const direction = btn.getAttribute("data-order-move");
+      const nextOrder = getElementsOrder();
+      if (direction === "up" && index > 0) {
+        [nextOrder[index - 1], nextOrder[index]] = [nextOrder[index], nextOrder[index - 1]];
+      } else if (direction === "down" && index < nextOrder.length - 1) {
+        [nextOrder[index + 1], nextOrder[index]] = [nextOrder[index], nextOrder[index + 1]];
+      } else {
+        return;
+      }
+      setOverride(["elements", "order"], nextOrder);
+      renderElementsOrderList();
+    });
+  });
+}
+
 function bindAppearanceFields() {
   const colorBindings = [
     ["color-primary", ["palette", "primary"]],
@@ -297,6 +369,7 @@ function bindAppearanceFields() {
     ["effect-secondary-speed", ["effects", "secondaryButton", "speed"]],
     ["setting-language", ["settings", "i18n", "language"]],
     ["setting-currency", ["settings", "i18n", "currency"]],
+    ["layout-type", ["layout", "type"]],
   ];
 
   textBindings.forEach(([id, path, cast]) => {
@@ -305,6 +378,9 @@ function bindAppearanceFields() {
       const raw = field.value;
       const value = cast === "number" ? Number(raw || 0) : raw;
       setOverride(path, value);
+      if (id === "header-logo-url") {
+        renderLogoPreview(value);
+      }
     });
   });
 
@@ -338,6 +414,66 @@ function bindAppearanceFields() {
   document.getElementById("add-custom-field")?.addEventListener("click", () => {
     alert("Campos personalizados serao implementados na proxima etapa.");
   });
+
+  const elementChecks = [
+    ["el-show-country", ["elements", "showCountrySelector"]],
+    ["el-show-product-image", ["elements", "showProductImage"]],
+    ["el-show-bumps", ["elements", "showOrderBumps"]],
+    ["el-show-shipping", ["elements", "showShipping"]],
+    ["el-show-footer-security", ["elements", "showFooterSecurityText"]],
+  ];
+
+  elementChecks.forEach(([id, path]) => {
+    const field = document.getElementById(id);
+    field?.addEventListener("change", () => setOverride(path, field.checked));
+  });
+
+  const uploadBtn = document.getElementById("header-logo-upload-btn");
+  const fileInput = document.getElementById("header-logo-file");
+  uploadBtn?.addEventListener("click", () => fileInput?.click());
+  fileInput?.addEventListener("change", async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+
+    const allowed = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    if (!allowed.includes(file.type.toLowerCase())) {
+      alert("Formato invalido. Use PNG, JPG, JPEG ou WEBP.");
+      fileInput.value = "";
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      alert("A imagem deve ter no maximo 2MB.");
+      fileInput.value = "";
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("logo", file);
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = "Enviando...";
+    try {
+      const response = await fetch("/api/admin/upload/logo", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.url) {
+        throw new Error(data.error || "Falha no upload do logo");
+      }
+      setFieldValue("header-logo-url", data.url, "");
+      setOverride(["header", "logoUrl"], data.url);
+      renderLogoPreview(data.url);
+    } catch (error) {
+      alert(error.message || "Falha no upload do logo.");
+    } finally {
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = "Enviar logo";
+      fileInput.value = "";
+    }
+  });
 }
 
 function populateFieldsFromEffective() {
@@ -356,7 +492,7 @@ function populateFieldsFromEffective() {
   setFieldValue("radius-fields", valueToRadiusToken(cfg.radius?.fields || "12px"), "md");
   setFieldValue("radius-steps", cfg.radius?.steps === "999px" ? "rounded" : "square", "square");
 
-  setFieldValue("header-style", cfg.header?.style, "logo+texto");
+  setFieldValue("header-style", cfg.header?.style, "logo");
   setFieldValue("header-center-logo", cfg.header?.centerLogo, false);
   setFieldValue("header-logo-url", cfg.header?.logoUrl, "");
   setFieldValue("header-logo-width", cfg.header?.logoWidthPx, 120);
@@ -384,9 +520,30 @@ function populateFieldsFromEffective() {
   setFieldValue("field-cpf", cfg.settings?.fields?.cpf, true);
   setFieldValue("setting-language", cfg.settings?.i18n?.language, "pt-BR");
   setFieldValue("setting-currency", cfg.settings?.i18n?.currency, "BRL");
+  setFieldValue("layout-type", cfg.layout?.type, "singleColumn");
+  setFieldValue("el-show-country", cfg.elements?.showCountrySelector, true);
+  setFieldValue("el-show-product-image", cfg.elements?.showProductImage, true);
+  setFieldValue("el-show-bumps", cfg.elements?.showOrderBumps, true);
+  setFieldValue("el-show-shipping", cfg.elements?.showShipping, true);
+  setFieldValue("el-show-footer-security", cfg.elements?.showFooterSecurityText, true);
 
   document.getElementById("current-theme-pill").textContent =
     state.themesByKey.get(state.theme_key)?.name || state.theme_key;
+  renderLogoPreview(cfg.header?.logoUrl || "");
+  renderElementsOrderList();
+}
+
+function renderLogoPreview(url) {
+  const preview = document.getElementById("header-logo-preview");
+  if (!preview) return;
+  const cleanUrl = typeof url === "string" ? url.trim() : "";
+  if (!cleanUrl) {
+    preview.removeAttribute("src");
+    preview.classList.add("hidden");
+    return;
+  }
+  preview.src = cleanUrl;
+  preview.classList.remove("hidden");
 }
 
 function renderThemeSelect() {

@@ -30,7 +30,7 @@
       <div class="trust-bar__content" id="checkout-header-content">
         <div class="trust-brand" id="header-brand-block">
           <img id="header-logo" src="/assets/logo-blackout.png" alt="Logo" class="trust-bar__logo" />
-          <strong id="header-text">The Black Checkout</strong>
+          <strong id="header-text" class="hidden"></strong>
         </div>
 
         <div class="trust-bar__badge" id="security-seal">
@@ -50,117 +50,128 @@
 
     <main class="page">
       <section class="checkout">
-        <header class="country-switcher">
-          <div class="country-switcher__flag">BR</div>
-          <span>Brasil</span>
-          <button type="button" class="country-switcher__toggle" aria-label="Trocar pais">
-            <svg viewBox="0 0 16 16" aria-hidden="true">
-              <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" />
-            </svg>
-          </button>
-        </header>
-
-        <article class="product-card">
-          <div class="product-card__media">
-            <img id="product-cover" src="https://dummyimage.com/200x280/f0f0f0/aaa&text=Livro" alt="Capa do produto" />
-          </div>
-          <div class="product-card__body">
-            <p class="product-card__badge">Oferta digital</p>
-            <h1 id="product-title">Devocional - 365 Dias de Amor com Deus</h1>
-            <p id="product-description">Receba instantaneamente no seu e-mail.</p>
-            <div class="product-card__prices">
-              <span id="product-compare-price" class="product-card__compare hidden">R$ 0,00</span>
-              <strong id="product-price">R$ 0,00</strong>
-            </div>
-          </div>
-        </article>
-
-        <hr class="divider" />
-
-        <form id="checkout-form" class="form">
-          <div class="field" id="field-wrap-email">
-            <label for="email">Seu e-mail</label>
-            <input id="email" type="email" name="email" required placeholder="Insira seu e-mail" />
-          </div>
-
-          <div class="field" id="field-wrap-name">
-            <label for="full-name">Nome completo</label>
-            <input id="full-name" type="text" name="name" required placeholder="Insira seu nome completo" />
-          </div>
-
-          <div class="field" id="field-wrap-cpf">
-            <label for="tax-id">CPF/CNPJ</label>
-            <input id="tax-id" type="text" name="taxId" placeholder="Insira seu CPF ou CNPJ" />
-          </div>
-
-          <div class="field" id="field-wrap-phone">
-            <label for="cellphone">Seu celular</label>
-            <div class="phone-field">
-              <span class="phone-field__code">+55</span>
-              <input id="cellphone" type="tel" name="cellphone" placeholder="Insira seu celular" />
-            </div>
-          </div>
-
-          <section class="address address--collapsed" id="address-card">
-            <header class="address__header">
-              <div>
-                <h3>Entrega</h3>
-                <p>Preencha o endereco para liberar o frete.</p>
-              </div>
-              <button type="button" id="address-toggle" class="address__toggle" disabled>
-                Adicionar endereco
+        <div id="checkout-layout" class="checkout-layout" data-layout="singleColumn">
+          <div id="checkout-primary" class="checkout-primary">
+            <header class="country-switcher" id="country-switcher">
+              <div class="country-switcher__flag">BR</div>
+              <span>Brasil</span>
+              <button type="button" class="country-switcher__toggle" aria-label="Trocar pais">
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" />
+                </svg>
               </button>
             </header>
-            <div id="address-content" class="address__content hidden">
-              <div class="address__grid">
-                <label class="field field--full">
-                  CEP
-                  <input id="cep" name="cep" inputmode="numeric" pattern="\d{5}-?\d{3}" placeholder="00000-000" />
-                  <small class="helper">Digite um CEP valido e aguarde o preenchimento automatico.</small>
-                  <p id="cep-error" class="field-error hidden"></p>
-                </label>
 
-                <label class="field field--full">Endereco<input id="address-street" name="street" readonly placeholder="Rua" /></label>
-                <label class="field">Numero<input id="address-number" name="address_number" placeholder="Digite o numero" /></label>
-                <label class="field">Complemento<input id="address-complement" name="complement" placeholder="Apartamento, bloco, etc." /></label>
-                <label class="field">Bairro<input id="address-neighborhood" name="neighborhood" readonly placeholder="Bairro" /></label>
-                <label class="field">Cidade<input id="address-city" name="city" readonly placeholder="Cidade" /></label>
-                <label class="field">Estado<input id="address-state" name="state" readonly placeholder="UF" /></label>
-                <label class="field">Pais<input id="address-country" name="country" readonly value="Brasil" /></label>
+            <form id="checkout-form" class="form">
+              <div id="form-fields-block" class="form-block">
+                <div class="field" id="field-wrap-email">
+                  <label for="email">Seu e-mail</label>
+                  <input id="email" type="email" name="email" required placeholder="Insira seu e-mail" />
+                </div>
+
+                <div class="field" id="field-wrap-name">
+                  <label for="full-name">Nome completo</label>
+                  <input id="full-name" type="text" name="name" required placeholder="Insira seu nome completo" />
+                </div>
+
+                <div class="field" id="field-wrap-cpf">
+                  <label for="tax-id">CPF/CNPJ</label>
+                  <input id="tax-id" type="text" name="taxId" placeholder="Insira seu CPF ou CNPJ" />
+                </div>
+
+                <div class="field" id="field-wrap-phone">
+                  <label for="cellphone">Seu celular</label>
+                  <div class="phone-field">
+                    <span class="phone-field__code">+55</span>
+                    <input id="cellphone" type="tel" name="cellphone" placeholder="Insira seu celular" />
+                  </div>
+                </div>
+
+                <section class="address address--collapsed" id="address-card">
+                  <header class="address__header">
+                    <div>
+                      <h3>Entrega</h3>
+                      <p>Preencha o endereco para liberar o frete.</p>
+                    </div>
+                    <button type="button" id="address-toggle" class="address__toggle" disabled>
+                      Adicionar endereco
+                    </button>
+                  </header>
+                  <div id="address-content" class="address__content hidden">
+                    <div class="address__grid">
+                      <label class="field field--full">
+                        CEP
+                        <input id="cep" name="cep" inputmode="numeric" pattern="\d{5}-?\d{3}" placeholder="00000-000" />
+                        <small class="helper">Digite um CEP valido e aguarde o preenchimento automatico.</small>
+                        <p id="cep-error" class="field-error hidden"></p>
+                      </label>
+
+                      <label class="field field--full">Endereco<input id="address-street" name="street" readonly placeholder="Rua" /></label>
+                      <label class="field">Numero<input id="address-number" name="address_number" placeholder="Digite o numero" /></label>
+                      <label class="field">Complemento<input id="address-complement" name="complement" placeholder="Apartamento, bloco, etc." /></label>
+                      <label class="field">Bairro<input id="address-neighborhood" name="neighborhood" readonly placeholder="Bairro" /></label>
+                      <label class="field">Cidade<input id="address-city" name="city" readonly placeholder="Cidade" /></label>
+                      <label class="field">Estado<input id="address-state" name="state" readonly placeholder="UF" /></label>
+                      <label class="field">Pais<input id="address-country" name="country" readonly value="Brasil" /></label>
+                    </div>
+                  </div>
+                </section>
               </div>
-            </div>
-          </section>
 
-          <section id="shipping-section" class="shipping hidden">
-            <h3>Escolha o melhor frete para voce</h3>
-            <div id="shipping-list" class="shipping__list"></div>
-          </section>
+              <section id="shipping-section" class="shipping hidden form-block">
+                <h3>Escolha o melhor frete para voce</h3>
+                <div id="shipping-list" class="shipping__list"></div>
+              </section>
 
-          <section id="addons-section" class="addons hidden">
-            <header class="addons__header">
-              <div><p class="eyebrow">Voce pode gostar</p></div>
-              <label class="select-all">
-                <input type="checkbox" id="select-all" />
-                <span id="select-all-text">Selecionar todos</span>
-              </label>
-            </header>
-            <div id="addons-list" class="addons__list"></div>
-          </section>
+              <section id="addons-section" class="addons hidden form-block">
+                <header class="addons__header">
+                  <div><p class="eyebrow">Voce pode gostar</p></div>
+                  <label class="select-all">
+                    <input type="checkbox" id="select-all" />
+                    <span id="select-all-text">Selecionar todos</span>
+                  </label>
+                </header>
+                <div id="addons-list" class="addons__list"></div>
+              </section>
 
-          <section class="summary">
-            <header class="summary__header">
-              <h3>Resumo</h3>
-              <span id="summary-count" class="summary__count">0 itens</span>
-            </header>
-            <div id="summary-lines" class="summary__lines"></div>
-            <div class="summary__line"><span>Subtotal</span><strong id="summary-subtotal">R$ 0,00</strong></div>
-            <div class="summary__line"><span>Frete</span><strong id="summary-shipping">R$ 0,00</strong></div>
-            <div class="summary__total"><span>Total</span><strong id="summary-total">R$ 0,00</strong></div>
-          </section>
+              <section id="payment-block" class="form-block">
+                <button id="pay-btn" type="submit" class="cta">Comprar agora</button>
+              </section>
 
-          <button id="pay-btn" type="submit" class="cta">Comprar agora</button>
-          <p class="trust">Ambiente seguro - Seus dados sao confidenciais</p>
-        </form>
+              <section id="footer-block" class="form-block">
+                <p id="footer-security-text" class="trust">Ambiente seguro - Seus dados sao confidenciais</p>
+              </section>
+            </form>
+          </div>
+
+          <aside id="checkout-side" class="checkout-side">
+            <article class="product-card" id="product-card">
+              <div class="product-card__media" id="product-image-wrap">
+                <img id="product-cover" src="https://dummyimage.com/200x280/f0f0f0/aaa&text=Livro" alt="Capa do produto" />
+              </div>
+              <div class="product-card__body">
+                <p class="product-card__badge">Oferta digital</p>
+                <h1 id="product-title">Devocional - 365 Dias de Amor com Deus</h1>
+                <p id="product-description">Receba instantaneamente no seu e-mail.</p>
+                <div class="product-card__prices">
+                  <span id="product-compare-price" class="product-card__compare hidden">R$ 0,00</span>
+                  <strong id="product-price">R$ 0,00</strong>
+                </div>
+              </div>
+            </article>
+
+            <section class="summary" id="summary-card">
+              <header class="summary__header">
+                <h3>Resumo</h3>
+                <span id="summary-count" class="summary__count">0 itens</span>
+              </header>
+              <div id="summary-lines" class="summary__lines"></div>
+              <div class="summary__line"><span>Subtotal</span><strong id="summary-subtotal">R$ 0,00</strong></div>
+              <div class="summary__line"><span>Frete</span><strong id="summary-shipping">R$ 0,00</strong></div>
+              <div class="summary__total"><span>Total</span><strong id="summary-total">R$ 0,00</strong></div>
+            </section>
+          </aside>
+        </div>
 
         <section id="pix-result" class="pix hidden">
           <div class="pix__content">
