@@ -12,6 +12,8 @@ const { ensurePaymentGatewayTable } = require("../lib/ensure-payment-gateway");
 const { encryptText } = require("../lib/credentials-crypto");
 const DEFAULT_SEALPAY_API_URL =
   process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix";
+const LOGO_MAX_BYTES = Number(process.env.LOGO_UPLOAD_MAX_BYTES || 4 * 1024 * 1024);
+const LOGO_MAX_MB_LABEL = `${Math.round(LOGO_MAX_BYTES / (1024 * 1024))}MB`;
 const authHandler = require("./auth/[[...path]]");
 
 function deepMerge(base, override) {
@@ -107,14 +109,14 @@ function normalizeThemeDefaults(defaults = {}) {
   return next;
 }
 
-function readRawBody(req, maxBytes = 2.5 * 1024 * 1024) {
+function readRawBody(req, maxBytes = LOGO_MAX_BYTES + 512 * 1024) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     let total = 0;
     req.on("data", (chunk) => {
       total += chunk.length;
       if (total > maxBytes) {
-        reject(new Error("Arquivo excede o limite de 2MB"));
+        reject(new Error(`Arquivo excede o limite de ${LOGO_MAX_MB_LABEL}`));
         return;
       }
       chunks.push(chunk);

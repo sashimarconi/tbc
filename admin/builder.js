@@ -62,6 +62,7 @@ const DEFAULT_ELEMENTS_ORDER = [
   "payment",
   "footer",
 ];
+const MAX_LOGO_UPLOAD_BYTES = 4 * 1024 * 1024;
 
 const ELEMENT_LABELS = {
   header: "Cabecalho",
@@ -441,8 +442,8 @@ function bindAppearanceFields() {
       fileInput.value = "";
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      alert("A imagem deve ter no maximo 2MB.");
+    if (file.size > MAX_LOGO_UPLOAD_BYTES) {
+      alert("A imagem deve ter no maximo 4MB.");
       fileInput.value = "";
       return;
     }
@@ -459,9 +460,15 @@ function bindAppearanceFields() {
         },
         body: formData,
       });
-      const data = await response.json().catch(() => ({}));
+      const raw = await response.text();
+      let data = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch (error) {
+        data = {};
+      }
       if (!response.ok || !data?.url) {
-        throw new Error(data.error || "Falha no upload do logo");
+        throw new Error(data.error || raw || `Falha no upload do logo (HTTP ${response.status})`);
       }
       setFieldValue("header-logo-url", data.url, "");
       setOverride(["header", "logoUrl"], data.url);
