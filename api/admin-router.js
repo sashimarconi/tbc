@@ -334,23 +334,24 @@ async function ensureThemesAndAppearanceSchema() {
     },
   });
 
-  await query(
-    `insert into checkout_themes (key, name, description, defaults)
-     values ($1, $2, $3, $4::jsonb)
-     on conflict (key) do nothing`,
-    ["solarys", "Solarys", "Tema Solarys", JSON.stringify(minimalDefaults)]
-  );
+  const ensureTheme = async (key, name, description, defaults) => {
+    const exists = await query("select id from checkout_themes where key = $1 limit 1", [key]);
+    if (exists.rows?.length) return;
+    await query(
+      `insert into checkout_themes (key, name, description, defaults)
+       values ($1, $2, $3, $4::jsonb)`,
+      [key, name, description, defaults]
+    );
+  };
 
-  await query(
-    `insert into checkout_themes (key, name, description, defaults)
-     values ($1, $2, $3, $4::jsonb)
-     on conflict (key) do nothing`,
-    [
-      "minimal",
-      "Minimal",
-      "Tema Minimal",
-      JSON.stringify(
-        normalizeThemeDefaults({
+  await ensureTheme("solarys", "Solarys", "Tema Solarys", JSON.stringify(minimalDefaults));
+
+  await ensureTheme(
+    "minimal",
+    "Minimal",
+    "Tema Minimal",
+    JSON.stringify(
+      normalizeThemeDefaults({
         ...minimalDefaults,
         palette: {
           primary: "#111827",
@@ -361,21 +362,16 @@ async function ensureThemesAndAppearanceSchema() {
           border: "#e2e8f0",
         },
         typography: { fontFamily: "Inter" },
-        })
-      ),
-    ]
+      })
+    )
   );
 
-  await query(
-    `insert into checkout_themes (key, name, description, defaults)
-     values ($1, $2, $3, $4::jsonb)
-     on conflict (key) do nothing`,
-    [
-      "dark",
-      "Dark",
-      "Tema escuro",
-      JSON.stringify(
-        normalizeThemeDefaults({
+  await ensureTheme(
+    "dark",
+    "Dark",
+    "Tema escuro",
+    JSON.stringify(
+      normalizeThemeDefaults({
         ...minimalDefaults,
         palette: {
           primary: "#22c55e",
@@ -386,9 +382,13 @@ async function ensureThemesAndAppearanceSchema() {
           border: "#24314b",
         },
         typography: { fontFamily: "Montserrat" },
-        })
-      ),
-    ]
+      })
+    )
+  );
+
+  await query("create unique index if not exists checkout_themes_key_uidx on checkout_themes (key)");
+  await query(
+    "create unique index if not exists checkout_appearance_owner_uidx on checkout_appearance (owner_user_id)"
   );
 
   const themesResult = await query("select id, defaults from checkout_themes");
@@ -481,15 +481,23 @@ async function handleAppearance(req, res, user) {
         return;
       }
 
-      await query(
-        `insert into checkout_appearance (owner_user_id, theme_key, overrides, updated_at)
-         values ($1, $2, $3::jsonb, now())
-         on conflict (owner_user_id)
-         do update set theme_key = excluded.theme_key,
-                       overrides = excluded.overrides,
-                       updated_at = now()`,
+      const updateRes = await query(
+        `update checkout_appearance
+         set theme_key = $2,
+             overrides = $3::jsonb,
+             updated_at = now()
+         where owner_user_id = $1
+         returning id`,
         [user.id, themeKey, JSON.stringify(overrides)]
       );
+
+      if (!updateRes.rows?.length) {
+        await query(
+          `insert into checkout_appearance (owner_user_id, theme_key, overrides, updated_at)
+           values ($1, $2, $3::jsonb, now())`,
+          [user.id, themeKey, JSON.stringify(overrides)]
+        );
+      }
 
       const saved = await getOrCreateAppearance(user.id);
       res.json({
@@ -891,17 +899,24 @@ async function handlePaymentSettings(req, res, user) {
         return;
       }
 
-      await query(
-        `insert into user_payment_gateways (owner_user_id, provider, api_url, api_key_encrypted, is_active, updated_at)
-         values ($1, $2, $3, $4, $5, now())
-         on conflict (owner_user_id, provider)
-         do update set
-           api_url = excluded.api_url,
-           api_key_encrypted = excluded.api_key_encrypted,
-           is_active = excluded.is_active,
-           updated_at = now()`,
+      const updateRes = await query(
+        `update user_payment_gateways
+         set api_url = $3,
+             api_key_encrypted = $4,
+             is_active = $5,
+             updated_at = now()
+         where owner_user_id = $1 and provider = $2
+         returning id`,
         [user.id, provider, apiUrl, encryptedKey, isActive]
       );
+
+      if (!updateRes.rows?.length) {
+        await query(
+          `insert into user_payment_gateways (owner_user_id, provider, api_url, api_key_encrypted, is_active, updated_at)
+           values ($1, $2, $3, $4, $5, now())`,
+          [user.id, provider, apiUrl, encryptedKey, isActive]
+        );
+      }
 
       res.json({
         ok: true,

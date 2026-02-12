@@ -65,6 +65,27 @@ body {
   font-weight: 500;
 }
 
+.back-main-link {
+  min-height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(237, 237, 237, 0.03);
+  color: rgba(237, 237, 237, 0.9);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+}
+
+.back-main-link:hover {
+  border-color: rgba(161, 0, 255, 0.55);
+  background: rgba(161, 0, 255, 0.1);
+  color: #fff;
+}
+
 .search-box {
   position: relative;
   display: block;

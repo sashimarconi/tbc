@@ -156,11 +156,18 @@ async function ensureThemesAndAppearanceSchema() {
     },
   });
 
+  const exists = await query("select id from checkout_themes where key = 'solarys' limit 1");
+  if (!exists.rows?.length) {
+    await query(
+      `insert into checkout_themes (key, name, description, defaults)
+       values ($1, $2, $3, $4::jsonb)`,
+      ["solarys", "Solarys", "Tema Solarys", JSON.stringify(solarysDefaults)]
+    );
+  }
+
+  await query("create unique index if not exists checkout_themes_key_uidx on checkout_themes (key)");
   await query(
-    `insert into checkout_themes (key, name, description, defaults)
-     values ($1, $2, $3, $4::jsonb)
-     on conflict (key) do nothing`,
-    ["solarys", "Solarys", "Tema Solarys", JSON.stringify(solarysDefaults)]
+    "create unique index if not exists checkout_appearance_owner_uidx on checkout_appearance (owner_user_id)"
   );
 
   const themes = await query("select id, defaults from checkout_themes");
