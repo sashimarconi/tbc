@@ -2,6 +2,8 @@ const { parseJson } = require("../lib/parse-json");
 const { query } = require("../lib/db");
 const { ensurePaymentGatewayTable } = require("../lib/ensure-payment-gateway");
 const { decryptText } = require("../lib/credentials-crypto");
+const DEFAULT_SEALPAY_API_URL =
+  process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix";
 
 async function resolveGatewayBySlug(slug) {
   if (!slug) {
@@ -67,9 +69,7 @@ module.exports = async (req, res) => {
   }
 
   if (!apiUrl) {
-    apiUrl =
-      process.env.SEALPAY_API_URL ||
-      "https://abacate-5eo1.onrender.com/create-pix";
+    apiUrl = DEFAULT_SEALPAY_API_URL;
   }
   if (!apiKey) {
     apiKey = process.env.SEALPAY_API_KEY || "";

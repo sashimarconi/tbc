@@ -10,6 +10,8 @@ const {
 const { saveProductFile } = require("../lib/product-files");
 const { ensurePaymentGatewayTable } = require("../lib/ensure-payment-gateway");
 const { encryptText } = require("../lib/credentials-crypto");
+const DEFAULT_SEALPAY_API_URL =
+  process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix";
 const authHandler = require("./auth/[[...path]]");
 
 function deepMerge(base, override) {
@@ -706,7 +708,7 @@ async function handlePaymentSettings(req, res, user) {
       const row = result.rows?.[0];
       res.json({
         provider: "sealpay",
-        api_url: row?.api_url || "",
+        api_url: row?.api_url || DEFAULT_SEALPAY_API_URL,
         is_active: row?.is_active !== false,
         has_api_key: Boolean(row),
         masked_api_key: row ? "********" : "",
@@ -718,14 +720,9 @@ async function handlePaymentSettings(req, res, user) {
     if (req.method === "POST") {
       const body = await parseJson(req);
       const provider = "sealpay";
-      const apiUrl = String(body.api_url || "").trim();
+      const apiUrl = String(body.api_url || "").trim() || DEFAULT_SEALPAY_API_URL;
       const apiKey = String(body.api_key || "").trim();
       const isActive = body.is_active !== false;
-
-      if (!apiUrl) {
-        res.status(400).json({ error: "api_url obrigatorio" });
-        return;
-      }
 
       const currentRes = await query(
         `select api_key_encrypted
