@@ -1,6 +1,13 @@
-﻿module.exports = async (req, res) => {
+module.exports = async (req, res) => {
   try {
-    const handler = require("../admin-global-router");
+    const raw = req.query?.path;
+    const segments = Array.isArray(raw)
+      ? raw
+      : typeof raw === "string" && raw.length
+        ? raw.split("/").filter(Boolean)
+        : [];
+    const isGlobalRoute = (segments[0] || "") === "global";
+    const handler = require(isGlobalRoute ? "../admin-global-router" : "../admin-router");
     await handler(req, res);
   } catch (error) {
     if (!res.headersSent) {
