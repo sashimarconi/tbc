@@ -204,6 +204,10 @@ const currencyFormatter = new Intl.NumberFormat("pt-BR", {
 const DASHBOARD_INTERVAL = 15000;
 const ORDERS_INTERVAL = 20000;
 const CARTS_INTERVAL = 20000;
+const IS_DEV =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1" ||
+  window.location.hostname.endsWith(".local");
 
 let token = localStorage.getItem("admin_token") || "";
 let summaryInterval = null;
@@ -852,6 +856,9 @@ async function loadOrders() {
       if (res.status === 401) {
         showLogin();
       }
+      if (IS_DEV) {
+        console.warn("[dashboard/orders] request failed", { status: res.status });
+      }
       renderTableMessage(ordersTableBody, 5, "Não foi possível carregar os pedidos.");
       return;
     }
@@ -859,6 +866,9 @@ async function loadOrders() {
     renderOrdersStats(data.stats || {});
     renderOrdersTable(data.orders || []);
   } catch (error) {
+    if (IS_DEV) {
+      console.warn("[dashboard/orders] unexpected error", error);
+    }
     renderTableMessage(ordersTableBody, 5, "Erro ao carregar pedidos.");
   }
 }
@@ -923,7 +933,7 @@ function activateView(targetId) {
 async function loadDashboardOrdersPreview() {
   if (!dashboardOrdersBody) return;
   try {
-    const res = await fetch("/api/dashboard/recent-orders", {
+    const res = await fetch("/api/dashboard/orders", {
       headers: { ...setAuthHeader() },
     });
     if (!res.ok) {
@@ -2134,10 +2144,15 @@ const sidebarToggle = document.getElementById("sidebar-toggle");
 if (sidebar && sidebarToggle && mainContent) {
   sidebarToggle.addEventListener("click", () => {
     sidebar.classList.toggle("minimized");
-    if (sidebar.classList.contains("minimized")) {
-      mainContent.style.marginLeft = "72px";
+    const isMobile = window.matchMedia("(max-width: 900px)").matches;
+    if (!isMobile) {
+      if (sidebar.classList.contains("minimized")) {
+        mainContent.style.marginLeft = "72px";
+      } else {
+        mainContent.style.marginLeft = "250px";
+      }
     } else {
-      mainContent.style.marginLeft = "250px";
+      mainContent.style.marginLeft = "";
     }
   });
 }

@@ -873,7 +873,7 @@ async function handleOrders(req, res, user) {
 
     const [ordersResult, statsResult] = await Promise.all([
       query(
-        `select id, cart_key, customer, summary, status, pix, total_cents, created_at
+        `select id, cart_key, customer, items, summary, status, pix, total_cents, created_at
          from checkout_orders
          where owner_user_id = $1
          order by created_at desc
@@ -893,8 +893,18 @@ async function handleOrders(req, res, user) {
       ),
     ]);
 
+    const orders = (ordersResult.rows || []).map((row) => {
+      const items = Array.isArray(row.items) ? row.items : [];
+      const firstItem = items.find((item) => item && typeof item === "object") || null;
+      return {
+        ...row,
+        product_name:
+          firstItem?.name || row.summary?.product_name || row.summary?.title || "Produto",
+      };
+    });
+
     res.json({
-      orders: ordersResult.rows || [],
+      orders,
       stats: statsResult.rows?.[0] || { total: 0, pending: 0, paid: 0, failed: 0, revenue_paid: 0 },
     });
   } catch (error) {
@@ -912,15 +922,7 @@ async function handleRecentOrders(req, res, user) {
     await ensureSalesTables();
     console.log("[dashboard/recent-orders] filtering by owner_user_id", user.id);
     const result = await query(
-      `select
-         id,
-         cart_key,
-         customer,
-         items,
-         summary,
-         status,
-         total_cents,
-         created_at
+      `select id, cart_key, customer, items, summary, status, pix, total_cents, created_at
        from checkout_orders
        where owner_user_id = $1
        order by created_at desc
@@ -931,10 +933,10 @@ async function handleRecentOrders(req, res, user) {
     const orders = (result.rows || []).map((row) => {
       const items = Array.isArray(row.items) ? row.items : [];
       const firstItem = items.find((item) => item && typeof item === "object") || null;
-      const productName = firstItem?.name || row.summary?.product_name || row.summary?.title || "Produto";
       return {
         ...row,
-        product_name: productName,
+        product_name:
+          firstItem?.name || row.summary?.product_name || row.summary?.title || "Produto",
       };
     });
     res.json({ orders });

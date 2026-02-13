@@ -208,9 +208,9 @@ async function handleSummary(req, res) {
         `select
            count(*) filter (where event_type = 'page_view') as visitors_today,
            count(*) filter (where event_type = 'checkout_view' or (event_type = 'page_view' and page = 'checkout')) as checkout_visits_today,
-           count(*) filter (where event_type = 'checkout_start') as checkout_starts_today,
+           count(*) filter (where event_type in ('checkout_start','checkout_started')) as checkout_starts_today,
            count(*) filter (where event_type = 'pix_generated') as pix_generated_today,
-           count(*) filter (where event_type = 'purchase') as purchases_today
+           count(*) filter (where event_type in ('purchase','paid')) as purchases_today
          from analytics_events
          where owner_user_id = $1
            and ${periodWindow.sql}`,
@@ -221,7 +221,7 @@ async function handleSummary(req, res) {
            date_trunc('hour', created_at) as bucket,
            count(*) filter (where event_type = 'page_view') as visits,
            count(*) filter (where event_type = 'checkout_view' or (event_type = 'page_view' and page = 'checkout')) as "checkoutViews",
-           count(*) filter (where event_type = 'checkout_start') as "checkoutStarts",
+           count(*) filter (where event_type in ('checkout_start','checkout_started')) as "checkoutStarts",
            count(*) filter (where event_type = 'pix_generated') as pix
          from analytics_events
          where owner_user_id = $1

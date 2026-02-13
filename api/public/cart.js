@@ -36,6 +36,11 @@ function asNumber(value) {
   return Number.isFinite(num) ? Math.max(0, Math.round(num)) : 0;
 }
 
+function toJsonb(value) {
+  if (value === null || value === undefined) return null;
+  return JSON.stringify(value);
+}
+
 async function resolveOwnerBySlug(slug) {
   const result = await query("select owner_user_id from products where slug = $1 and type = 'base' limit 1", [slug]);
   return result.rows?.[0]?.owner_user_id || null;
@@ -79,7 +84,6 @@ module.exports = async (req, res) => {
   const customer = asObject(body.customer) || {};
   const address = asObject(body.address) || null;
   const items = Array.isArray(body.items) ? body.items : [];
-  const itemsJson = JSON.stringify(items);
   const shipping = asObject(body.shipping) || null;
   const summary = asObject(body.summary) || null;
   const utm = asObject(body.utm) || null;
@@ -93,61 +97,77 @@ module.exports = async (req, res) => {
   try {
     await ensureSalesTables();
 
-    await query(
-      `insert into checkout_carts (
-         owner_user_id, cart_key, customer, address, items, shipping, summary,
-         stage, stage_level, status,
-         total_cents, subtotal_cents, shipping_cents,
-         utm, source, tracking,
-         last_seen, last_stage_at
-       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,now(),now())
-       on conflict (owner_user_id, cart_key)
-       do update set
-         owner_user_id = excluded.owner_user_id,
-         customer = coalesce(excluded.customer, checkout_carts.customer),
-         address = coalesce(excluded.address, checkout_carts.address),
-         items = case when coalesce(jsonb_array_length(excluded.items),0) > 0 then excluded.items else checkout_carts.items end,
-         shipping = coalesce(excluded.shipping, checkout_carts.shipping),
-         summary = coalesce(excluded.summary, checkout_carts.summary),
-         stage = case when excluded.stage_level > checkout_carts.stage_level then excluded.stage else checkout_carts.stage end,
-         stage_level = greatest(checkout_carts.stage_level, excluded.stage_level),
-         status = case
-            when checkout_carts.status = 'converted' then checkout_carts.status
-            when excluded.status = 'converted' then 'converted'
-            else excluded.status
-          end,
-         total_cents = greatest(excluded.total_cents, checkout_carts.total_cents),
-         subtotal_cents = greatest(excluded.subtotal_cents, checkout_carts.subtotal_cents),
-         shipping_cents = greatest(excluded.shipping_cents, checkout_carts.shipping_cents),
-         utm = coalesce(checkout_carts.utm, excluded.utm),
-         source = case when checkout_carts.source is null or checkout_carts.source = '' then excluded.source else checkout_carts.source end,
-         tracking = coalesce(checkout_carts.tracking, excluded.tracking),
-         updated_at = now(),
-         last_seen = now(),
-         last_stage_at = case when excluded.stage_level > checkout_carts.stage_level then now() else checkout_carts.last_stage_at end
-       `,
-      [
-        ownerUserId,
-        cartKey,
-        customer,
-        address,
-        itemsJson,
-        shipping,
-        summary,
-        stage,
-        stageLevel,
-        status,
-        totalCents,
-        subtotalCents,
-        shippingCents,
-        utm,
-        source || null,
-        tracking,
-      ]
+    const params = [
+      ownerUserId,
+      cartKey,
+      toJsonb(customer),
+      toJsonb(address),
+      toJsonb(items),
+      toJsonb(shipping),
+      toJsonb(summary),
+      stage,
+      stageLevel,
+      status,
+      totalCents,
+      subtotalCents,
+      shippingCents,
+      toJsonb(utm),
+      source || null,
+      toJsonb(tracking),
+    ];
+
+    const updated = await query(
+      `update checkout_carts
+         set owner_user_id = $1,
+             customer = coalesce($3::jsonb, customer),
+             address = coalesce($4::jsonb, address),
+             items = case when coalesce(jsonb_array_length($5::jsonb),0) > 0 then $5::jsonb else items end,
+             shipping = coalesce($6::jsonb, shipping),
+             summary = coalesce($7::jsonb, summary),
+             stage = case when $9 > stage_level then $8 else stage end,
+             stage_level = greatest(stage_level, $9),
+             status = case
+               when status = 'converted' then status
+               when $10 = 'converted' then 'converted'
+               else $10
+             end,
+             total_cents = greatest($11, total_cents),
+             subtotal_cents = greatest($12, subtotal_cents),
+             shipping_cents = greatest($13, shipping_cents),
+             utm = coalesce(utm, $14::jsonb),
+             source = case when source is null or source = '' then $15 else source end,
+             tracking = coalesce(tracking, $16::jsonb),
+             updated_at = now(),
+             last_seen = now(),
+             last_stage_at = case when $9 > stage_level then now() else last_stage_at end
+       where cart_key = $2 and (owner_user_id = $1 or owner_user_id is null)
+       returning id`,
+      params
     );
+
+    if (!updated.rows?.length) {
+      await query(
+        `insert into checkout_carts (
+           owner_user_id, cart_key, customer, address, items, shipping, summary,
+           stage, stage_level, status,
+           total_cents, subtotal_cents, shipping_cents,
+           utm, source, tracking,
+           last_seen, last_stage_at
+         ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,now(),now())`,
+        params
+      );
+    }
 
     res.json({ ok: true });
   } catch (error) {
+    console.error("[public/cart] failed to upsert cart snapshot", {
+      ownerUserId,
+      slug,
+      cartKey,
+      stage,
+      status,
+      error: error?.message,
+    });
     res.status(500).json({ error: error.message });
   }
 };

@@ -19,6 +19,11 @@ function asNumber(value) {
   return Number.isFinite(num) ? Math.max(0, Math.round(num)) : 0;
 }
 
+function toJsonb(value) {
+  if (value === null || value === undefined) return null;
+  return JSON.stringify(value);
+}
+
 function normalizeOrderStatus(value) {
   const raw = sanitizeText(value).toLowerCase();
   if (!raw || raw === "pending") return "waiting_payment";
@@ -80,7 +85,6 @@ module.exports = async (req, res) => {
 
   const address = asObject(body.address);
   const items = Array.isArray(body.items) ? body.items : [];
-  const itemsJson = JSON.stringify(items);
   const shipping = asObject(body.shipping);
   const summary = asObject(body.summary);
   const utm = asObject(body.utm);
@@ -101,51 +105,58 @@ module.exports = async (req, res) => {
   try {
     await ensureSalesTables();
 
-    const result = await query(
-      `insert into checkout_orders (
-         owner_user_id, cart_key, customer, address, items, shipping, summary,
-         status, pix, total_cents, subtotal_cents, shipping_cents,
-         tracking_parameters, utm, source, tracking
-       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
-       on conflict (owner_user_id, cart_key)
-       do update set
-         owner_user_id = excluded.owner_user_id,
-         customer = excluded.customer,
-         address = excluded.address,
-         items = excluded.items,
-         shipping = excluded.shipping,
-         summary = excluded.summary,
-         status = excluded.status,
-         pix = excluded.pix,
-         total_cents = excluded.total_cents,
-         subtotal_cents = excluded.subtotal_cents,
-         shipping_cents = excluded.shipping_cents,
-         tracking_parameters = coalesce(excluded.tracking_parameters, checkout_orders.tracking_parameters),
-         utm = coalesce(checkout_orders.utm, excluded.utm),
-         source = case when checkout_orders.source is null or checkout_orders.source = '' then excluded.source else checkout_orders.source end,
-         tracking = coalesce(checkout_orders.tracking, excluded.tracking),
-         created_at = checkout_orders.created_at
-       returning *
-      `,
-      [
-        ownerUserId,
-        cartKey,
-        customer,
-        address,
-        itemsJson,
-        shipping,
-        summary,
-        status,
-        pix,
-        totalCents,
-        subtotalCents,
-        shippingCents,
-        trackingParameters,
-        utm,
-        source || null,
-        tracking,
-      ]
+    const params = [
+      ownerUserId,
+      cartKey,
+      toJsonb(customer),
+      toJsonb(address),
+      toJsonb(items),
+      toJsonb(shipping),
+      toJsonb(summary),
+      status,
+      toJsonb(pix),
+      totalCents,
+      subtotalCents,
+      shippingCents,
+      toJsonb(trackingParameters),
+      toJsonb(utm),
+      source || null,
+      toJsonb(tracking),
+    ];
+
+    let result = await query(
+      `update checkout_orders
+         set owner_user_id = $1,
+             customer = $3::jsonb,
+             address = $4::jsonb,
+             items = $5::jsonb,
+             shipping = $6::jsonb,
+             summary = $7::jsonb,
+             status = $8,
+             pix = $9::jsonb,
+             total_cents = $10,
+             subtotal_cents = $11,
+             shipping_cents = $12,
+             tracking_parameters = coalesce($13::jsonb, tracking_parameters),
+             utm = coalesce(utm, $14::jsonb),
+             source = case when source is null or source = '' then $15 else source end,
+             tracking = coalesce(tracking, $16::jsonb)
+       where cart_key = $2 and (owner_user_id = $1 or owner_user_id is null)
+       returning *`,
+      params
     );
+
+    if (!result.rows?.length) {
+      result = await query(
+        `insert into checkout_orders (
+           owner_user_id, cart_key, customer, address, items, shipping, summary,
+           status, pix, total_cents, subtotal_cents, shipping_cents,
+           tracking_parameters, utm, source, tracking
+         ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+         returning *`,
+        params
+      );
+    }
 
     await query(
       `update checkout_carts
@@ -161,7 +172,7 @@ module.exports = async (req, res) => {
              updated_at = now(),
              last_stage_at = now()
        where owner_user_id = $8 and cart_key = $1`,
-      [cartKey, summary, itemsJson, shipping, totalCents, subtotalCents, shippingCents, ownerUserId]
+      [cartKey, toJsonb(summary), toJsonb(items), toJsonb(shipping), totalCents, subtotalCents, shippingCents, ownerUserId]
     );
 
     const savedOrder = result.rows?.[0] || null;
@@ -183,6 +194,13 @@ module.exports = async (req, res) => {
 
     res.json({ orderId: savedOrder?.id || null });
   } catch (error) {
+    console.error("[public/order] failed to persist order", {
+      ownerUserId,
+      slug,
+      cartKey,
+      status,
+      error: error?.message,
+    });
     res.status(500).json({ error: error.message });
   }
 };

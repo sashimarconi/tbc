@@ -90,6 +90,17 @@ input:not([type="checkbox"]):focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 3px rgba(161, 0, 255, 0.35);
 }
 
+select {
+  background-color: #0d0d12;
+  color: #ededed;
+  border-color: rgba(161, 0, 255, 0.25);
+}
+
+select option {
+  background-color: #0d0d12;
+  color: #ededed;
+}
+
 input[type="checkbox"] {
   -webkit-appearance: none;
   appearance: none;

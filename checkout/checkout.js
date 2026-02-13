@@ -1172,7 +1172,7 @@ function trackCheckout(event, metadata = {}) {
 function trackCheckoutStartOnce(metadata = {}) {
   if (firedCheckoutStartEvent) return;
   firedCheckoutStartEvent = true;
-  trackCheckout("checkout_start", metadata);
+  trackCheckout("checkout_started", metadata);
 }
 
 function getFieldValue(name) {
@@ -1343,15 +1343,24 @@ async function syncCartSnapshot(stage, overrides = {}) {
   }
 
   try {
-    await fetch("/api/public/cart", {
+    const response = await fetch("/api/public/cart", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+    if (!response.ok) {
+      const raw = await response.text().catch(() => "");
+      throw new Error(raw || `HTTP ${response.status}`);
+    }
     lastCartPayloadSignature = signature;
     cartStageLevel = Math.max(cartStageLevel, stageLevel);
   } catch (error) {
-    console.warn("Falha ao sincronizar carrinho", error);
+    console.warn("Falha ao sincronizar carrinho", {
+      stage: targetStage,
+      cart_id: cartId,
+      slug: activeOfferSlug,
+      error: error?.message || error,
+    });
   }
 }
 
@@ -1382,11 +1391,15 @@ async function recordOrder(pixData, checkoutPayload) {
   };
 
   try {
-    await fetch("/api/public/order", {
+    const response = await fetch("/api/public/order", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(orderPayload),
     });
+    if (!response.ok) {
+      const raw = await response.text().catch(() => "");
+      console.warn("Falha ao registrar pedido", { status: response.status, error: raw || "Erro desconhecido" });
+    }
   } catch (error) {
     console.warn("Nao foi possivel registrar o pedido", error);
   }
