@@ -27,6 +27,30 @@
     <link rel="stylesheet" href="/checkout/themes/mercadex.css" />
   </head>
   <body data-analytics-page="checkout">
+    <div id="boot-loader" class="boot-loader" aria-live="polite">
+      <header class="boot-header">
+        <div class="boot-header__brand">
+          <img src="/assets/logo-blackout.png" alt="Logo" />
+        </div>
+        <div class="boot-header__seal">
+          <span class="boot-header__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" role="presentation">
+              <path d="M12 3l7 3v5c0 4.97-3.16 9.36-7 10-3.84-.64-7-5.03-7-10V6l7-3z" fill="currentColor" />
+              <path d="M10.5 12.75l-2-2 1.5-1.5L11 11.25l4-4L16.5 8l-5 5z" fill="#fff" />
+            </svg>
+          </span>
+          <strong>PAGAMENTO 100% SEGURO</strong>
+        </div>
+      </header>
+      <div class="boot-center">
+        <h2 id="boot-title">Preparando tudo para<br />sua compra</h2>
+        <div class="boot-spinner" aria-hidden="true"></div>
+        <p id="boot-error" class="boot-error hidden">Nao foi possivel carregar. Tente novamente.</p>
+        <button id="boot-retry" type="button" class="boot-retry hidden">Tentar novamente</button>
+      </div>
+    </div>
+
+    <main id="checkout-root" class="checkout-root is-hidden">
     <header class="trust-bar" id="checkout-header">
       <div class="trust-bar__content" id="checkout-header-content">
         <div class="trust-brand" id="header-brand-block">

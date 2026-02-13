@@ -66,6 +66,11 @@ const shippingList = document.getElementById("shipping-list");
 const CPF_FALLBACK = "25335818875";
 const URL_PARAMS = new URLSearchParams(window.location.search);
 const EMBED_MODE = URL_PARAMS.get("embed") === "1" || URL_PARAMS.get("preview") === "1";
+const bootLoader = document.getElementById("boot-loader");
+const bootTitle = document.getElementById("boot-title");
+const bootError = document.getElementById("boot-error");
+const bootRetry = document.getElementById("boot-retry");
+const checkoutRoot = document.getElementById("checkout-root");
 
 if (EMBED_MODE) {
   document.documentElement.classList.add("embed");
@@ -73,6 +78,7 @@ if (EMBED_MODE) {
 }
 
 const activeOfferSlug = resolveOfferSlug();
+const APPEARANCE_CACHE_PREFIX = "checkout:appearance:";
 
 let offerData = null;
 let selectedBumps = new Set();
@@ -129,6 +135,10 @@ let blocksConfig = {
     summaryPosition: "top",
   },
 };
+
+if (checkoutRoot) {
+  checkoutRoot.classList.add("is-hidden");
+}
 
 function resolveOfferSlug() {
   try {
@@ -275,6 +285,67 @@ function safeString(value, fallback = "") {
 function safeNumber(value, fallback) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function getAppearanceCacheKey(slug) {
+  return `${APPEARANCE_CACHE_PREFIX}${slug || ""}`;
+}
+
+function readAppearanceCache(slug) {
+  try {
+    const raw = localStorage.getItem(getAppearanceCacheKey(slug));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function writeAppearanceCache(slug, config) {
+  if (!slug || !config || typeof config !== "object") return;
+  try {
+    localStorage.setItem(getAppearanceCacheKey(slug), JSON.stringify(config));
+  } catch (_error) {
+    // Ignore cache write issues.
+  }
+}
+
+function applyBootTheme(config) {
+  if (!config || typeof config !== "object") return;
+  const header = config.header || {};
+  const seal = config.securitySeal || {};
+  document.documentElement.style.setProperty("--header-bg", safeString(header.bgColor, "#ffe600"));
+  document.documentElement.style.setProperty("--seal-icon", safeString(seal.iconColor, "#2d68c4"));
+}
+
+function showBootError(message) {
+  if (bootTitle) {
+    bootTitle.innerHTML = "Nao foi possivel carregar<br/>seu checkout";
+  }
+  if (bootError) {
+    bootError.textContent = safeString(message, "Nao foi possivel carregar. Tente novamente.");
+    bootError.classList.remove("hidden");
+  }
+  if (bootRetry) {
+    bootRetry.classList.remove("hidden");
+  }
+}
+
+function hideBootError() {
+  if (bootTitle) {
+    bootTitle.innerHTML = "Preparando tudo para<br/>sua compra";
+  }
+  if (bootError) {
+    bootError.classList.add("hidden");
+  }
+  if (bootRetry) {
+    bootRetry.classList.add("hidden");
+  }
+}
+
+function nextFrame() {
+  return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 }
 
 function applyLayoutType(nextLayoutType) {
@@ -756,18 +827,23 @@ function applyAppearance(config) {
   syncMercadexStructure();
 }
 
-async function loadAppearanceBySlug(slug) {
+async function fetchAppearanceBySlug(slug) {
   if (!slug) return;
-  try {
-    const response = await fetch(`/api/public/appearance?slug=${encodeURIComponent(slug)}`);
-    if (!response.ok) return;
-    const data = await response.json();
-    if (data?.effectiveConfig) {
-      applyAppearance(data.effectiveConfig);
+  const response = await fetch(`/api/public/appearance?slug=${encodeURIComponent(slug)}`);
+  if (!response.ok) {
+    let message = "Nao foi possivel carregar a aparencia.";
+    try {
+      const data = await response.json();
+      if (data?.error) {
+        message = data.error;
+      }
+    } catch (_error) {
+      // Keep fallback message.
     }
-  } catch (error) {
-    console.warn("Falha ao carregar aparencia", error);
+    throw new Error(message);
   }
+  const data = await response.json();
+  return data?.effectiveConfig || data || null;
 }
 
 window.addEventListener("message", (ev) => {
@@ -1553,20 +1629,8 @@ if (cepInput) {
   });
 }
 
-async function loadOffer() {
-  if (!activeOfferSlug) {
-    showOfferUnavailable("Link invalido");
-    return;
-  }
-
-  let response;
-  try {
-    response = await fetch(`/api/public/offer?slug=${encodeURIComponent(activeOfferSlug)}`);
-  } catch (error) {
-    showOfferUnavailable("Nao foi possivel carregar a oferta.");
-    return;
-  }
-
+async function fetchOfferBySlug(slug) {
+  const response = await fetch(`/api/public/offer?slug=${encodeURIComponent(slug)}`);
   if (!response.ok) {
     let errorMessage = "Oferta indisponivel";
     try {
@@ -1574,23 +1638,20 @@ async function loadOffer() {
       if (info?.error) {
         errorMessage = info.error;
       }
-    } catch (error) {
-      // ignore parse issues
+    } catch (_error) {
+      // Keep fallback message.
     }
-    showOfferUnavailable(errorMessage);
-    return;
+    throw new Error(errorMessage);
   }
-
   const data = await response.json();
-  offerData = data;
-
-  if (!offerData?.base) {
-    showOfferUnavailable("Oferta indisponivel");
-    return;
+  if (!data?.base) {
+    throw new Error("Oferta indisponivel");
   }
+  return data;
+}
 
-  await loadAppearanceBySlug(activeOfferSlug);
-
+function renderCheckoutFromOffer(offer) {
+  offerData = offer;
   form?.classList.remove("form--disabled");
   if (payBtn) {
     payBtn.disabled = false;
@@ -1627,6 +1688,48 @@ async function loadOffer() {
   renderShipping(requiresAddressFlag ? offerData.shipping || [] : []);
   updateSummary();
   scheduleCartSync();
+}
+
+async function bootstrapCheckout() {
+  if (!activeOfferSlug) {
+    showBootError("Link invalido.");
+    return;
+  }
+
+  hideBootError();
+  const cachedAppearance = readAppearanceCache(activeOfferSlug);
+  if (cachedAppearance) {
+    applyBootTheme(cachedAppearance);
+  }
+
+  try {
+    const [offer, appearance] = await Promise.all([
+      fetchOfferBySlug(activeOfferSlug),
+      fetchAppearanceBySlug(activeOfferSlug),
+    ]);
+
+    renderCheckoutFromOffer(offer);
+    if (appearance) {
+      applyAppearance(appearance?.effectiveConfig || appearance);
+      applyBootTheme(appearance?.effectiveConfig || appearance);
+      writeAppearanceCache(activeOfferSlug, appearance?.effectiveConfig || appearance);
+    }
+    applyBlocksVisibility();
+    applyBlocksLayout();
+    await nextFrame();
+
+    if (checkoutRoot) {
+      checkoutRoot.classList.remove("is-hidden");
+    }
+    if (bootLoader) {
+      bootLoader.classList.add("fade-out");
+      setTimeout(() => {
+        bootLoader.remove();
+      }, 200);
+    }
+  } catch (error) {
+    showBootError(error?.message || "Nao foi possivel carregar. Tente novamente.");
+  }
 }
 
 form.addEventListener("submit", async (event) => {
@@ -1744,7 +1847,13 @@ copyBtn.addEventListener("click", async () => {
   }, 1500);
 });
 
-loadOffer();
+if (bootRetry) {
+  bootRetry.addEventListener("click", () => {
+    window.location.reload();
+  });
+}
+
+bootstrapCheckout();
 
 async function requestPix(payload) {
   const res = await fetch("/api/create-pix", {
