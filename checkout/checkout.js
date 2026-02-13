@@ -77,6 +77,10 @@ if (EMBED_MODE) {
   document.body.classList.add("embed");
 }
 
+if (bootLoader) {
+  document.body.classList.add("checkout-booting");
+}
+
 const activeOfferSlug = resolveOfferSlug();
 const APPEARANCE_CACHE_PREFIX = "checkout:appearance:";
 let integrationsConfig = [];
@@ -145,6 +149,9 @@ let blocksConfig = {
 
 if (checkoutRoot) {
   checkoutRoot.classList.add("is-hidden");
+}
+if (headerWrap) {
+  headerWrap.classList.add("hidden");
 }
 
 function resolveOfferSlug() {
@@ -328,7 +335,7 @@ function applyBootTheme(config) {
 
 function showBootError(message) {
   if (bootTitle) {
-    bootTitle.innerHTML = "Nao foi possivel carregar<br/>seu checkout";
+    bootTitle.textContent = "Nao foi possivel carregar seu checkout";
   }
   if (bootError) {
     bootError.textContent = safeString(message, "Nao foi possivel carregar. Tente novamente.");
@@ -341,7 +348,7 @@ function showBootError(message) {
 
 function hideBootError() {
   if (bootTitle) {
-    bootTitle.innerHTML = "Preparando tudo para<br/>sua compra";
+    bootTitle.textContent = "Preparando tudo para sua compra";
   }
   if (bootError) {
     bootError.classList.add("hidden");
@@ -1954,7 +1961,10 @@ async function bootstrapCheckout() {
       bootLoader.classList.add("fade-out");
       setTimeout(() => {
         bootLoader.remove();
+        document.body.classList.remove("checkout-booting");
       }, 200);
+    } else {
+      document.body.classList.remove("checkout-booting");
     }
   } catch (error) {
     showBootError(error?.message || "Nao foi possivel carregar. Tente novamente.");

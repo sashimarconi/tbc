@@ -56,104 +56,133 @@ body {
   display: none;
 }
 
+body.checkout-booting #checkout-header {
+  display: none !important;
+}
+
 .boot-loader {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: #ededed;
-  display: flex;
-  flex-direction: column;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(161, 0, 255, 0.2), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(91, 0, 181, 0.22), transparent 42%),
+    linear-gradient(160deg, #050505 0%, #0d0d12 60%, #050505 100%);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.boot-loader::before {
+  content: "";
+  position: absolute;
+  width: min(80vw, 760px);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(161, 0, 255, 0.2) 0%, rgba(161, 0, 255, 0) 68%);
+  filter: blur(28px);
+  animation: bootPulse 4.2s ease-in-out infinite;
+}
+
+.boot-shell {
+  position: relative;
+  z-index: 1;
+  width: min(92vw, 520px);
+  padding: 20px;
+}
+
+.boot-card {
+  border-radius: 24px;
+  border: 1px solid rgba(161, 0, 255, 0.26);
+  background: rgba(13, 13, 18, 0.72);
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 22px 44px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(237, 237, 237, 0.08);
+  padding: 34px 24px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  gap: 14px;
 }
 
 .boot-loader.fade-out {
   opacity: 0;
-  transition: opacity 180ms ease;
+  transition: opacity 240ms ease;
   pointer-events: none;
 }
 
-.boot-header {
-  height: 56px;
-  background: var(--header-bg, #ffe600);
-  border-bottom: 1px solid rgba(17, 19, 24, 0.12);
-  padding: 0 14px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.boot-header__brand img {
-  width: auto;
-  height: 36px;
-  max-width: 150px;
-  object-fit: contain;
-}
-
-.boot-header__seal {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: #111318;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.boot-header__icon {
-  width: 20px;
-  height: 20px;
-  color: var(--seal-icon, #2d68c4);
-  display: inline-flex;
-}
-
-.boot-header__icon svg {
-  width: 100%;
-  height: 100%;
-}
-
-.boot-center {
-  flex: 1;
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: 16px;
-  text-align: center;
-  padding: 24px;
-}
-
-.boot-center h2 {
+.boot-card h2 {
   margin: 0;
-  color: #111318;
-  font-size: 40px;
-  line-height: 1.2;
+  color: #ededed;
+  font-size: clamp(28px, 4.6vw, 42px);
+  line-height: 1.16;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+
+.boot-subtitle {
+  margin: 0;
+  color: rgba(237, 237, 237, 0.76);
+  font-size: clamp(14px, 2.4vw, 16px);
 }
 
 .boot-spinner {
-  width: 46px;
-  height: 46px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
-  border: 4px solid rgba(45, 104, 196, 0.2);
-  border-top-color: #2d68c4;
-  animation: bootSpin 850ms linear infinite;
+  background: conic-gradient(from 0deg, #a100ff, #5b00b5 55%, rgba(161, 0, 255, 0.18) 90%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px));
+  animation: bootSpin 950ms linear infinite;
+  box-shadow: 0 0 22px rgba(161, 0, 255, 0.36);
 }
 
 .boot-error {
   margin: 4px 0 0;
-  color: #b00020;
+  color: #ff8fa2;
   font-size: 14px;
 }
 
 .boot-retry {
-  border: 0;
-  border-radius: 10px;
-  background: #2d68c4;
-  color: #fff;
+  border: 1px solid rgba(161, 0, 255, 0.5);
+  border-radius: 999px;
+  background: rgba(161, 0, 255, 0.14);
+  color: #ededed;
   font-weight: 700;
-  padding: 11px 16px;
+  padding: 11px 18px;
   cursor: pointer;
+  transition: background 180ms ease, border-color 180ms ease;
+}
+
+.boot-retry:hover {
+  background: rgba(161, 0, 255, 0.24);
+  border-color: #a100ff;
 }
 
 @keyframes bootSpin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes bootPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.78;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .boot-card {
+    border-radius: 20px;
+    padding: 28px 18px;
+    gap: 12px;
   }
 }
 
