@@ -2153,18 +2153,7 @@ navBtns.forEach(btn => {
     }
     navBtns.forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    document.querySelectorAll('.panel-view').forEach(view => {
-      view.classList.add('hidden');
-      view.hidden = true;
-    });
-    const view = document.getElementById(target);
-    if (view) {
-      view.classList.remove('hidden');
-      view.hidden = false;
-      if (target === "integrations-view") {
-        loadIntegrations();
-      }
-    }
+    activateView(target);
   });
 });
 

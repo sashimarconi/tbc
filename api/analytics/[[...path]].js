@@ -2,10 +2,12 @@ const { query } = require("../../lib/db");
 const { parseJson } = require("../../lib/parse-json");
 const { requireAuth } = require("../../lib/auth");
 const { ensureAnalyticsTables } = require("../../lib/ensure-analytics");
+const { ensureSalesTables } = require("../../lib/ensure-sales");
 const { getGeoFromIp } = require("../../lib/geoip");
 
 const FALLBACK_PAGE = "unknown";
 const MAX_STRING = 512;
+const DASHBOARD_TZ = process.env.DASHBOARD_TZ || "America/Sao_Paulo";
 
 function sanitizeString(value, fallback = "") {
   if (typeof value !== "string") {
@@ -66,6 +68,26 @@ function getPathSegments(req) {
   }
   const cleaned = (req.url || "").split("?")[0].replace(/^\/api\/analytics\/?/, "");
   return cleaned ? cleaned.split("/").filter(Boolean) : [];
+}
+
+function resolvePeriodWindow(periodRaw) {
+  const period = sanitizeString(periodRaw || "today").toLowerCase();
+  if (period === "7d") {
+    return {
+      key: "7d",
+      sql: "created_at >= now() - interval '7 days'",
+    };
+  }
+  if (period === "30d") {
+    return {
+      key: "30d",
+      sql: "created_at >= now() - interval '30 days'",
+    };
+  }
+  return {
+    key: "today",
+    sql: "created_at >= (date_trunc('day', now() at time zone $2) at time zone $2)",
+  };
 }
 
 async function handleEvent(req, res) {
@@ -176,26 +198,29 @@ async function handleSummary(req, res) {
 
   try {
     await ensureAnalyticsTables();
+    await ensureSalesTables();
+    const periodWindow = resolvePeriodWindow(req.query?.period);
     console.log("[dashboard/analytics/summary] filtering by owner_user_id", user.id);
 
-    const [summaryResult, timelineResult, liveResult] = await Promise.all([
+    const summaryParams = periodWindow.key === "today" ? [user.id, DASHBOARD_TZ] : [user.id];
+    const [summaryResult, timelineResult, liveResult, ordersSummaryResult] = await Promise.all([
       query(
         `select
            count(*) filter (where event_type = 'page_view') as visitors_today,
-           count(*) filter (where event_type = 'checkout_view') as checkout_visits_today,
+           count(*) filter (where event_type = 'checkout_view' or (event_type = 'page_view' and page = 'checkout')) as checkout_visits_today,
            count(*) filter (where event_type = 'checkout_start') as checkout_starts_today,
            count(*) filter (where event_type = 'pix_generated') as pix_generated_today,
            count(*) filter (where event_type = 'purchase') as purchases_today
          from analytics_events
          where owner_user_id = $1
-           and created_at >= date_trunc('day', now())`,
-        [user.id]
+           and ${periodWindow.sql}`,
+        summaryParams
       ),
       query(
         `select
            date_trunc('hour', created_at) as bucket,
            count(*) filter (where event_type = 'page_view') as visits,
-           count(*) filter (where event_type = 'checkout_view') as "checkoutViews",
+           count(*) filter (where event_type = 'checkout_view' or (event_type = 'page_view' and page = 'checkout')) as "checkoutViews",
            count(*) filter (where event_type = 'checkout_start') as "checkoutStarts",
            count(*) filter (where event_type = 'pix_generated') as pix
          from analytics_events
@@ -214,14 +239,32 @@ async function handleSummary(req, res) {
          limit 200`,
         [user.id]
       ),
+      query(
+        `select
+           count(*) as orders_total,
+           count(*) filter (where status = 'paid') as orders_paid,
+           count(*) filter (where coalesce(pix->>'txid','') <> '' or coalesce(pix->>'copy_and_paste','') <> '' or coalesce(pix->>'qr_code','') <> '') as pix_generated_orders
+         from checkout_orders
+         where owner_user_id = $1
+           and ${periodWindow.sql}`,
+        summaryParams
+      ),
     ]);
 
     const summary = summaryResult.rows?.[0] || {};
+    const ordersSummary = ordersSummaryResult.rows?.[0] || {};
     const visitorsToday = Number(summary.visitors_today || 0);
-    const checkoutVisitsToday = Number(summary.checkout_visits_today || 0);
-    const checkoutStartsToday = Number(summary.checkout_starts_today || 0);
-    const pixGeneratedToday = Number(summary.pix_generated_today || 0);
-    const purchasesToday = Number(summary.purchases_today || 0);
+    const ordersTotal = Number(ordersSummary.orders_total || 0);
+    const checkoutStartsFromEvents = Number(summary.checkout_starts_today || 0);
+    const checkoutStartsToday = Math.max(checkoutStartsFromEvents, ordersTotal);
+    const checkoutVisitsFromEvents = Number(summary.checkout_visits_today || 0);
+    const checkoutVisitsToday = Math.max(checkoutVisitsFromEvents, checkoutStartsToday);
+    const pixFromEvents = Number(summary.pix_generated_today || 0);
+    const pixFromOrders = Number(ordersSummary.pix_generated_orders || 0);
+    const pixGeneratedToday = Math.max(pixFromEvents, pixFromOrders);
+    const purchasesFromEvents = Number(summary.purchases_today || 0);
+    const purchasesFromOrders = Number(ordersSummary.orders_paid || 0);
+    const purchasesToday = Math.max(purchasesFromEvents, purchasesFromOrders);
     const conversionRate = checkoutStartsToday > 0 ? (purchasesToday / checkoutStartsToday) * 100 : 0;
 
     const liveRows = liveResult.rows || [];
@@ -251,6 +294,7 @@ async function handleSummary(req, res) {
       checkoutStartsToday,
       pixGeneratedToday,
       purchasesToday,
+      ordersToday: ordersTotal,
       conversionRate,
       timeline: timelineResult.rows || [],
       liveView: {

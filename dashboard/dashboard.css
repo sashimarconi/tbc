@@ -2548,11 +2548,12 @@ body {
   align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
-  padding: 0;
+  padding: 18px;
   margin: 0 0 24px;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
+  border: 1px solid rgba(161, 0, 255, 0.2);
+  border-radius: 18px;
+  background: rgba(13, 13, 18, 0.62);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.24);
 }
 
 .panel-header.panel-header--inline .panel-title-wrap {
@@ -2647,4 +2648,32 @@ textarea:focus,
 
 .online-now-value span {
   color: #a100ff !important;
+}
+
+/* Sidebar must not inherit global purple button fill */
+.sidebar .sidebar__nav-btn {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  color: #ededed !important;
+  box-shadow: none !important;
+}
+
+.sidebar .sidebar__nav-btn:hover {
+  border-color: rgba(161, 0, 255, 0.25) !important;
+  background: rgba(161, 0, 255, 0.06) !important;
+}
+
+.sidebar .sidebar__nav-btn.active,
+.sidebar .sidebar__nav-btn:focus-visible {
+  border-color: rgba(161, 0, 255, 0.55) !important;
+  background: rgba(161, 0, 255, 0.1) !important;
+  box-shadow: 0 0 0 1px rgba(161, 0, 255, 0.15) !important;
+}
+
+.sidebar .sidebar__footer .ghost,
+.sidebar .sidebar__footer .ghost:hover {
+  background: transparent !important;
+  color: #ededed !important;
+  border: 1px solid rgba(161, 0, 255, 0.35) !important;
+  box-shadow: none !important;
 }

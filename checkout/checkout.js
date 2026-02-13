@@ -84,6 +84,8 @@ let metaPixelReady = false;
 let tiktokPixelReady = false;
 let firedInitiateCheckout = false;
 let firedAddPaymentInfo = false;
+let firedCheckoutView = false;
+let firedCheckoutStartEvent = false;
 
 let offerData = null;
 let selectedBumps = new Set();
@@ -596,6 +598,10 @@ function ensureMercadexStructure() {
   continueA.addEventListener("click", () => {
     if (!firedInitiateCheckout) {
       firedInitiateCheckout = true;
+      trackCheckoutStartOnce({
+        source: "mercadex_step_identificacao",
+        total_cents: calcTotal(),
+      });
       trackPixelEvent("InitiateCheckout", {
         value: Number(calcTotal() / 100),
         currency: "BRL",
@@ -616,6 +622,10 @@ function ensureMercadexStructure() {
   continueB.addEventListener("click", () => {
     if (!firedInitiateCheckout) {
       firedInitiateCheckout = true;
+      trackCheckoutStartOnce({
+        source: "mercadex_step_entrega",
+        total_cents: calcTotal(),
+      });
       trackPixelEvent("InitiateCheckout", {
         value: Number(calcTotal() / 100),
         currency: "BRL",
@@ -1157,6 +1167,12 @@ function trackCheckout(event, metadata = {}) {
     page: "checkout",
     metadata,
   });
+}
+
+function trackCheckoutStartOnce(metadata = {}) {
+  if (firedCheckoutStartEvent) return;
+  firedCheckoutStartEvent = true;
+  trackCheckout("checkout_start", metadata);
 }
 
 function getFieldValue(name) {
@@ -1775,6 +1791,10 @@ contactInputs.forEach((input) => {
   input.addEventListener("input", () => {
     if (!firedInitiateCheckout) {
       firedInitiateCheckout = true;
+      trackCheckoutStartOnce({
+        source: "contact_input",
+        total_cents: calcTotal(),
+      });
       trackPixelEvent("InitiateCheckout", {
         value: Number(calcTotal() / 100),
         currency: "BRL",
@@ -1907,6 +1927,13 @@ async function bootstrapCheckout() {
     applyBlocksLayout();
     await nextFrame();
 
+    if (!firedCheckoutView) {
+      firedCheckoutView = true;
+      trackCheckout("checkout_view", {
+        slug: activeOfferSlug,
+      });
+    }
+
     if (checkoutRoot) {
       checkoutRoot.classList.remove("is-hidden");
     }
@@ -2007,7 +2034,7 @@ form.addEventListener("submit", async (event) => {
     user_agent: navigator.userAgent,
   };
 
-  trackCheckout("checkout_start", {
+  trackCheckoutStartOnce({
     total_cents: calcTotal(),
     shipping_id: shippingOption?.id || null,
     bumps: Array.from(selectedBumps),
