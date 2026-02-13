@@ -1118,7 +1118,7 @@ module.exports = async (req, res) => {
     const path = segments[0] || "";
 
     req.query = req.query || {};
-    if (["items", "orders", "carts"].includes(path) && segments.length > 1 && !req.query.id) {
+    if (["items", "orders", "carts", "upload"].includes(path) && segments.length > 1 && !req.query.id) {
       req.query.id = segments[1];
     }
 
