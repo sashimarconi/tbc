@@ -1,5 +1,10 @@
 ﻿// LIVE VIEW GLOBE (Globe.gl)
 window.addEventListener('DOMContentLoaded', () => {
+  if (window.lucide && typeof window.lucide.createIcons === "function") {
+    window.lucide.createIcons({
+      attrs: { "stroke-width": 1.9 }
+    });
+  }
   const globeEl = document.getElementById('live-globe');
   if (!globeEl || typeof Globe !== 'function') return;
 
@@ -22,7 +27,7 @@ window.addEventListener('DOMContentLoaded', () => {
           .map((session) => {
             const city = (session?.city || "Sem cidade").toString();
             const count = Number(session?.count) || 0;
-            return `<li><span style="color:#00FF85;font-weight:700;">•</span> ${count} ${city}</li>`;
+            return `<li><span style="color:#A100FF;font-weight:700;">•</span> ${count} ${city}</li>`;
           })
           .join("");
       }
@@ -45,7 +50,7 @@ window.addEventListener('DOMContentLoaded', () => {
     .pointRadius(0.22)
     .pointLabel('city')
     .showAtmosphere(true)
-    .atmosphereColor('#00FF85')
+    .atmosphereColor('#A100FF')
     .atmosphereAltitude(0.18);
   window.liveGlobe = globe;
   // Responsivo

@@ -84,14 +84,16 @@
   background: linear-gradient(180deg,#A100FF 60%,#5B00B5 100%);
   box-shadow: 0 0 8px 2px #A100FF44;
 }
-.sidebar__nav-btn svg {
-  width: 24px;
-  height: 24px;
+.sidebar__nav-btn svg,
+.sidebar__nav-btn .lucide {
+  width: 21px;
+  height: 21px;
   flex-shrink: 0;
   transition: color 0.15s;
   color: var(--color-text-secondary);
 }
-.sidebar__nav-btn.active svg {
+.sidebar__nav-btn.active svg,
+.sidebar__nav-btn.active .lucide {
   color: var(--color-brand);
   filter: drop-shadow(0 0 4px #A100FF88);
 }
@@ -103,6 +105,10 @@
   gap: 1.2rem;
 }
 .sidebar__footer .ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
   width: 90%;
   font-size: 1.08em;
   font-weight: 700;
@@ -112,6 +118,10 @@
   border: 1.5px solid var(--color-brand);
   margin-bottom: 0.5rem;
   box-shadow: 0 2px 16px 0 #A100FF22;
+}
+.sidebar__footer .ghost .lucide {
+  width: 20px;
+  height: 20px;
 }
 .sidebar__footer .ghost:hover {
   background: linear-gradient(90deg,#A100FF22 60%,#181825 100%);
@@ -171,7 +181,8 @@
     text-indent: -9999px;
     white-space: nowrap;
   }
-  .sidebar__nav-btn svg {
+  .sidebar__nav-btn svg,
+  .sidebar__nav-btn .lucide {
     width: 20px;
     height: 20px;
     text-indent: 0;
