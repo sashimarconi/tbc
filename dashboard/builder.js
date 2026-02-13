@@ -62,7 +62,22 @@ const DEFAULT_ELEMENTS_ORDER = [
   "payment",
   "footer",
 ];
+const DEFAULT_BLOCK_VISIBILITY = {
+  header: true,
+  country: true,
+  offer: true,
+  form: true,
+  bumps: true,
+  shipping: true,
+  payment: true,
+  footer: true,
+};
 const MAX_LOGO_UPLOAD_BYTES = 4 * 1024 * 1024;
+const DEVICE_PRESETS = {
+  mobile: { width: 390, height: 844 },
+  tablet: { width: 768, height: 900 },
+  desktop: { width: 980, height: 820 },
+};
 
 const ELEMENT_LABELS = {
   header: "Cabecalho",
@@ -235,12 +250,48 @@ function setOverride(path, value) {
 }
 
 function recomputeDraft() {
-  state.effectiveDraft = deepMerge(getCurrentThemeDefaults(), state.overridesDraft);
+  const merged = deepMerge(getCurrentThemeDefaults(), state.overridesDraft);
+  merged.blocks = buildBlocksConfigFromEffective(merged);
+  state.effectiveDraft = merged;
   state.isDirty =
     state.theme_key !== state.savedThemeKey ||
     !isEqual(state.overridesDraft, state.savedOverrides);
   renderDirtyState();
   pushPreview();
+}
+
+function buildBlocksConfigFromEffective(cfg = {}) {
+  const elements = cfg?.elements || {};
+  const blocks = cfg?.blocks && typeof cfg.blocks === "object" ? deepClone(cfg.blocks) : {};
+  const visibility = { ...DEFAULT_BLOCK_VISIBILITY, ...(blocks.visibility || {}) };
+  if (elements.showCountrySelector !== undefined) visibility.country = elements.showCountrySelector !== false;
+  if (elements.showOrderBumps !== undefined) visibility.bumps = elements.showOrderBumps !== false;
+  if (elements.showShipping !== undefined) visibility.shipping = elements.showShipping !== false;
+  if (elements.showFooterSecurityText !== undefined) visibility.footer = elements.showFooterSecurityText !== false;
+  if (elements.showProductImage === false) visibility.offer = false;
+
+  const orderRaw = Array.isArray(blocks.order)
+    ? blocks.order
+    : Array.isArray(elements.order)
+      ? elements.order
+      : DEFAULT_ELEMENTS_ORDER;
+  const order = orderRaw.filter((item) => DEFAULT_ELEMENTS_ORDER.includes(item));
+  DEFAULT_ELEMENTS_ORDER.forEach((item) => {
+    if (!order.includes(item)) order.push(item);
+  });
+
+  const layoutType = cfg?.layout?.type === "twoColumn" ? "two-col" : "stack";
+  const layoutStyle = blocks?.layout?.style === "two-col" ? "two-col" : layoutType;
+  const summaryPosition = blocks?.layout?.summaryPosition === "right" ? "right" : layoutStyle === "two-col" ? "right" : "top";
+
+  return {
+    visibility,
+    order,
+    layout: {
+      style: layoutStyle,
+      summaryPosition,
+    },
+  };
 }
 
 function renderDirtyState() {
@@ -255,6 +306,19 @@ function renderDirtyState() {
     badge.classList.remove("is-dirty");
     publishBtn.disabled = true;
   }
+}
+
+function updatePreviewViewport() {
+  const shell = document.getElementById("preview-shell");
+  const column = document.querySelector(".preview-column");
+  if (!shell || !column) return;
+  const preset = DEVICE_PRESETS[shell.dataset.device] || DEVICE_PRESETS.mobile;
+  const availableWidth = Math.max(280, column.clientWidth - 40);
+  const availableHeight = Math.max(320, window.innerHeight - 160);
+  const scale = Math.min(1, availableWidth / preset.width, availableHeight / preset.height);
+  shell.style.setProperty("--preview-width", `${preset.width}px`);
+  shell.style.setProperty("--preview-height", `${preset.height}px`);
+  shell.style.setProperty("--preview-scale", String(scale));
 }
 
 function pushPreview() {
@@ -291,7 +355,7 @@ function setFieldValue(id, value, fallback = "") {
 }
 
 function getElementsOrder(config = state.effectiveDraft) {
-  const order = config?.elements?.order;
+  const order = config?.blocks?.order || config?.elements?.order;
   if (!Array.isArray(order) || !order.length) {
     return DEFAULT_ELEMENTS_ORDER.slice();
   }
@@ -335,6 +399,7 @@ function renderElementsOrderList() {
         return;
       }
       setOverride(["elements", "order"], nextOrder);
+      setOverride(["blocks", "order"], nextOrder);
       renderElementsOrderList();
     });
   });
@@ -385,6 +450,11 @@ function bindAppearanceFields() {
       const raw = field.value;
       const value = cast === "number" ? Number(raw || 0) : raw;
       setOverride(path, value);
+      if (id === "layout-type") {
+        const style = value === "twoColumn" ? "two-col" : "stack";
+        setOverride(["blocks", "layout", "style"], style);
+        setOverride(["blocks", "layout", "summaryPosition"], style === "two-col" ? "right" : "top");
+      }
       if (id === "header-logo-url") {
         renderLogoPreview(value);
       }
@@ -423,16 +493,19 @@ function bindAppearanceFields() {
   });
 
   const elementChecks = [
-    ["el-show-country", ["elements", "showCountrySelector"]],
-    ["el-show-product-image", ["elements", "showProductImage"]],
-    ["el-show-bumps", ["elements", "showOrderBumps"]],
-    ["el-show-shipping", ["elements", "showShipping"]],
-    ["el-show-footer-security", ["elements", "showFooterSecurityText"]],
+    ["el-show-country", ["elements", "showCountrySelector"], ["blocks", "visibility", "country"]],
+    ["el-show-product-image", ["elements", "showProductImage"], ["blocks", "visibility", "offer"]],
+    ["el-show-bumps", ["elements", "showOrderBumps"], ["blocks", "visibility", "bumps"]],
+    ["el-show-shipping", ["elements", "showShipping"], ["blocks", "visibility", "shipping"]],
+    ["el-show-footer-security", ["elements", "showFooterSecurityText"], ["blocks", "visibility", "footer"]],
   ];
 
-  elementChecks.forEach(([id, path]) => {
+  elementChecks.forEach(([id, path, blocksPath]) => {
     const field = document.getElementById(id);
-    field?.addEventListener("change", () => setOverride(path, field.checked));
+    field?.addEventListener("change", () => {
+      setOverride(path, field.checked);
+      setOverride(blocksPath, field.checked);
+    });
   });
 
   const uploadBtn = document.getElementById("header-logo-upload-btn");
@@ -534,11 +607,12 @@ function populateFieldsFromEffective() {
   setFieldValue("setting-language", cfg.settings?.i18n?.language, "pt-BR");
   setFieldValue("setting-currency", cfg.settings?.i18n?.currency, "BRL");
   setFieldValue("layout-type", cfg.layout?.type, "singleColumn");
-  setFieldValue("el-show-country", cfg.elements?.showCountrySelector, true);
-  setFieldValue("el-show-product-image", cfg.elements?.showProductImage, true);
-  setFieldValue("el-show-bumps", cfg.elements?.showOrderBumps, true);
-  setFieldValue("el-show-shipping", cfg.elements?.showShipping, true);
-  setFieldValue("el-show-footer-security", cfg.elements?.showFooterSecurityText, true);
+  const blockVisibility = cfg.blocks?.visibility || {};
+  setFieldValue("el-show-country", blockVisibility.country ?? cfg.elements?.showCountrySelector, true);
+  setFieldValue("el-show-product-image", blockVisibility.offer ?? cfg.elements?.showProductImage, true);
+  setFieldValue("el-show-bumps", blockVisibility.bumps ?? cfg.elements?.showOrderBumps, true);
+  setFieldValue("el-show-shipping", blockVisibility.shipping ?? cfg.elements?.showShipping, true);
+  setFieldValue("el-show-footer-security", blockVisibility.footer ?? cfg.elements?.showFooterSecurityText, true);
 
   document.getElementById("current-theme-pill").textContent =
     state.themesByKey.get(state.theme_key)?.name || state.theme_key;
@@ -619,7 +693,11 @@ function bindTopbar() {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".device-btn").forEach((item) => item.classList.remove("is-active"));
       btn.classList.add("is-active");
-      document.getElementById("preview-shell").dataset.device = btn.dataset.device;
+      const shell = document.getElementById("preview-shell");
+      if (shell) {
+        shell.dataset.device = btn.dataset.device;
+      }
+      updatePreviewViewport();
     });
   });
 
@@ -747,12 +825,15 @@ function bindPreviewRefresh() {
   bindPaymentSettings();
   bindAppearanceFields();
   bindPreviewRefresh();
+  window.addEventListener("resize", updatePreviewViewport);
   showSection("modelos");
   renderDirtyState();
+  updatePreviewViewport();
 
   try {
     await loadInitialData();
     await loadPaymentSettings();
+    updatePreviewViewport();
   } catch (error) {
     alert(error.message || "Erro ao carregar Builder");
   }

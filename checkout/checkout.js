@@ -103,13 +103,31 @@ let mercadexRefs = {
   continueA: null,
   continueB: null,
 };
+const DEFAULT_BLOCK_ORDER = ["header", "country", "offer", "form", "bumps", "shipping", "payment", "footer"];
 let elementsConfig = {
   showCountrySelector: true,
   showProductImage: true,
   showOrderBumps: true,
   showShipping: true,
   showFooterSecurityText: true,
-  order: ["header", "country", "offer", "form", "bumps", "shipping", "payment", "footer"],
+  order: DEFAULT_BLOCK_ORDER.slice(),
+};
+let blocksConfig = {
+  visibility: {
+    header: true,
+    country: true,
+    offer: true,
+    form: true,
+    bumps: true,
+    shipping: true,
+    payment: true,
+    footer: true,
+  },
+  order: DEFAULT_BLOCK_ORDER.slice(),
+  layout: {
+    style: "stack",
+    summaryPosition: "top",
+  },
 };
 
 function resolveOfferSlug() {
@@ -185,7 +203,7 @@ function applyButtonEffects(config) {
 }
 
 function normalizeElementsConfig(next = {}) {
-  const orderDefault = ["header", "country", "offer", "form", "bumps", "shipping", "payment", "footer"];
+  const orderDefault = DEFAULT_BLOCK_ORDER;
   const incomingOrder = Array.isArray(next.order) ? next.order : [];
   const order = incomingOrder.filter((id) => orderDefault.includes(id));
   orderDefault.forEach((id) => {
@@ -203,9 +221,67 @@ function normalizeElementsConfig(next = {}) {
   };
 }
 
+function normalizeBlocksConfig(config = {}) {
+  const sourceBlocks = config?.blocks && typeof config.blocks === "object" ? config.blocks : {};
+  const sourceVisibility =
+    sourceBlocks.visibility && typeof sourceBlocks.visibility === "object" ? sourceBlocks.visibility : {};
+  const sourceElements = config?.elements && typeof config.elements === "object" ? config.elements : {};
+
+  const orderFromBlocks = Array.isArray(sourceBlocks.order) ? sourceBlocks.order : null;
+  const orderFromElements = Array.isArray(sourceElements.order) ? sourceElements.order : null;
+  const orderRaw = orderFromBlocks || orderFromElements || DEFAULT_BLOCK_ORDER;
+  const order = orderRaw.filter((id) => DEFAULT_BLOCK_ORDER.includes(id));
+  DEFAULT_BLOCK_ORDER.forEach((id) => {
+    if (!order.includes(id)) order.push(id);
+  });
+
+  const layoutTypeLegacy = config?.layout?.type === "twoColumn" ? "two-col" : "stack";
+  const layoutStyle = sourceBlocks?.layout?.style === "two-col" ? "two-col" : layoutTypeLegacy;
+  const summaryPosition =
+    sourceBlocks?.layout?.summaryPosition === "right"
+      ? "right"
+      : layoutStyle === "two-col"
+        ? "right"
+        : "top";
+
+  return {
+    visibility: {
+      header: sourceVisibility.header !== false,
+      country: sourceVisibility.country ?? sourceElements.showCountrySelector !== false,
+      offer: sourceVisibility.offer ?? true,
+      form: sourceVisibility.form !== false,
+      bumps: sourceVisibility.bumps ?? sourceElements.showOrderBumps !== false,
+      shipping: sourceVisibility.shipping ?? sourceElements.showShipping !== false,
+      payment: sourceVisibility.payment !== false,
+      footer: sourceVisibility.footer ?? sourceElements.showFooterSecurityText !== false,
+    },
+    order,
+    layout: {
+      style: layoutStyle,
+      summaryPosition,
+    },
+  };
+}
+
+function safeString(value, fallback = "") {
+  if (value === null || value === undefined) return fallback;
+  const normalized = String(value).trim();
+  if (!normalized || normalized.toLowerCase() === "null" || normalized.toLowerCase() === "undefined") {
+    return fallback;
+  }
+  return normalized;
+}
+
+function safeNumber(value, fallback) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 function applyLayoutType(nextLayoutType) {
   layoutType = nextLayoutType === "twoColumn" ? "twoColumn" : "singleColumn";
   document.body.classList.toggle("layout-two-column", layoutType === "twoColumn");
+  document.body.classList.toggle("layout-two-col", layoutType === "twoColumn");
+  document.body.classList.toggle("layout-stack", layoutType !== "twoColumn");
   if (checkoutLayout) {
     checkoutLayout.dataset.layout = layoutType;
   }
@@ -257,10 +333,36 @@ function applyElementOrder() {
     if (countrySwitcher && checkoutPrimary.firstElementChild !== countrySwitcher) {
       checkoutPrimary.insertBefore(countrySwitcher, form);
     }
-    if (productCard && checkoutSide && checkoutSide.firstElementChild !== productCard) {
+    if (productCard && checkoutSide) {
       checkoutSide.prepend(productCard);
     }
   }
+
+  if (summaryCard && checkoutSide) {
+    checkoutSide.appendChild(summaryCard);
+  }
+}
+
+function applyBlocksLayout() {
+  const summaryTop = blocksConfig?.layout?.summaryPosition === "top" || layoutType !== "twoColumn";
+  document.body.classList.toggle("summary-top", summaryTop);
+  document.body.classList.toggle("summary-right", !summaryTop);
+}
+
+function applyBlocksVisibility() {
+  const visibility = blocksConfig?.visibility || {};
+  if (headerWrap) headerWrap.classList.toggle("hidden", visibility.header === false);
+  if (countrySwitcher) countrySwitcher.classList.toggle("hidden", visibility.country === false);
+  if (productCard) productCard.classList.toggle("hidden", visibility.offer === false);
+  if (formFieldsBlock) formFieldsBlock.classList.toggle("hidden", visibility.form === false);
+  if (addonsSection) addonsSection.classList.toggle("hidden", visibility.bumps === false || !elementsConfig.showOrderBumps);
+  if (shippingSection) {
+    const shouldHide =
+      visibility.shipping === false || !elementsConfig.showShipping || !baseRequiresAddress || !(shippingOptions?.length > 0);
+    shippingSection.classList.toggle("hidden", shouldHide);
+  }
+  if (paymentBlock) paymentBlock.classList.toggle("hidden", visibility.payment === false);
+  if (footerBlock) footerBlock.classList.toggle("hidden", visibility.footer === false || !elementsConfig.showFooterSecurityText);
 }
 
 function isVisible(node) {
@@ -514,41 +616,47 @@ function applyElementsConfig(nextElements) {
     shippingSection.classList.toggle("hidden", shouldHideShipping);
   }
   applyElementOrder();
+  applyBlocksVisibility();
+  applyBlocksLayout();
 }
 
-function applyAppearanceConfig(config) {
+function applyAppearance(config) {
   if (!config || typeof config !== "object") return;
   appearanceConfig = config;
+  blocksConfig = normalizeBlocksConfig(config);
   const root = document.documentElement;
+  const palette = config?.palette || {};
+  const radius = config?.radius || {};
+  const typography = config?.typography || {};
 
-  root.style.setProperty("--color-primary", config?.palette?.primary || "#f5a623");
-  root.style.setProperty("--color-buttons", config?.palette?.button || config?.palette?.buttons || "#f39c12");
-  root.style.setProperty("--color-background", config?.palette?.background || "#f4f6fb");
-  root.style.setProperty("--color-text", config?.palette?.text || "#1c2431");
-  root.style.setProperty("--color-card", config?.palette?.card || "#ffffff");
-  root.style.setProperty("--color-border", config?.palette?.border || "#dde3ee");
-  root.style.setProperty("--color-muted", config?.palette?.mutedText || config?.palette?.muted || "#6b7280");
-  root.style.setProperty("--color-primary-text", config?.palette?.primaryText || "#111111");
-  root.style.setProperty("--color-primary-hover", config?.palette?.primaryHover || config?.palette?.button || "#e58e0a");
-  root.style.setProperty("--color-link", config?.palette?.link || "#2b67f6");
-  root.style.setProperty("--color-link-hover", config?.palette?.linkHover || "#1f56ad");
-  root.style.setProperty("--color-button-secondary-bg", config?.palette?.buttonSecondaryBg || "#f6f8fb");
-  root.style.setProperty("--color-button-secondary-text", config?.palette?.buttonSecondaryText || "#1c2431");
-  root.style.setProperty("--color-success", config?.palette?.success || "#1d9f55");
-  root.style.setProperty("--color-warning", config?.palette?.warning || "#f39c12");
-  root.style.setProperty("--color-danger", config?.palette?.danger || "#c22525");
+  root.style.setProperty("--color-primary", safeString(palette.primary, "#f5a623"));
+  root.style.setProperty("--color-buttons", safeString(palette.button || palette.buttons, "#f39c12"));
+  root.style.setProperty("--color-background", safeString(palette.background, "#f4f6fb"));
+  root.style.setProperty("--color-text", safeString(palette.text, "#1c2431"));
+  root.style.setProperty("--color-card", safeString(palette.card, "#ffffff"));
+  root.style.setProperty("--color-border", safeString(palette.border, "#dde3ee"));
+  root.style.setProperty("--color-muted", safeString(palette.mutedText || palette.muted, "#6b7280"));
+  root.style.setProperty("--color-primary-text", safeString(palette.primaryText, "#111111"));
+  root.style.setProperty("--color-primary-hover", safeString(palette.primaryHover || palette.button, "#e58e0a"));
+  root.style.setProperty("--color-link", safeString(palette.link, "#2b67f6"));
+  root.style.setProperty("--color-link-hover", safeString(palette.linkHover, "#1f56ad"));
+  root.style.setProperty("--color-button-secondary-bg", safeString(palette.buttonSecondaryBg, "#f6f8fb"));
+  root.style.setProperty("--color-button-secondary-text", safeString(palette.buttonSecondaryText, "#1c2431"));
+  root.style.setProperty("--color-success", safeString(palette.success, "#1d9f55"));
+  root.style.setProperty("--color-warning", safeString(palette.warning, "#f39c12"));
+  root.style.setProperty("--color-danger", safeString(palette.danger, "#c22525"));
 
-  root.style.setProperty("--radius-card", config?.radius?.card || config?.radius?.cards || "16px");
-  root.style.setProperty("--radius-button", config?.radius?.button || config?.radius?.buttons || "14px");
-  root.style.setProperty("--radius-field", config?.radius?.field || config?.radius?.fields || "12px");
-  root.style.setProperty("--radius-steps", config?.radius?.steps || "999px");
+  root.style.setProperty("--radius-card", safeString(radius.card || radius.cards, "16px"));
+  root.style.setProperty("--radius-button", safeString(radius.button || radius.buttons, "14px"));
+  root.style.setProperty("--radius-field", safeString(radius.field || radius.fields, "12px"));
+  root.style.setProperty("--radius-steps", safeString(radius.steps, "999px"));
 
-  const fontFamily = config?.typography?.fontFamily || "Poppins";
+  const fontFamily = safeString(typography.fontFamily, "Poppins");
   loadGoogleFontIfNeeded(fontFamily);
   root.style.setProperty("--font-family", `"${fontFamily}", sans-serif`);
-  root.style.setProperty("--font-heading-weight", String(config?.typography?.headingWeight || 700));
-  root.style.setProperty("--font-body-weight", String(config?.typography?.bodyWeight || 500));
-  root.style.setProperty("--font-base-size", `${Number(config?.typography?.baseSize || 16)}px`);
+  root.style.setProperty("--font-heading-weight", String(safeNumber(typography.headingWeight, 700)));
+  root.style.setProperty("--font-body-weight", String(safeNumber(typography.bodyWeight, 500)));
+  root.style.setProperty("--font-base-size", `${safeNumber(typography.baseSize, 16)}px`);
 
   const variant = ["mercadex", "tiktex", "vegex", "solarys", "minimal", "dark"].includes(
     config?.ui?.variant
@@ -574,18 +682,18 @@ function applyAppearanceConfig(config) {
   }
 
   const header = config?.header || {};
-  root.style.setProperty("--header-bg", header.bgColor || "#ffffff");
-  root.style.setProperty("--header-text", header.textColor || "#0f5132");
+  root.style.setProperty("--header-bg", safeString(header.bgColor, "#ffffff"));
+  root.style.setProperty("--header-text", safeString(header.textColor, "#0f5132"));
   if (headerWrap) {
-    headerWrap.style.background = header.bgColor || "#ffffff";
+    headerWrap.style.background = safeString(header.bgColor, "#ffffff");
   }
   if (headerText) {
-    headerText.style.color = header.textColor || "#0f5132";
+    headerText.style.color = safeString(header.textColor, "#0f5132");
   }
 
   if (headerLogo) {
     const hasExplicitLogo = typeof header.logoUrl === "string";
-    const logoUrl = hasExplicitLogo ? header.logoUrl.trim() : "";
+    const logoUrl = hasExplicitLogo ? safeString(header.logoUrl, "") : "";
     if (logoUrl) {
       headerLogo.src = logoUrl;
       headerLogo.classList.remove("hidden");
@@ -593,13 +701,13 @@ function applyAppearanceConfig(config) {
       headerLogo.removeAttribute("src");
       headerLogo.classList.add("hidden");
     }
-    headerLogo.style.width = `${Number(header.logoWidthPx || 120)}px`;
-    headerLogo.style.height = `${Number(header.logoHeightPx || 40)}px`;
+    headerLogo.style.width = `${safeNumber(header.logoWidthPx, 120)}px`;
+    headerLogo.style.height = `${safeNumber(header.logoHeightPx, 40)}px`;
   }
 
   const headerStyle = header.style || "logo";
   const hasCustomHeaderText = typeof header.text === "string";
-  const resolvedHeaderText = hasCustomHeaderText ? header.text.trim() : "";
+  const resolvedHeaderText = hasCustomHeaderText ? safeString(header.text, "") : "";
   if (headerText && hasCustomHeaderText) {
     headerText.textContent = resolvedHeaderText;
   }
@@ -613,9 +721,9 @@ function applyAppearanceConfig(config) {
   }
 
   const seal = config?.securitySeal || {};
-  root.style.setProperty("--seal-bg", seal.bgColor || "#f5f7fb");
-  root.style.setProperty("--seal-text", seal.textColor || "#0f5132");
-  root.style.setProperty("--seal-icon", seal.iconColor || "#1d9f55");
+  root.style.setProperty("--seal-bg", safeString(seal.bgColor, "#f5f7fb"));
+  root.style.setProperty("--seal-text", safeString(seal.textColor, "#0f5132"));
+  root.style.setProperty("--seal-icon", safeString(seal.iconColor, "#1d9f55"));
   root.style.setProperty("--seal-radius", seal.radius === "quadrado" ? "10px" : "999px");
 
   if (securitySeal) {
@@ -624,7 +732,7 @@ function applyAppearanceConfig(config) {
     securitySeal.style.transform = size === "pequeno" ? "scale(0.92)" : size === "grande" ? "scale(1.05)" : "scale(1)";
   }
   if (securitySealText) {
-    securitySealText.textContent = seal.text || "Pagamento 100% seguro";
+    securitySealText.textContent = safeString(seal.text, "Pagamento 100% seguro");
     securitySealText.classList.toggle("hidden", seal.style === "somente_icone");
   }
   if (securitySealIcon) {
@@ -633,8 +741,18 @@ function applyAppearanceConfig(config) {
 
   applyFieldVisibility(config?.settings?.fields || {});
   applyButtonEffects(config);
-  applyLayoutType(config?.layout?.type || "singleColumn");
-  applyElementsConfig(config?.elements || {});
+  const forcedLayoutType = blocksConfig.layout.style === "two-col" ? "twoColumn" : "singleColumn";
+  applyLayoutType(forcedLayoutType);
+  applyElementsConfig({
+    ...(config?.elements || {}),
+    showCountrySelector: blocksConfig.visibility.country,
+    showOrderBumps: blocksConfig.visibility.bumps,
+    showShipping: blocksConfig.visibility.shipping,
+    showFooterSecurityText: blocksConfig.visibility.footer,
+    order: blocksConfig.order,
+  });
+  applyBlocksVisibility();
+  applyBlocksLayout();
   syncMercadexStructure();
 }
 
@@ -645,7 +763,7 @@ async function loadAppearanceBySlug(slug) {
     if (!response.ok) return;
     const data = await response.json();
     if (data?.effectiveConfig) {
-      applyAppearanceConfig(data.effectiveConfig);
+      applyAppearance(data.effectiveConfig);
     }
   } catch (error) {
     console.warn("Falha ao carregar aparencia", error);
@@ -655,11 +773,11 @@ async function loadAppearanceBySlug(slug) {
 window.addEventListener("message", (ev) => {
   if (!ev.data) return;
   if (ev.data.type === "appearance:preview" && ev.data.configEffective) {
-    applyAppearanceConfig(ev.data.configEffective);
+    applyAppearance(ev.data.configEffective);
     return;
   }
   if (ev.data.type === "customize") {
-    applyAppearanceConfig({
+    applyAppearance({
       palette: {
         primary: ev.data.primary,
         buttons: ev.data.button,
