@@ -83,6 +83,19 @@ let lastCartPayloadSignature = "";
 let baseRequiresAddress = true;
 let appearanceConfig = null;
 let layoutType = "singleColumn";
+let mercadexEnabled = false;
+let mercadexState = {
+  currentStep: "identificacao",
+  completed: { identificacao: false, entrega: false },
+};
+let mercadexRefs = {
+  root: null,
+  stepCards: {},
+  stepBodies: {},
+  statusNodes: {},
+  continueA: null,
+  continueB: null,
+};
 let elementsConfig = {
   showCountrySelector: true,
   showProductImage: true,
@@ -200,6 +213,7 @@ function applyLayoutType(nextLayoutType) {
 }
 
 function applyElementOrder() {
+  if (mercadexEnabled) return;
   if (!form) return;
   const order = elementsConfig.order || [];
   const formBlocks = {
@@ -240,6 +254,226 @@ function applyElementOrder() {
       checkoutSide.prepend(productCard);
     }
   }
+}
+
+function isVisible(node) {
+  return !!node && !node.classList.contains("hidden");
+}
+
+function getMercadexHasEntrega() {
+  return Boolean(baseRequiresAddress && elementsConfig.showShipping !== false);
+}
+
+function getRequiredValue(id, wrapperId) {
+  const input = document.getElementById(id);
+  const wrapper = wrapperId ? document.getElementById(wrapperId) : null;
+  if (!input || (wrapper && wrapper.classList.contains("hidden"))) return null;
+  if (input.required || id === "email" || id === "full-name") {
+    return (input.value || "").trim();
+  }
+  return null;
+}
+
+function validateMercadexStepA() {
+  const email = getRequiredValue("email", "field-wrap-email");
+  const fullName = getRequiredValue("full-name", "field-wrap-name");
+  const cpf = getRequiredValue("tax-id", "field-wrap-cpf");
+  const phone = getRequiredValue("cellphone", "field-wrap-phone");
+
+  if (!email || !fullName) {
+    alert("Preencha nome completo e e-mail para continuar.");
+    return false;
+  }
+  if (cpf !== null && !cpf) {
+    alert("Preencha CPF/CNPJ para continuar.");
+    return false;
+  }
+  if (phone !== null && !phone) {
+    alert("Preencha celular para continuar.");
+    return false;
+  }
+  return true;
+}
+
+function validateMercadexStepB() {
+  if (!getMercadexHasEntrega()) return true;
+  const cep = (cepInput?.value || "").trim();
+  const number = (addressInputs.number?.value || "").trim();
+  const street = (addressInputs.street?.value || "").trim();
+  const city = (addressInputs.city?.value || "").trim();
+  const state = (addressInputs.state?.value || "").trim();
+
+  if (!cep || !number || !street || !city || !state) {
+    alert("Preencha os dados de entrega (CEP, numero e endereco) para continuar.");
+    return false;
+  }
+  return true;
+}
+
+function setMercadexStep(step) {
+  mercadexState.currentStep = step;
+  updateMercadexAccordionUI();
+}
+
+function markMercadexStepCompleted(step) {
+  mercadexState.completed[step] = true;
+  updateMercadexAccordionUI();
+}
+
+function updateMercadexAccordionUI() {
+  const hasEntrega = getMercadexHasEntrega();
+  if (!hasEntrega && mercadexState.currentStep === "entrega") {
+    mercadexState.currentStep = "pagamento";
+  }
+  const steps = ["identificacao", "entrega", "pagamento"];
+
+  steps.forEach((step) => {
+    const card = mercadexRefs.stepCards[step];
+    const body = mercadexRefs.stepBodies[step];
+    const status = mercadexRefs.statusNodes[step];
+    if (!card || !body || !status) return;
+
+    if (step === "entrega" && !hasEntrega) {
+      card.classList.add("hidden");
+      body.classList.add("hidden");
+      return;
+    }
+
+    card.classList.remove("hidden");
+    const isOpen = mercadexState.currentStep === step;
+    card.classList.toggle("is-open", isOpen);
+    body.classList.toggle("hidden", !isOpen);
+    status.textContent = mercadexState.completed[step] ? "Concluido ✓" : "Pendente";
+    status.classList.toggle("is-done", mercadexState.completed[step]);
+  });
+}
+
+function buildMercadexStepCard(step, number, title) {
+  const card = document.createElement("section");
+  card.className = "mercadex-step";
+  card.dataset.step = step;
+  card.id = `mercadex-card-${step}`;
+
+  const headerBtn = document.createElement("button");
+  headerBtn.type = "button";
+  headerBtn.className = "mercadex-step__header";
+  headerBtn.innerHTML = `
+    <span class="mercadex-step__left">
+      <span class="mercadex-step__number">${number}</span>
+      <strong>${title}</strong>
+    </span>
+    <span class="mercadex-step__status">Pendente</span>
+  `;
+  headerBtn.addEventListener("click", () => setMercadexStep(step));
+
+  const body = document.createElement("div");
+  body.className = "mercadex-step__body";
+  body.id = `mercadex-step-${step}`;
+
+  card.appendChild(headerBtn);
+  card.appendChild(body);
+
+  mercadexRefs.stepCards[step] = card;
+  mercadexRefs.stepBodies[step] = body;
+  mercadexRefs.statusNodes[step] = headerBtn.querySelector(".mercadex-step__status");
+  return card;
+}
+
+function ensureMercadexStructure() {
+  if (!form) return;
+  if (mercadexRefs.root && mercadexRefs.root.isConnected) return;
+
+  const root = document.createElement("div");
+  root.id = "mercadex-accordion";
+  root.className = "mercadex-accordion";
+
+  root.appendChild(buildMercadexStepCard("identificacao", "1", "Identificacao"));
+  root.appendChild(buildMercadexStepCard("entrega", "2", "Entrega"));
+  root.appendChild(buildMercadexStepCard("pagamento", "3", "Pagamento"));
+
+  mercadexRefs.root = root;
+  form.prepend(root);
+
+  const continueA = document.createElement("button");
+  continueA.type = "button";
+  continueA.className = "mercadex-btn mercadex-btn--secondary";
+  continueA.textContent = "Continuar";
+  continueA.addEventListener("click", () => {
+    if (!validateMercadexStepA()) return;
+    markMercadexStepCompleted("identificacao");
+    setMercadexStep(getMercadexHasEntrega() ? "entrega" : "pagamento");
+  });
+  mercadexRefs.stepBodies.identificacao?.appendChild(continueA);
+  mercadexRefs.continueA = continueA;
+
+  const continueB = document.createElement("button");
+  continueB.type = "button";
+  continueB.className = "mercadex-btn mercadex-btn--secondary";
+  continueB.textContent = "Continuar";
+  continueB.addEventListener("click", () => {
+    if (!validateMercadexStepB()) return;
+    markMercadexStepCompleted("entrega");
+    setMercadexStep("pagamento");
+  });
+  mercadexRefs.stepBodies.entrega?.appendChild(continueB);
+  mercadexRefs.continueB = continueB;
+}
+
+function mountMercadexBlocks() {
+  ensureMercadexStructure();
+  const stepA = mercadexRefs.stepBodies.identificacao;
+  const stepB = mercadexRefs.stepBodies.entrega;
+  const stepC = mercadexRefs.stepBodies.pagamento;
+  if (!stepA || !stepB || !stepC) return;
+
+  const fields = formFieldsBlock?.querySelectorAll(".field");
+  fields?.forEach((field) => stepA.appendChild(field));
+  if (mercadexRefs.continueA) stepA.appendChild(mercadexRefs.continueA);
+
+  if (addressCard) stepB.appendChild(addressCard);
+  if (shippingSection) stepB.appendChild(shippingSection);
+  if (mercadexRefs.continueB) stepB.appendChild(mercadexRefs.continueB);
+
+  if (addonsSection) stepC.appendChild(addonsSection);
+  if (paymentBlock) stepC.appendChild(paymentBlock);
+  if (footerBlock) stepC.appendChild(footerBlock);
+
+  updateMercadexAccordionUI();
+}
+
+function unmountMercadexBlocks() {
+  if (!formFieldsBlock) return;
+  const basicFieldIds = ["field-wrap-email", "field-wrap-name", "field-wrap-cpf", "field-wrap-phone"];
+  basicFieldIds.forEach((id) => {
+    const node = document.getElementById(id);
+    if (node) formFieldsBlock.appendChild(node);
+  });
+
+  if (addressCard) formFieldsBlock.appendChild(addressCard);
+  if (shippingSection) form.appendChild(shippingSection);
+  if (addonsSection) form.appendChild(addonsSection);
+  if (paymentBlock) form.appendChild(paymentBlock);
+  if (footerBlock) form.appendChild(footerBlock);
+
+  if (mercadexRefs.root?.isConnected) {
+    mercadexRefs.root.remove();
+  }
+  mercadexRefs = {
+    root: null,
+    stepCards: {},
+    stepBodies: {},
+    statusNodes: {},
+    continueA: null,
+    continueB: null,
+  };
+}
+
+function syncMercadexStructure() {
+  if (mercadexEnabled) {
+    mountMercadexBlocks();
+    return;
+  }
+  unmountMercadexBlocks();
 }
 
 function applyElementsConfig(nextElements) {
@@ -313,6 +547,14 @@ function applyAppearanceConfig(config) {
     "ui-vegex"
   );
   document.body.classList.add(`ui-${variant}`);
+  const wasMercadex = mercadexEnabled;
+  mercadexEnabled = variant === "mercadex";
+  if (!wasMercadex && mercadexEnabled) {
+    mercadexState = {
+      currentStep: "identificacao",
+      completed: { identificacao: false, entrega: false },
+    };
+  }
 
   const header = config?.header || {};
   root.style.setProperty("--header-bg", header.bgColor || "#ffffff");
@@ -325,7 +567,15 @@ function applyAppearanceConfig(config) {
   }
 
   if (headerLogo) {
-    if (header.logoUrl) headerLogo.src = header.logoUrl;
+    const hasExplicitLogo = typeof header.logoUrl === "string";
+    const logoUrl = hasExplicitLogo ? header.logoUrl.trim() : "";
+    if (logoUrl) {
+      headerLogo.src = logoUrl;
+      headerLogo.classList.remove("hidden");
+    } else if (hasExplicitLogo && mercadexEnabled) {
+      headerLogo.removeAttribute("src");
+      headerLogo.classList.add("hidden");
+    }
     headerLogo.style.width = `${Number(header.logoWidthPx || 120)}px`;
     headerLogo.style.height = `${Number(header.logoHeightPx || 40)}px`;
   }
@@ -368,6 +618,7 @@ function applyAppearanceConfig(config) {
   applyButtonEffects(config);
   applyLayoutType(config?.layout?.type || "singleColumn");
   applyElementsConfig(config?.elements || {});
+  syncMercadexStructure();
 }
 
 async function loadAppearanceBySlug(slug) {
@@ -1094,6 +1345,9 @@ function applyAddressRequirement(required) {
     addressCard.classList.remove("hidden");
     addressToggle?.classList.remove("hidden");
     setAddressSection(false);
+  }
+  if (mercadexEnabled) {
+    updateMercadexAccordionUI();
   }
 }
 
