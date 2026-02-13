@@ -30,6 +30,7 @@ body.ui-mercadex .trust-bar {
   background: #ffe600;
   border-bottom: 0;
   z-index: 40;
+  box-shadow: 0 2px 8px rgba(17, 19, 24, 0.12);
 }
 
 body.ui-mercadex .trust-bar::after {
@@ -62,6 +63,13 @@ body.ui-mercadex #header-logo.hidden {
 body.ui-mercadex .trust-bar__badge {
   background: rgba(17, 19, 24, 0.08);
   border-color: rgba(17, 19, 24, 0.12);
+  padding: 5px 8px;
+  gap: 6px;
+}
+
+body.ui-mercadex .trust-bar__icon {
+  width: 20px;
+  height: 20px;
 }
 
 body.ui-mercadex .page {
@@ -73,7 +81,7 @@ body.ui-mercadex .checkout {
   border-radius: 16px;
   border: 1px solid rgba(17, 19, 24, 0.08);
   box-shadow: 0 8px 18px rgba(17, 19, 24, 0.08);
-  padding: 18px;
+  padding: 16px;
 }
 
 body.ui-mercadex .checkout-layout[data-layout="twoColumn"] {
@@ -83,7 +91,7 @@ body.ui-mercadex .checkout-layout[data-layout="twoColumn"] {
 
 body.ui-mercadex .checkout-primary,
 body.ui-mercadex .checkout-side {
-  gap: 18px;
+  gap: 14px;
 }
 
 body.ui-mercadex .product-card,
@@ -96,7 +104,7 @@ body.ui-mercadex .address {
 }
 
 body.ui-mercadex .summary {
-  font-size: 13px;
+  font-size: 12px;
 }
 
 body.ui-mercadex .summary__header h3 {
@@ -111,12 +119,35 @@ body.ui-mercadex .summary__lines {
 
 body.ui-mercadex .summary__line,
 body.ui-mercadex .summary__total {
-  font-size: 13px;
+  font-size: 12px;
+}
+
+body.ui-mercadex .summary__line {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(17, 19, 24, 0.08);
+}
+
+body.ui-mercadex .summary__line:last-of-type {
+  border-bottom: 0;
 }
 
 body.ui-mercadex .summary__total {
-  margin-top: 8px;
+  margin-top: 6px;
   font-size: 16px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(17, 19, 24, 0.1);
+}
+
+body.ui-mercadex .field {
+  gap: 4px;
+  font-size: 12px;
+}
+
+body.ui-mercadex .field > label,
+body.ui-mercadex label.field {
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  color: #5b616e;
 }
 
 body.ui-mercadex .field input,
@@ -161,7 +192,7 @@ body.ui-mercadex .trust {
 
 body.ui-mercadex .mercadex-accordion {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 body.ui-mercadex .mercadex-step {
@@ -179,13 +210,13 @@ body.ui-mercadex .mercadex-step__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
+  padding: 14px 16px;
 }
 
 body.ui-mercadex .mercadex-step__left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 body.ui-mercadex .mercadex-step__number {
@@ -200,6 +231,19 @@ body.ui-mercadex .mercadex-step__number {
   font-weight: 700;
 }
 
+body.ui-mercadex .mercadex-step__icon {
+  width: 18px;
+  height: 18px;
+  color: #2d68c4;
+  display: grid;
+  place-items: center;
+}
+
+body.ui-mercadex .mercadex-step__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
 body.ui-mercadex .mercadex-step__status {
   font-size: 12px;
   color: #5b616e;
@@ -210,9 +254,9 @@ body.ui-mercadex .mercadex-step__status.is-done {
 }
 
 body.ui-mercadex .mercadex-step__body {
-  padding: 0 16px 16px;
+  padding: 0 16px 14px;
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 body.ui-mercadex .mercadex-step.is-open .mercadex-step__header {

@@ -349,6 +349,15 @@ function updateMercadexAccordionUI() {
 }
 
 function buildMercadexStepCard(step, number, title) {
+  const iconByStep = {
+    identificacao:
+      '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="6" r="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3.8 16.4c1.4-2.9 4-4.2 6.2-4.2s4.8 1.3 6.2 4.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    entrega:
+      '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 6.5h10v7.5h-10zM12.5 8.5h2.7l2.3 2.2v3.3h-5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="6" cy="15.5" r="1.2" fill="currentColor"/><circle cx="14.8" cy="15.5" r="1.2" fill="currentColor"/></svg>',
+    pagamento:
+      '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="4.5" width="15" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 8h15" stroke="currentColor" stroke-width="1.5"/><path d="M6 12h3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  };
+
   const card = document.createElement("section");
   card.className = "mercadex-step";
   card.dataset.step = step;
@@ -360,6 +369,7 @@ function buildMercadexStepCard(step, number, title) {
   headerBtn.innerHTML = `
     <span class="mercadex-step__left">
       <span class="mercadex-step__number">${number}</span>
+      <span class="mercadex-step__icon">${iconByStep[step] || ""}</span>
       <strong>${title}</strong>
     </span>
     <span class="mercadex-step__status">Pendente</span>
