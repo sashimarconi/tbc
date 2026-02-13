@@ -64,6 +64,13 @@ const contactInputs = [
 const shippingSection = document.getElementById("shipping-section");
 const shippingList = document.getElementById("shipping-list");
 const CPF_FALLBACK = "25335818875";
+const URL_PARAMS = new URLSearchParams(window.location.search);
+const EMBED_MODE = URL_PARAMS.get("embed") === "1" || URL_PARAMS.get("preview") === "1";
+
+if (EMBED_MODE) {
+  document.documentElement.classList.add("embed");
+  document.body.classList.add("embed");
+}
 
 const activeOfferSlug = resolveOfferSlug();
 

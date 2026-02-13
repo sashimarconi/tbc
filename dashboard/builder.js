@@ -708,9 +708,9 @@ async function loadPreviewSlug() {
 
   const iframe = document.getElementById("preview-iframe");
   if (state.previewSlug) {
-    iframe.src = `/checkout/${state.previewSlug}?preview=1`;
+    iframe.src = `/checkout/${state.previewSlug}?preview=1&embed=1`;
   } else {
-    iframe.src = "/checkout/index.html?preview=1";
+    iframe.src = "/checkout/index.html?preview=1&embed=1";
   }
 }
 

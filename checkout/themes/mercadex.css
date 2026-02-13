@@ -263,6 +263,20 @@ body.ui-mercadex .mercadex-step.is-open .mercadex-step__header {
   border-bottom: 1px solid rgba(17, 19, 24, 0.08);
 }
 
+body.embed.ui-mercadex .page {
+  padding-top: 84px;
+}
+
+body.embed.ui-mercadex .checkout {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border-radius: 0;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
 @media (min-width: 980px) {
   body.ui-mercadex .checkout-layout[data-layout="twoColumn"] {
     grid-template-columns: minmax(0, 1fr) 360px;
