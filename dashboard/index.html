@@ -27,6 +27,7 @@
         <button class="sidebar__nav-btn" data-target="appearance-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M7 7h.01"/><path d="M12 7h.01"/><path d="M17 7h.01"/><path d="M7 12h.01"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 17h.01"/><path d="M12 17h.01"/><path d="M17 17h.01"/></svg>Aparência</button>
         <button class="sidebar__nav-btn" data-target="orders-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/></svg>Pedidos</button>
         <button class="sidebar__nav-btn" data-target="carts-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h2l.34 2.36a2 2 0 0 0 2 1.64h12.72a2 2 0 0 0 2-1.64L23 6H6"/></svg>Carrinhos</button>
+        <button class="sidebar__nav-btn" data-target="integrations-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h5"/><path d="M15 12h5"/><circle cx="12" cy="12" r="3"/><path d="M12 4v2"/><path d="M12 18v2"/></svg>Integrações</button>
         <button class="sidebar__nav-btn" data-target="products-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M12 12v6"/><path d="M9 15h6"/></svg>Produtos</button>
         <button class="sidebar__nav-btn" data-target="order-bumps-view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>Order Bumps</button>
       </nav>
@@ -121,6 +122,7 @@
               <button type="button" class="panel-tab is-active" data-target="dashboard-view">Dashboard</button>
               <button type="button" class="panel-tab" data-target="orders-view">Pedidos</button>
               <button type="button" class="panel-tab" data-target="carts-view">Carrinhos</button>
+              <button type="button" class="panel-tab" data-target="integrations-view">Integrações</button>
               <button type="button" class="panel-tab" data-target="products-view">Produtos</button>
               <button type="button" class="panel-tab" data-target="order-bumps-view">Order Bumps</button>
             </div>
@@ -334,6 +336,85 @@
                   <tr>
                     <td colspan="6">Carregando carrinhos...</td>
                   </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="integrations-view" class="panel-view hidden" hidden>
+          <header class="view-header" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:1.5rem;">
+            <div>
+              <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.5rem;">Integrações</h2>
+              <p style="color:var(--color-text-secondary);font-weight:500;">Meta Pixel, TikTok Pixel e UTMify (sem webhook por enquanto).</p>
+            </div>
+            <button id="integrations-refresh" type="button" class="ghost">Atualizar</button>
+          </header>
+
+          <section class="card" style="padding:1.2rem;margin-bottom:1rem;">
+            <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:1rem;">
+              <button type="button" class="ghost integration-provider is-active" data-provider="meta">Meta</button>
+              <button type="button" class="ghost integration-provider" data-provider="tiktok">TikTok</button>
+              <button type="button" class="ghost integration-provider" data-provider="utmify">UTMify</button>
+            </div>
+            <form id="integration-form" style="display:grid;gap:0.75rem;">
+              <input id="integration-id" type="hidden" />
+              <input id="integration-provider" type="hidden" value="meta" />
+              <label>Nome
+                <input id="integration-name" type="text" placeholder="Ex: Pixel principal" />
+              </label>
+              <label class="toggle-label">Ativo
+                <input id="integration-active" type="checkbox" checked />
+              </label>
+
+              <div id="integration-fields-meta">
+                <label>Meta Pixel ID
+                  <input id="meta-pixel-id" type="text" placeholder="1234567890" />
+                </label>
+              </div>
+
+              <div id="integration-fields-tiktok" class="hidden">
+                <label>TikTok Pixel ID
+                  <input id="tiktok-pixel-id" type="text" placeholder="CXXXXXXXX" />
+                </label>
+              </div>
+
+              <div id="integration-fields-utmify" class="hidden" style="display:grid;gap:0.75rem;">
+                <label>UTMify API URL
+                  <input id="utmify-api-url" type="url" placeholder="https://api.utmify.com.br/api/events" />
+                </label>
+                <label>UTMify API Token
+                  <input id="utmify-api-token" type="password" placeholder="token..." />
+                </label>
+                <label class="toggle-label">Enviar no pedido criado (waiting_payment)
+                  <input id="utmify-fire-on-order-created" type="checkbox" checked />
+                </label>
+                <label class="toggle-label">Enviar somente quando pago
+                  <input id="utmify-fire-only-when-paid" type="checkbox" />
+                </label>
+              </div>
+
+              <div style="display:flex;gap:0.6rem;">
+                <button id="integration-save" type="submit" class="ghost">Salvar</button>
+                <button id="integration-cancel" type="button" class="ghost">Cancelar edição</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="card" style="padding:1.2rem;">
+            <h3 style="margin-top:0;">Integrações cadastradas</h3>
+            <div class="table-scroll">
+              <table class="data-table" style="width:100%;">
+                <thead>
+                  <tr>
+                    <th>Provider</th>
+                    <th>Nome</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="integrations-table-body">
+                  <tr><td colspan="4">Carregando integrações...</td></tr>
                 </tbody>
               </table>
             </div>

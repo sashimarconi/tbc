@@ -1,5 +1,8 @@
 {
   "rewrites": [
+    { "source": "/", "destination": "/home.html" },
+    { "source": "/home", "destination": "/home.html" },
+    { "source": "/home/", "destination": "/home.html" },
     { "source": "/api/dashboard/upload/logo", "destination": "/api/dashboard/upload?id=logo" },
     { "source": "/api/admin/upload/logo", "destination": "/api/admin/upload?id=logo" },
     { "source": "/signup.html", "destination": "/admin/signup.html" },

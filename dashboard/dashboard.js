@@ -102,6 +102,24 @@ const ordersTableBody = document.getElementById("orders-table-body");
 const cartsTableBody = document.getElementById("carts-table-body");
 const ordersRefreshBtn = document.getElementById("orders-refresh");
 const cartsRefreshBtn = document.getElementById("carts-refresh");
+const integrationsRefreshBtn = document.getElementById("integrations-refresh");
+const integrationForm = document.getElementById("integration-form");
+const integrationIdInput = document.getElementById("integration-id");
+const integrationProviderInput = document.getElementById("integration-provider");
+const integrationNameInput = document.getElementById("integration-name");
+const integrationActiveInput = document.getElementById("integration-active");
+const integrationCancelBtn = document.getElementById("integration-cancel");
+const integrationProviderButtons = document.querySelectorAll(".integration-provider");
+const integrationMetaFields = document.getElementById("integration-fields-meta");
+const integrationTikTokFields = document.getElementById("integration-fields-tiktok");
+const integrationUtmifyFields = document.getElementById("integration-fields-utmify");
+const metaPixelIdInput = document.getElementById("meta-pixel-id");
+const tiktokPixelIdInput = document.getElementById("tiktok-pixel-id");
+const utmifyApiUrlInput = document.getElementById("utmify-api-url");
+const utmifyApiTokenInput = document.getElementById("utmify-api-token");
+const utmifyFireOnOrderCreatedInput = document.getElementById("utmify-fire-on-order-created");
+const utmifyFireOnlyWhenPaidInput = document.getElementById("utmify-fire-only-when-paid");
+const integrationsTableBody = document.getElementById("integrations-table-body");
 const inspector = document.getElementById("inspector");
 const inspectorType = document.getElementById("inspector-type");
 const inspectorTitle = document.getElementById("inspector-title");
@@ -184,6 +202,7 @@ let editingBumpId = null;
 let currentBumpImageMode = "upload";
 let currentBumpImageValue = "";
 const fallbackProductImage = "https://dummyimage.com/200x200/ede9df/8a8277&text=Produto";
+let integrationsCache = [];
 
 function setAuthHeader() {
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -855,6 +874,8 @@ function activateView(targetId) {
   } else if (targetId === "order-bumps-view") {
     loadItems();
     renderOrderBumpsList();
+  } else if (targetId === "integrations-view") {
+    loadIntegrations();
   }
 }
 
@@ -1642,6 +1663,72 @@ logoutBtn.addEventListener("click", () => {
 
 ordersRefreshBtn?.addEventListener("click", () => loadOrders());
 cartsRefreshBtn?.addEventListener("click", () => loadCarts());
+integrationsRefreshBtn?.addEventListener("click", () => loadIntegrations());
+integrationProviderButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    updateIntegrationProviderUI(btn.dataset.provider || "meta");
+  });
+});
+integrationCancelBtn?.addEventListener("click", () => {
+  resetIntegrationForm();
+  updateIntegrationProviderUI(getCurrentIntegrationProvider());
+});
+integrationForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const id = integrationIdInput?.value || "";
+  const payload = getIntegrationPayloadFromForm();
+  const endpoint = id ? `/api/dashboard/integrations/${id}` : "/api/dashboard/integrations";
+  const method = id ? "PUT" : "POST";
+  try {
+    const res = await fetch(endpoint, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        ...setAuthHeader(),
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      alert(data.error || "Falha ao salvar integração.");
+      return;
+    }
+    resetIntegrationForm();
+    updateIntegrationProviderUI(payload.provider);
+    await loadIntegrations();
+  } catch (_error) {
+    alert("Erro ao salvar integração.");
+  }
+});
+integrationsTableBody?.addEventListener("click", async (event) => {
+  const actionBtn = event.target.closest("[data-integration-action]");
+  if (!actionBtn) return;
+  const id = String(actionBtn.dataset.integrationId || "");
+  const action = actionBtn.dataset.integrationAction;
+  const row = integrationsCache.find((item) => String(item.id) === id);
+  if (!row) return;
+  if (action === "edit") {
+    fillIntegrationForm(row);
+    return;
+  }
+  if (action === "delete") {
+    if (!confirm("Excluir esta integração?")) return;
+    try {
+      const res = await fetch(`/api/dashboard/integrations/${id}`, {
+        method: "DELETE",
+        headers: { ...setAuthHeader() },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(data.error || "Falha ao excluir.");
+        return;
+      }
+      await loadIntegrations();
+    } catch (_error) {
+      alert("Erro ao excluir integração.");
+    }
+  }
+});
 
 productsSearchInput?.addEventListener("input", () => renderProductsTable());
 createProductBtn?.addEventListener("click", () => openProductModal("create"));
@@ -1788,6 +1875,8 @@ if (productForm) {
   setFormFactor("physical");
   setImageMode("upload");
 }
+resetIntegrationForm();
+updateIntegrationProviderUI("meta");
 
 async function bootstrapAuth() {
   if (!token) {
@@ -1811,6 +1900,122 @@ async function bootstrapAuth() {
     token = "";
     localStorage.removeItem("admin_token");
     showLogin();
+  }
+}
+
+function getCurrentIntegrationProvider() {
+  const provider = (integrationProviderInput?.value || "meta").trim().toLowerCase();
+  return ["meta", "tiktok", "utmify"].includes(provider) ? provider : "meta";
+}
+
+function updateIntegrationProviderUI(provider) {
+  integrationProviderButtons.forEach((btn) => {
+    btn.classList.toggle("is-active", btn.dataset.provider === provider);
+  });
+  if (integrationProviderInput) integrationProviderInput.value = provider;
+  integrationMetaFields?.classList.toggle("hidden", provider !== "meta");
+  integrationTikTokFields?.classList.toggle("hidden", provider !== "tiktok");
+  integrationUtmifyFields?.classList.toggle("hidden", provider !== "utmify");
+  renderIntegrationsTable();
+}
+
+function resetIntegrationForm() {
+  if (integrationIdInput) integrationIdInput.value = "";
+  if (integrationNameInput) integrationNameInput.value = "";
+  if (integrationActiveInput) integrationActiveInput.checked = true;
+  if (metaPixelIdInput) metaPixelIdInput.value = "";
+  if (tiktokPixelIdInput) tiktokPixelIdInput.value = "";
+  if (utmifyApiUrlInput) utmifyApiUrlInput.value = "";
+  if (utmifyApiTokenInput) utmifyApiTokenInput.value = "";
+  if (utmifyFireOnOrderCreatedInput) utmifyFireOnOrderCreatedInput.checked = true;
+  if (utmifyFireOnlyWhenPaidInput) utmifyFireOnlyWhenPaidInput.checked = false;
+}
+
+function getIntegrationPayloadFromForm() {
+  const provider = getCurrentIntegrationProvider();
+  const payload = {
+    provider,
+    name: integrationNameInput?.value?.trim() || "",
+    is_active: integrationActiveInput?.checked !== false,
+    config: {},
+  };
+
+  if (provider === "meta") {
+    payload.config.pixel_id = metaPixelIdInput?.value?.trim() || "";
+  } else if (provider === "tiktok") {
+    payload.config.pixel_id = tiktokPixelIdInput?.value?.trim() || "";
+  } else if (provider === "utmify") {
+    payload.config.api_url = utmifyApiUrlInput?.value?.trim() || "";
+    payload.config.api_token = utmifyApiTokenInput?.value?.trim() || "";
+    payload.config.fire_on_order_created = utmifyFireOnOrderCreatedInput?.checked !== false;
+    payload.config.fire_only_when_paid = utmifyFireOnlyWhenPaidInput?.checked === true;
+  }
+  return payload;
+}
+
+function fillIntegrationForm(item) {
+  if (!item) return;
+  const provider = item.provider || "meta";
+  if (integrationIdInput) integrationIdInput.value = item.id;
+  if (integrationNameInput) integrationNameInput.value = item.name || "";
+  if (integrationActiveInput) integrationActiveInput.checked = item.is_active !== false;
+  updateIntegrationProviderUI(provider);
+  if (provider === "meta" && metaPixelIdInput) {
+    metaPixelIdInput.value = item?.config?.pixel_id || "";
+  }
+  if (provider === "tiktok" && tiktokPixelIdInput) {
+    tiktokPixelIdInput.value = item?.config?.pixel_id || "";
+  }
+  if (provider === "utmify") {
+    if (utmifyApiUrlInput) utmifyApiUrlInput.value = item?.config?.api_url || "";
+    if (utmifyApiTokenInput) utmifyApiTokenInput.value = item?.config?.api_token || "";
+    if (utmifyFireOnOrderCreatedInput) utmifyFireOnOrderCreatedInput.checked = item?.config?.fire_on_order_created !== false;
+    if (utmifyFireOnlyWhenPaidInput) utmifyFireOnlyWhenPaidInput.checked = item?.config?.fire_only_when_paid === true;
+  }
+}
+
+function renderIntegrationsTable() {
+  if (!integrationsTableBody) return;
+  const provider = getCurrentIntegrationProvider();
+  const rows = integrationsCache.filter((item) => item.provider === provider);
+  if (!rows.length) {
+    integrationsTableBody.innerHTML = `<tr><td colspan="4">Nenhuma integração para ${provider}.</td></tr>`;
+    return;
+  }
+  integrationsTableBody.innerHTML = rows
+    .map((item) => {
+      const statusLabel = item.is_active !== false ? "Ativa" : "Inativa";
+      return `
+        <tr data-integration-id="${item.id}">
+          <td>${escapeHtml(item.provider || "")}</td>
+          <td>${escapeHtml(item.name || "-")}</td>
+          <td>${escapeHtml(statusLabel)}</td>
+          <td>
+            <button type="button" class="ghost" data-integration-action="edit" data-integration-id="${item.id}">Editar</button>
+            <button type="button" class="ghost" data-integration-action="delete" data-integration-id="${item.id}">Excluir</button>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+async function loadIntegrations() {
+  if (!integrationsTableBody) return;
+  try {
+    const res = await fetch("/api/dashboard/integrations", {
+      headers: { ...setAuthHeader() },
+    });
+    if (!res.ok) {
+      if (res.status === 401) showLogin();
+      integrationsTableBody.innerHTML = `<tr><td colspan="4">Falha ao carregar integrações.</td></tr>`;
+      return;
+    }
+    const data = await res.json();
+    integrationsCache = Array.isArray(data.integrations) ? data.integrations : [];
+    renderIntegrationsTable();
+  } catch (_error) {
+    integrationsTableBody.innerHTML = `<tr><td colspan="4">Erro ao carregar integrações.</td></tr>`;
   }
 }
 
@@ -1851,6 +2056,9 @@ navBtns.forEach(btn => {
     if (view) {
       view.classList.remove('hidden');
       view.hidden = false;
+      if (target === "integrations-view") {
+        loadIntegrations();
+      }
     }
   });
 });

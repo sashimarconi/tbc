@@ -1,0 +1,340 @@
+﻿:root {
+  --bg: #050505;
+  --panel: rgba(20, 16, 34, 0.78);
+  --panel-border: rgba(161, 0, 255, 0.24);
+  --text: #ededed;
+  --muted: #b8b8c2;
+  --purple: #a100ff;
+  --purple-deep: #5b00b5;
+  --cta: #b6ff2e;
+  --cta-text: #101206;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  background: radial-gradient(circle at 50% 0%, #101018 0%, var(--bg) 50%, #030303 100%);
+  color: var(--text);
+  font-family: "Sora", "Segoe UI", sans-serif;
+}
+
+body {
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  z-index: -3;
+  pointer-events: none;
+  border-radius: 999px;
+  filter: blur(150px);
+  opacity: 0.3;
+}
+
+body::before {
+  width: 42vw;
+  height: 42vw;
+  min-width: 320px;
+  min-height: 320px;
+  left: -8vw;
+  top: -8vh;
+  background: radial-gradient(circle at 40% 40%, rgba(161, 0, 255, 0.85), rgba(91, 0, 181, 0.18) 70%);
+  animation: drift-a 18s ease-in-out infinite alternate;
+}
+
+body::after {
+  width: 44vw;
+  height: 44vw;
+  min-width: 340px;
+  min-height: 340px;
+  right: -8vw;
+  top: 8vh;
+  background: radial-gradient(circle at 65% 35%, rgba(91, 0, 181, 0.85), rgba(161, 0, 255, 0.16) 70%);
+  animation: drift-b 16s ease-in-out infinite alternate;
+}
+
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(38vw 30vw at 52% 72%, rgba(91, 0, 181, 0.45), transparent 72%),
+    radial-gradient(32vw 24vw at 48% 28%, rgba(161, 0, 255, 0.33), transparent 70%);
+  filter: blur(8px);
+  animation: aurora-shift 14s ease-in-out infinite alternate;
+}
+
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: radial-gradient(circle, #fff 0.5px, transparent 0.6px);
+  background-size: 4px 4px;
+}
+
+.site-shell {
+  min-height: 100vh;
+  padding: 20px 22px 42px;
+}
+
+.topbar-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.topbar {
+  width: min(1040px, 100%);
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 14px 42px rgba(0, 0, 0, 0.35);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.brand-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: linear-gradient(120deg, var(--purple), #d072ff);
+  box-shadow: inset 0 0 0 4px rgba(0, 0, 0, 0.25);
+}
+
+.brand-text {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: 0.03em;
+}
+
+.top-links {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin: 0;
+  padding: 0;
+}
+
+.top-links a {
+  color: #dedee7;
+  text-decoration: none;
+  font-size: 0.98rem;
+  font-weight: 500;
+  transition: color 160ms ease;
+}
+
+.top-links a:hover {
+  color: #ffffff;
+}
+
+.top-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.link-login {
+  color: #f2f2fa;
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  border-radius: 999px;
+  padding: 0 28px;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 140ms ease, box-shadow 180ms ease, background-color 180ms ease, color 180ms ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-neon {
+  background: var(--cta);
+  color: var(--cta-text);
+  box-shadow: 0 0 0 1px rgba(182, 255, 46, 0.45), 0 14px 36px rgba(182, 255, 46, 0.16);
+}
+
+.btn-neon:hover {
+  background: #c4ff54;
+  box-shadow: 0 0 0 1px rgba(196, 255, 84, 0.52), 0 18px 40px rgba(182, 255, 46, 0.22);
+}
+
+.btn-outline {
+  color: #d8c8ff;
+  border: 1px solid rgba(161, 0, 255, 0.75);
+  background: rgba(91, 0, 181, 0.08);
+}
+
+.btn-outline:hover {
+  background: rgba(161, 0, 255, 0.17);
+  color: #ece3ff;
+}
+
+.hero {
+  max-width: 980px;
+  margin: 108px auto 0;
+  text-align: center;
+  padding: 0 14px;
+}
+
+.hero-kicker {
+  margin: 0;
+  color: #a6a6bc;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  font-size: 0.78rem;
+}
+
+.hero-title {
+  margin: 20px 0 0;
+  font-size: clamp(2.15rem, 7.1vw, 5.4rem);
+  line-height: 0.98;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.hero-title span {
+  display: block;
+}
+
+.hero-title .highlight {
+  color: var(--cta);
+  text-shadow: 0 0 24px rgba(182, 255, 46, 0.22);
+}
+
+.hero-subtitle {
+  width: min(720px, 100%);
+  margin: 26px auto 0;
+  color: var(--muted);
+  font-size: clamp(1rem, 2.2vw, 1.38rem);
+  line-height: 1.5;
+}
+
+.hero-actions {
+  margin-top: 34px;
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 980px) {
+  .topbar {
+    border-radius: 24px;
+  }
+
+  .top-links {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .site-shell {
+    padding: 14px 14px 30px;
+  }
+
+  .topbar {
+    min-height: 66px;
+    padding: 10px 12px;
+  }
+
+  .brand-text {
+    font-size: 1.12rem;
+  }
+
+  .top-actions {
+    gap: 10px;
+  }
+
+  .top-actions .btn {
+    min-height: 44px;
+    padding: 0 16px;
+    font-size: 0.88rem;
+  }
+
+  .link-login {
+    font-size: 0.88rem;
+  }
+
+  .hero {
+    margin-top: 72px;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+    max-width: 300px;
+    margin-inline: auto;
+    margin-top: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@keyframes drift-a {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(9vw, 6vh, 0) scale(1.13);
+  }
+}
+
+@keyframes drift-b {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(-10vw, 8vh, 0) scale(1.16);
+  }
+}
+
+@keyframes aurora-shift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(0, -2vh, 0) scale(1.05);
+  }
+}

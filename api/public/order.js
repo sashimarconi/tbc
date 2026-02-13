@@ -1,6 +1,7 @@
-﻿const { parseJson } = require("../../lib/parse-json");
+const { parseJson } = require("../../lib/parse-json");
 const { query } = require("../../lib/db");
 const { ensureSalesTables } = require("../../lib/ensure-sales");
+const { dispatchUtmifyEvent, normalizeTrackingParameters } = require("../../lib/utmify");
 
 function asObject(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -70,6 +71,11 @@ module.exports = async (req, res) => {
   const pix = asObject(body.pix) || {};
   const status = sanitizeText(body.status) || "pending";
   const source = sanitizeText(body.source || (tracking && tracking.src) || req.headers.referer || "");
+  const trackingParameters = normalizeTrackingParameters({
+    utm,
+    tracking,
+    source,
+  });
 
   const totalCents = asNumber(body.total_cents || (summary && summary.total_cents));
   const subtotalCents = asNumber(body.subtotal_cents || (summary && summary.subtotal_cents));
@@ -82,8 +88,8 @@ module.exports = async (req, res) => {
       `insert into checkout_orders (
          owner_user_id, cart_key, customer, address, items, shipping, summary,
          status, pix, total_cents, subtotal_cents, shipping_cents,
-         utm, source, tracking
-       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+         tracking_parameters, utm, source, tracking
+       ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
        on conflict (owner_user_id, cart_key)
        do update set
          owner_user_id = excluded.owner_user_id,
@@ -97,11 +103,12 @@ module.exports = async (req, res) => {
          total_cents = excluded.total_cents,
          subtotal_cents = excluded.subtotal_cents,
          shipping_cents = excluded.shipping_cents,
+         tracking_parameters = coalesce(excluded.tracking_parameters, checkout_orders.tracking_parameters),
          utm = coalesce(checkout_orders.utm, excluded.utm),
          source = case when checkout_orders.source is null or checkout_orders.source = '' then excluded.source else checkout_orders.source end,
          tracking = coalesce(checkout_orders.tracking, excluded.tracking),
          created_at = checkout_orders.created_at
-       returning id
+       returning *
       `,
       [
         ownerUserId,
@@ -116,6 +123,7 @@ module.exports = async (req, res) => {
         totalCents,
         subtotalCents,
         shippingCents,
+        trackingParameters,
         utm,
         source || null,
         tracking,
@@ -139,7 +147,16 @@ module.exports = async (req, res) => {
       [cartKey, summary, itemsJson, shipping, totalCents, subtotalCents, shippingCents, ownerUserId]
     );
 
-    res.json({ orderId: result.rows[0]?.id || null });
+    const savedOrder = result.rows?.[0] || null;
+    if (savedOrder) {
+      try {
+        await dispatchUtmifyEvent({ order: savedOrder, status: "waiting_payment" });
+      } catch (_error) {
+        // Keep order creation resilient even if integration fails.
+      }
+    }
+
+    res.json({ orderId: savedOrder?.id || null });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

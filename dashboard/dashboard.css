@@ -263,6 +263,12 @@
   background: #181825;
 }
 
+.integration-provider.is-active {
+  border-color: #a100ff !important;
+  color: #ffffff !important;
+  background: rgba(161, 0, 255, 0.25) !important;
+}
+
 .products-table button, .data-table button, .bumps-grid button, .bumps-empty__card button {
   background: #181825;
   border: 1.5px solid #232336;

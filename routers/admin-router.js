@@ -10,12 +10,14 @@ const {
 const { saveProductFile, saveProductFileBuffer } = require("../lib/product-files");
 const { ensurePaymentGatewayTable } = require("../lib/ensure-payment-gateway");
 const { encryptText } = require("../lib/credentials-crypto");
+const { ensureIntegrationsSchema } = require("../lib/ensure-integrations");
+const { dispatchUtmifyEvent } = require("../lib/utmify");
 const DEFAULT_SEALPAY_API_URL =
   process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix";
 const LOGO_MAX_BYTES = Number(process.env.LOGO_UPLOAD_MAX_BYTES || 4 * 1024 * 1024);
 const LOGO_MAX_MB_LABEL = `${Math.round(LOGO_MAX_BYTES / (1024 * 1024))}MB`;
-const authHandler = require("./auth/[[...path]]");
-const analyticsHandler = require("./analytics/[[...path]]");
+const authHandler = require("../api/auth/[[...path]]");
+const analyticsHandler = require("../api/analytics/[[...path]]");
 
 function deepMerge(base, override) {
   if (Array.isArray(base)) {
@@ -1096,6 +1098,176 @@ async function handlePaymentSettings(req, res, user) {
   }
 }
 
+function normalizeIntegrationProvider(value) {
+  const provider = String(value || "")
+    .trim()
+    .toLowerCase();
+  return ["meta", "tiktok", "utmify"].includes(provider) ? provider : "";
+}
+
+function normalizeIntegrationPayload(body = {}) {
+  const provider = normalizeIntegrationProvider(body.provider);
+  const name = typeof body.name === "string" ? body.name.trim().slice(0, 120) : "";
+  const isActive = body.is_active !== false;
+  const rawConfig = body.config && typeof body.config === "object" && !Array.isArray(body.config) ? body.config : {};
+  const config = { ...rawConfig };
+
+  if (provider === "meta" || provider === "tiktok") {
+    config.pixel_id = typeof config.pixel_id === "string" ? config.pixel_id.trim() : "";
+    config.access_token = typeof config.access_token === "string" ? config.access_token.trim() : "";
+    config.test_event_code = typeof config.test_event_code === "string" ? config.test_event_code.trim() : "";
+  }
+
+  if (provider === "utmify") {
+    config.api_url = typeof config.api_url === "string" ? config.api_url.trim() : "";
+    config.api_token = typeof config.api_token === "string" ? config.api_token.trim() : "";
+    config.fire_on_order_created = config.fire_on_order_created !== false;
+    config.fire_only_when_paid = config.fire_only_when_paid === true;
+    config.fire_on_paid = config.fire_on_paid !== false;
+  }
+
+  return { provider, name, isActive, config };
+}
+
+function sanitizeIntegrationRow(row = {}) {
+  const provider = row.provider;
+  const config = row.config && typeof row.config === "object" ? { ...row.config } : {};
+  if (provider !== "utmify") {
+    delete config.api_token;
+  }
+  return {
+    id: row.id,
+    owner_user_id: row.owner_user_id,
+    provider,
+    name: row.name || "",
+    is_active: row.is_active !== false,
+    config,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+async function handleIntegrations(req, res, user) {
+  try {
+    await ensureIntegrationsSchema();
+    const { id } = req.query || {};
+
+    if (req.method === "GET") {
+      const rows = await query(
+        `select id, owner_user_id, provider, name, is_active, config, created_at, updated_at
+         from user_integrations
+         where owner_user_id = $1
+         order by provider asc, updated_at desc`,
+        [user.id]
+      );
+      res.json({ integrations: (rows.rows || []).map((row) => sanitizeIntegrationRow(row)) });
+      return;
+    }
+
+    if (req.method === "POST") {
+      const body = await parseJson(req);
+      const payload = normalizeIntegrationPayload(body);
+      if (!payload.provider) {
+        res.status(400).json({ error: "provider invalido" });
+        return;
+      }
+      const created = await query(
+        `insert into user_integrations (owner_user_id, provider, name, is_active, config, updated_at)
+         values ($1,$2,$3,$4,$5::jsonb, now())
+         returning id, owner_user_id, provider, name, is_active, config, created_at, updated_at`,
+        [user.id, payload.provider, payload.name || null, payload.isActive, JSON.stringify(payload.config)]
+      );
+      res.json({ integration: sanitizeIntegrationRow(created.rows?.[0] || {}) });
+      return;
+    }
+
+    if (req.method === "PUT") {
+      if (!id) {
+        res.status(400).json({ error: "Missing id" });
+        return;
+      }
+      const body = await parseJson(req);
+      const payload = normalizeIntegrationPayload(body);
+      if (!payload.provider) {
+        res.status(400).json({ error: "provider invalido" });
+        return;
+      }
+      const updated = await query(
+        `update user_integrations
+           set provider = $3,
+               name = $4,
+               is_active = $5,
+               config = $6::jsonb,
+               updated_at = now()
+         where id = $1 and owner_user_id = $2
+         returning id, owner_user_id, provider, name, is_active, config, created_at, updated_at`,
+        [id, user.id, payload.provider, payload.name || null, payload.isActive, JSON.stringify(payload.config)]
+      );
+      if (!updated.rows?.length) {
+        res.status(404).json({ error: "Integration not found" });
+        return;
+      }
+      res.json({ integration: sanitizeIntegrationRow(updated.rows[0]) });
+      return;
+    }
+
+    if (req.method === "DELETE") {
+      if (!id) {
+        res.status(400).json({ error: "Missing id" });
+        return;
+      }
+      await query("delete from user_integrations where id = $1 and owner_user_id = $2", [id, user.id]);
+      res.json({ ok: true });
+      return;
+    }
+
+    res.status(405).json({ error: "Method not allowed" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+async function handleMarkOrderPaid(req, res, user) {
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
+
+  const { id } = req.query || {};
+  if (!id) {
+    res.status(400).json({ error: "Missing id" });
+    return;
+  }
+
+  try {
+    await ensureSalesTables();
+    await ensureIntegrationsSchema();
+    const updated = await query(
+      `update checkout_orders
+         set status = 'paid',
+             paid_at = coalesce(paid_at, now())
+       where id = $1 and owner_user_id = $2
+       returning *`,
+      [id, user.id]
+    );
+    const order = updated.rows?.[0];
+    if (!order) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+
+    try {
+      await dispatchUtmifyEvent({ order, status: "paid" });
+    } catch (_error) {
+      // Keep manual status update resilient.
+    }
+
+    res.json({ ok: true, order });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
 function getPathSegments(req) {
   const raw = req.query?.path;
   if (Array.isArray(raw)) {
@@ -1118,8 +1290,11 @@ module.exports = async (req, res) => {
     const path = segments[0] || "";
 
     req.query = req.query || {};
-    if (["items", "orders", "carts", "upload"].includes(path) && segments.length > 1 && !req.query.id) {
+    if (["items", "orders", "carts", "upload", "integrations"].includes(path) && segments.length > 1 && !req.query.id) {
       req.query.id = segments[1];
+    }
+    if (path === "orders" && segments.length > 2 && !req.query.action) {
+      req.query.action = segments[2];
     }
 
     if (path === "login") {
@@ -1138,6 +1313,10 @@ module.exports = async (req, res) => {
         await handleItems(req, res, user);
         return;
       case "orders":
+        if (req.query?.action === "mark-paid") {
+          await handleMarkOrderPaid(req, res, user);
+          return;
+        }
         await handleOrders(req, res, user);
         return;
       case "carts":
@@ -1161,6 +1340,9 @@ module.exports = async (req, res) => {
         return;
       case "payment-settings":
         await handlePaymentSettings(req, res, user);
+        return;
+      case "integrations":
+        await handleIntegrations(req, res, user);
         return;
       case "analytics":
         req.query.path = segments.slice(1);

@@ -140,9 +140,11 @@ create table if not exists checkout_orders (
   total_cents integer default 0,
   subtotal_cents integer default 0,
   shipping_cents integer default 0,
+  tracking_parameters jsonb,
   utm jsonb,
   source text,
   tracking jsonb,
+  paid_at timestamptz,
   created_at timestamptz not null default now(),
   unique(owner_user_id, cart_key)
 );
@@ -183,6 +185,35 @@ create table if not exists user_payment_gateways (
 
 create index if not exists user_payment_gateways_owner_idx
   on user_payment_gateways (owner_user_id, provider, updated_at desc);
+
+create table if not exists user_integrations (
+  id serial primary key,
+  owner_user_id uuid not null references users(id) on delete cascade,
+  provider text not null check (provider in ('meta', 'tiktok', 'utmify')),
+  name text,
+  is_active boolean not null default true,
+  config jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists user_integrations_owner_provider_idx
+  on user_integrations (owner_user_id, provider, updated_at desc);
+
+create table if not exists utmify_events_log (
+  id serial primary key,
+  owner_user_id uuid not null references users(id) on delete cascade,
+  order_id uuid not null references checkout_orders(id) on delete cascade,
+  status text not null,
+  request_payload jsonb,
+  response_payload jsonb,
+  http_status integer,
+  created_at timestamptz not null default now(),
+  unique(order_id, status)
+);
+
+create index if not exists utmify_events_log_owner_created_idx
+  on utmify_events_log (owner_user_id, created_at desc);
 
 insert into checkout_themes (key, name, description, preview_image, defaults)
 values

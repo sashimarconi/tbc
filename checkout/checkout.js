@@ -79,6 +79,11 @@ if (EMBED_MODE) {
 
 const activeOfferSlug = resolveOfferSlug();
 const APPEARANCE_CACHE_PREFIX = "checkout:appearance:";
+let integrationsConfig = [];
+let metaPixelReady = false;
+let tiktokPixelReady = false;
+let firedInitiateCheckout = false;
+let firedAddPaymentInfo = false;
 
 let offerData = null;
 let selectedBumps = new Set();
@@ -589,6 +594,14 @@ function ensureMercadexStructure() {
   continueA.className = "mercadex-btn mercadex-btn--secondary";
   continueA.textContent = "Continuar";
   continueA.addEventListener("click", () => {
+    if (!firedInitiateCheckout) {
+      firedInitiateCheckout = true;
+      trackPixelEvent("InitiateCheckout", {
+        value: Number(calcTotal() / 100),
+        currency: "BRL",
+        ...getOfferEventPayload(),
+      });
+    }
     if (!validateMercadexStepA()) return;
     markMercadexStepCompleted("identificacao");
     setMercadexStep(getMercadexHasEntrega() ? "entrega" : "pagamento");
@@ -601,6 +614,14 @@ function ensureMercadexStructure() {
   continueB.className = "mercadex-btn mercadex-btn--secondary";
   continueB.textContent = "Continuar";
   continueB.addEventListener("click", () => {
+    if (!firedInitiateCheckout) {
+      firedInitiateCheckout = true;
+      trackPixelEvent("InitiateCheckout", {
+        value: Number(calcTotal() / 100),
+        currency: "BRL",
+        ...getOfferEventPayload(),
+      });
+    }
     if (!validateMercadexStepB()) return;
     markMercadexStepCompleted("entrega");
     setMercadexStep("pagamento");
@@ -846,6 +867,16 @@ async function fetchAppearanceBySlug(slug) {
   return data?.effectiveConfig || data || null;
 }
 
+async function fetchIntegrationsBySlug(slug) {
+  if (!slug) return [];
+  const response = await fetch(`/api/public/integrations?slug=${encodeURIComponent(slug)}`);
+  if (!response.ok) {
+    return [];
+  }
+  const data = await response.json();
+  return Array.isArray(data?.integrations) ? data.integrations : [];
+}
+
 window.addEventListener("message", (ev) => {
   if (!ev.data) return;
   if (ev.data.type === "appearance:preview" && ev.data.configEffective) {
@@ -950,6 +981,138 @@ function getCookie(name) {
   return match ? match[2] : "";
 }
 
+function buildTrackingParameters() {
+  const params = getUtmParams();
+  params.src = window.location.href;
+  const url = new URL(window.location.href);
+  const sck = url.searchParams.get("sck") || url.searchParams.get("subid") || "";
+  if (sck) {
+    params.sck = sck;
+  }
+  return params;
+}
+
+async function loadScriptOnce(id, src) {
+  if (document.getElementById(id)) return;
+  await new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.id = id;
+    script.async = true;
+    script.src = src;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error(`Falha ao carregar script: ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+function getIntegration(provider) {
+  return (integrationsConfig || []).find((item) => item.provider === provider && item.is_active !== false) || null;
+}
+
+async function initMetaPixel() {
+  const meta = getIntegration("meta");
+  const pixelId = meta?.config?.pixel_id || "";
+  if (!pixelId) return;
+
+  if (!window.fbq) {
+    /* eslint-disable */
+    !(function (f, b, e, v, n, t, s) {
+      if (f.fbq) return;
+      n = f.fbq = function () {
+        n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+      };
+      if (!f._fbq) f._fbq = n;
+      n.push = n;
+      n.loaded = true;
+      n.version = "2.0";
+      n.queue = [];
+      t = b.createElement(e);
+      t.async = true;
+      t.src = v;
+      s = b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t, s);
+    })(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
+    /* eslint-enable */
+  }
+
+  window.fbq("init", pixelId);
+  window.fbq("track", "PageView");
+  metaPixelReady = true;
+}
+
+async function initTikTokPixel() {
+  const tiktok = getIntegration("tiktok");
+  const pixelId = tiktok?.config?.pixel_id || "";
+  if (!pixelId) return;
+
+  if (!window.ttq) {
+    /* eslint-disable */
+    !(function (w, d, t) {
+      w.TiktokAnalyticsObject = t;
+      var ttq = (w[t] = w[t] || []);
+      ttq.methods = [
+        "page",
+        "track",
+        "identify",
+        "instances",
+        "debug",
+        "on",
+        "off",
+        "once",
+        "ready",
+        "alias",
+        "group",
+        "enableCookie",
+        "disableCookie",
+      ];
+      ttq.setAndDefer = function (tName, e) {
+        tName[e] = function () {
+          tName.push([e].concat(Array.prototype.slice.call(arguments, 0)));
+        };
+      };
+      for (var i = 0; i < ttq.methods.length; i += 1) {
+        ttq.setAndDefer(ttq, ttq.methods[i]);
+      }
+      ttq.load = function (e, n) {
+        var r = "https://analytics.tiktok.com/i18n/pixel/events.js";
+        ttq._i = ttq._i || {};
+        ttq._i[e] = [];
+        ttq._i[e]._u = r;
+        ttq._t = ttq._t || {};
+        ttq._t[e] = +new Date();
+        ttq._o = ttq._o || {};
+        ttq._o[e] = n || {};
+        var o = document.createElement("script");
+        o.type = "text/javascript";
+        o.async = true;
+        o.src = r;
+        var a = document.getElementsByTagName("script")[0];
+        a.parentNode.insertBefore(o, a);
+      };
+    })(window, document, "ttq");
+    /* eslint-enable */
+  }
+
+  window.ttq.load(pixelId);
+  window.ttq.page();
+  tiktokPixelReady = true;
+}
+
+function trackMetaEvent(name, payload) {
+  if (!metaPixelReady || !window.fbq) return;
+  window.fbq("track", name, payload || {});
+}
+
+function trackTikTokEvent(name, payload) {
+  if (!tiktokPixelReady || !window.ttq) return;
+  window.ttq.track(name, payload || {});
+}
+
+function trackPixelEvent(name, payload) {
+  trackMetaEvent(name, payload);
+  trackTikTokEvent(name, payload);
+}
+
 function calcSubtotal() {
   const base = offerData?.base?.price_cents || 0;
   let total = base;
@@ -974,6 +1137,17 @@ function calcTotal() {
   const subtotal = calcSubtotal();
   const shipping = calcShipping();
   return Math.max(subtotal + shipping, 0);
+}
+
+function getOfferEventPayload() {
+  const base = offerData?.base || {};
+  return {
+    content_type: "product",
+    content_ids: [String(base.id || activeOfferSlug || "")],
+    content_name: normalizeDisplayText(base.name || ""),
+    value: Number((base.price_cents || 0) / 100),
+    currency: "BRL",
+  };
 }
 
 function trackCheckout(event, metadata = {}) {
@@ -1084,8 +1258,10 @@ function buildSummaryData(items) {
 }
 
 function getTrackingData() {
+  const url = new URL(window.location.href);
   return {
     src: window.location.href,
+    sck: url.searchParams.get("sck") || url.searchParams.get("subid") || "",
     fbp: getCookie("_fbp"),
     fbc: getCookie("_fbc"),
     user_agent: navigator.userAgent,
@@ -1597,6 +1773,14 @@ function updateAddressToggleState() {
 
 contactInputs.forEach((input) => {
   input.addEventListener("input", () => {
+    if (!firedInitiateCheckout) {
+      firedInitiateCheckout = true;
+      trackPixelEvent("InitiateCheckout", {
+        value: Number(calcTotal() / 100),
+        currency: "BRL",
+        ...getOfferEventPayload(),
+      });
+    }
     updateAddressToggleState();
     scheduleCartSync("contact");
   });
@@ -1688,6 +1872,7 @@ function renderCheckoutFromOffer(offer) {
   renderShipping(requiresAddressFlag ? offerData.shipping || [] : []);
   updateSummary();
   scheduleCartSync();
+  trackPixelEvent("ViewContent", getOfferEventPayload());
 }
 
 async function bootstrapCheckout() {
@@ -1703,10 +1888,14 @@ async function bootstrapCheckout() {
   }
 
   try {
-    const [offer, appearance] = await Promise.all([
+    const [offer, appearance, integrations] = await Promise.all([
       fetchOfferBySlug(activeOfferSlug),
       fetchAppearanceBySlug(activeOfferSlug),
+      fetchIntegrationsBySlug(activeOfferSlug),
     ]);
+
+    integrationsConfig = integrations;
+    await Promise.allSettled([initMetaPixel(), initTikTokPixel()]);
 
     renderCheckoutFromOffer(offer);
     if (appearance) {
@@ -1761,6 +1950,16 @@ form.addEventListener("submit", async (event) => {
       alert("Selecione uma opcao de frete.");
       return;
     }
+  }
+
+  if (!firedAddPaymentInfo) {
+    firedAddPaymentInfo = true;
+    trackPixelEvent("AddPaymentInfo", {
+      value: Number(calcTotal() / 100),
+      currency: "BRL",
+      payment_type: "pix",
+      ...getOfferEventPayload(),
+    });
   }
 
   payBtn.disabled = true;
@@ -1852,6 +2051,17 @@ if (bootRetry) {
     window.location.reload();
   });
 }
+
+payBtn?.addEventListener("click", () => {
+  if (firedAddPaymentInfo) return;
+  firedAddPaymentInfo = true;
+  trackPixelEvent("AddPaymentInfo", {
+    value: Number(calcTotal() / 100),
+    currency: "BRL",
+    payment_type: "pix",
+    ...getOfferEventPayload(),
+  });
+});
 
 bootstrapCheckout();
 
