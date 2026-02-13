@@ -19,6 +19,20 @@
     </style>
   </head>
   <body>
+    <header class="mobile-topbar" aria-label="Barra de navegação mobile">
+      <button
+        id="mobile-menu-btn"
+        type="button"
+        class="mobile-menu-btn"
+        aria-label="Abrir menu"
+        aria-controls="sidebar"
+        aria-expanded="false"
+      >
+        <i data-lucide="menu"></i>
+      </button>
+      <img src="/assets/logo.png" alt="Blackout" class="mobile-topbar__logo" />
+    </header>
+
     <div class="sidebar" id="sidebar">
       <div class="sidebar__logo">
         <img src="/assets/logo.png" alt="Blackout Logo" class="sidebar-logo-img-full" />
@@ -38,6 +52,7 @@
         <button class="sidebar__toggle" id="sidebar-toggle" title="Minimizar sidebar"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z" fill="currentColor"/></svg></button>
       </div>
     </div>
+    <div id="sidebar-overlay" class="sidebar-overlay" aria-hidden="true"></div>
     <main class="page" id="main-content">
       <section id="login" class="card dashboard-login-card">
         <div class="dashboard-login-brand">

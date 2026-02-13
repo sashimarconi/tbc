@@ -2851,3 +2851,18 @@ select option {
     border-radius: 16px 16px 0 0;
   }
 }
+
+/* Mobile Sidebar Drawer Layout Overrides */
+@media (min-width: 769px) and (max-width: 900px) {
+  #main-content {
+    margin-left: 260px !important;
+    padding: 20px 16px 18px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  #main-content {
+    margin-left: 0 !important;
+    padding: 84px 16px 18px !important;
+  }
+}

@@ -206,3 +206,123 @@
     padding: 0.5rem;
   }
 }
+
+/* Mobile Drawer Overrides (<=768) */
+.mobile-topbar {
+  display: none;
+}
+
+.sidebar-overlay {
+  display: none;
+}
+
+@media (min-width: 769px) and (max-width: 900px) {
+  .sidebar {
+    width: 260px;
+    transform: none;
+  }
+
+  .sidebar.minimized {
+    width: 72px;
+  }
+
+  .sidebar__logo {
+    height: 80px;
+    border-bottom: 2px solid #1B1B22;
+  }
+
+  .sidebar__nav {
+    flex-direction: column;
+    margin-top: 2.5rem;
+    gap: 1.1rem;
+    padding: 0 0.5rem;
+  }
+
+  .sidebar__nav-btn {
+    padding: 0.82em 1em;
+    font-size: 1rem;
+    gap: 1.1rem;
+    text-indent: 0;
+    white-space: normal;
+  }
+
+  .sidebar__footer .ghost {
+    width: 90%;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(13, 13, 18, 0.92);
+    border-bottom: 1px solid rgba(161, 0, 255, 0.2);
+    backdrop-filter: blur(10px);
+    z-index: 120;
+  }
+
+  .mobile-menu-btn {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(13, 13, 18, 0.7) !important;
+    border: 1px solid rgba(161, 0, 255, 0.35) !important;
+    border-radius: 10px;
+    color: #ededed !important;
+    box-shadow: none !important;
+  }
+
+  .mobile-topbar__logo {
+    height: 28px;
+    width: auto;
+    object-fit: contain;
+  }
+
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(3px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+    z-index: 105;
+  }
+
+  .sidebar-overlay.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sidebar {
+    width: 272px;
+    max-width: 86vw;
+    transform: translateX(-100%);
+    transition: transform 0.24s ease, width 0.22s cubic-bezier(.4,0,.2,1);
+    z-index: 110;
+  }
+
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .sidebar.minimized {
+    width: 272px;
+  }
+
+  .sidebar__toggle {
+    display: none;
+  }
+}
