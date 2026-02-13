@@ -453,7 +453,7 @@ function bindAppearanceFields() {
     uploadBtn.disabled = true;
     uploadBtn.textContent = "Enviando...";
     try {
-      const response = await fetch("/api/admin/upload/logo", {
+      const response = await fetch("/api/admin/upload?id=logo", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
