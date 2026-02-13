@@ -194,19 +194,23 @@ values
   '{
     "palette": {
       "primary": "#f5a623",
-      "buttons": "#f39c12",
+      "button": "#f39c12",
       "background": "#f4f6fb",
       "text": "#1c2431",
       "card": "#ffffff",
-      "border": "#dde3ee"
+      "border": "#dde3ee",
+      "muted": "#6b7280"
     },
     "typography": {
-      "fontFamily": "Poppins"
+      "fontFamily": "Poppins",
+      "headingWeight": 700,
+      "bodyWeight": 500,
+      "baseSize": 16
     },
     "radius": {
-      "cards": "16px",
-      "buttons": "14px",
-      "fields": "12px",
+      "card": "16px",
+      "button": "14px",
+      "field": "12px",
       "steps": "999px"
     },
     "header": {
@@ -249,6 +253,9 @@ values
     "layout": {
       "type": "singleColumn"
     },
+    "ui": {
+      "variant": "solarys"
+    },
     "elements": {
       "showCountrySelector": true,
       "showProductImage": true,
@@ -267,19 +274,23 @@ values
   '{
     "palette": {
       "primary": "#111827",
-      "buttons": "#111827",
+      "button": "#111827",
       "background": "#f8fafc",
       "text": "#0f172a",
       "card": "#ffffff",
-      "border": "#e2e8f0"
+      "border": "#e2e8f0",
+      "muted": "#64748b"
     },
     "typography": {
-      "fontFamily": "Inter"
+      "fontFamily": "Inter",
+      "headingWeight": 700,
+      "bodyWeight": 500,
+      "baseSize": 16
     },
     "radius": {
-      "cards": "12px",
-      "buttons": "10px",
-      "fields": "10px",
+      "card": "12px",
+      "button": "10px",
+      "field": "10px",
       "steps": "10px"
     },
     "header": {
@@ -322,6 +333,9 @@ values
     "layout": {
       "type": "singleColumn"
     },
+    "ui": {
+      "variant": "minimal"
+    },
     "elements": {
       "showCountrySelector": true,
       "showProductImage": true,
@@ -340,19 +354,23 @@ values
   '{
     "palette": {
       "primary": "#22c55e",
-      "buttons": "#16a34a",
+      "button": "#16a34a",
       "background": "#0b1020",
       "text": "#e2e8f0",
       "card": "#111827",
-      "border": "#24314b"
+      "border": "#24314b",
+      "muted": "#9aa5b8"
     },
     "typography": {
-      "fontFamily": "Montserrat"
+      "fontFamily": "Montserrat",
+      "headingWeight": 700,
+      "bodyWeight": 500,
+      "baseSize": 16
     },
     "radius": {
-      "cards": "18px",
-      "buttons": "14px",
-      "fields": "12px",
+      "card": "18px",
+      "button": "14px",
+      "field": "12px",
       "steps": "999px"
     },
     "header": {
@@ -395,6 +413,9 @@ values
     "layout": {
       "type": "singleColumn"
     },
+    "ui": {
+      "variant": "dark"
+    },
     "elements": {
       "showCountrySelector": true,
       "showProductImage": true,
@@ -402,6 +423,141 @@ values
       "showShipping": true,
       "showFooterSecurityText": true,
       "order": ["header", "country", "offer", "form", "bumps", "shipping", "payment", "footer"]
+    }
+  }'::jsonb
+),
+(
+  'mercadex',
+  'Mercadex',
+  'Estilo marketplace claro e confiavel.',
+  null,
+  '{
+    "palette": {
+      "primary": "#2f69ff",
+      "button": "#2f69ff",
+      "background": "#eef2f6",
+      "text": "#1c1f28",
+      "card": "#ffffff",
+      "border": "#d6dde8",
+      "muted": "#64748b"
+    },
+    "typography": {
+      "fontFamily": "Inter",
+      "headingWeight": 700,
+      "bodyWeight": 500,
+      "baseSize": 16
+    },
+    "radius": {
+      "card": "16px",
+      "button": "14px",
+      "field": "12px",
+      "steps": "999px"
+    },
+    "header": {
+      "style": "logo",
+      "text": "",
+      "centerLogo": false,
+      "logoUrl": "",
+      "logoWidthPx": 120,
+      "logoHeightPx": 40,
+      "bgColor": "#f7f9fc",
+      "textColor": "#1f2a44"
+    },
+    "layout": {
+      "type": "twoColumn"
+    },
+    "ui": {
+      "variant": "mercadex"
+    }
+  }'::jsonb
+),
+(
+  'tiktex',
+  'TikTex',
+  'E-commerce social moderno com contraste forte.',
+  null,
+  '{
+    "palette": {
+      "primary": "#9f5bff",
+      "button": "#ff375f",
+      "background": "#0b0b13",
+      "text": "#f8f9ff",
+      "card": "#111220",
+      "border": "#2f3258",
+      "muted": "#b0b6dc"
+    },
+    "typography": {
+      "fontFamily": "Montserrat",
+      "headingWeight": 800,
+      "bodyWeight": 500,
+      "baseSize": 16
+    },
+    "radius": {
+      "card": "18px",
+      "button": "16px",
+      "field": "14px",
+      "steps": "999px"
+    },
+    "header": {
+      "style": "logo",
+      "text": "",
+      "centerLogo": false,
+      "logoUrl": "",
+      "logoWidthPx": 120,
+      "logoHeightPx": 40,
+      "bgColor": "#0f1020",
+      "textColor": "#f8f9ff"
+    },
+    "layout": {
+      "type": "twoColumn"
+    },
+    "ui": {
+      "variant": "tiktex"
+    }
+  }'::jsonb
+),
+(
+  'vegex',
+  'Vegex',
+  'Checkout minimal premium com tipografia forte.',
+  null,
+  '{
+    "palette": {
+      "primary": "#24452e",
+      "button": "#1a1a16",
+      "background": "#f7f7f5",
+      "text": "#1a1a16",
+      "card": "#ffffff",
+      "border": "#dcdacf",
+      "muted": "#6f6b60"
+    },
+    "typography": {
+      "fontFamily": "Plus Jakarta Sans",
+      "headingWeight": 800,
+      "bodyWeight": 500,
+      "baseSize": 16
+    },
+    "radius": {
+      "card": "22px",
+      "button": "999px",
+      "field": "14px",
+      "steps": "999px"
+    },
+    "header": {
+      "style": "logo",
+      "text": "",
+      "centerLogo": false,
+      "logoUrl": "",
+      "logoWidthPx": 120,
+      "logoHeightPx": 40,
+      "bgColor": "#ffffff",
+      "textColor": "#1a1a16"
+    },
+    "layout": {
+      "type": "singleColumn"
+    },
+    "ui": {
+      "variant": "vegex"
     }
   }'::jsonb
 )

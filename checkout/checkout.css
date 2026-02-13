@@ -5,11 +5,15 @@
   --color-text: #1c2431;
   --color-card: #ffffff;
   --color-border: #dde3ee;
+  --color-muted: #6b7280;
   --radius-card: 16px;
   --radius-button: 14px;
   --radius-field: 12px;
   --radius-steps: 999px;
   --font-family: "Poppins", sans-serif;
+  --font-heading-weight: 700;
+  --font-body-weight: 500;
+  --font-base-size: 16px;
   --header-bg: #ffffff;
   --header-text: #0f5132;
   --seal-bg: #f5f7fb;
@@ -35,6 +39,8 @@ body {
   background: var(--color-background);
   color: var(--color-text);
   font-family: var(--font-family);
+  font-size: var(--font-base-size);
+  font-weight: var(--font-body-weight);
 }
 
 .trust-bar {
@@ -201,12 +207,13 @@ body {
 .product-card__body h1 {
   margin: 6px 0;
   font-size: 18px;
+  font-weight: var(--font-heading-weight);
 }
 
 .product-card__body p {
   margin: 0;
   font-size: 14px;
-  color: #5f6880;
+  color: var(--color-muted);
 }
 
 .product-card__prices {
@@ -248,7 +255,7 @@ body {
   display: grid;
   gap: 6px;
   font-size: 13px;
-  color: #5f6880;
+  color: var(--color-muted);
 }
 
 .field input,
@@ -463,7 +470,7 @@ select {
   padding: 13px;
   font-size: 16px;
   font-weight: 700;
-  color: #fff;
+  color: #111111;
   background: var(--color-buttons);
   cursor: pointer;
 }
@@ -480,7 +487,7 @@ select {
   margin: -2px 0 0;
   text-align: center;
   font-size: 12px;
-  color: #5f6880;
+  color: var(--color-muted);
 }
 
 .pix__content {
@@ -510,6 +517,99 @@ select {
 
 .hidden {
   display: none !important;
+}
+
+body.ui-mercadex {
+  --color-background: #eef2f6;
+  --color-card: #ffffff;
+  --color-text: #1c1f28;
+  --color-border: #d6dde8;
+  --color-muted: #64748b;
+  --color-buttons: #2f69ff;
+  --color-primary: #2f69ff;
+  --radius-card: 16px;
+  --radius-button: 14px;
+  --radius-field: 12px;
+  --font-family: "Inter", sans-serif;
+}
+
+body.ui-mercadex .checkout {
+  box-shadow: 0 18px 40px rgba(40, 61, 92, 0.14);
+}
+
+body.ui-mercadex .product-card,
+body.ui-mercadex .summary,
+body.ui-mercadex .shipping,
+body.ui-mercadex .addons,
+body.ui-mercadex .address {
+  box-shadow: 0 8px 20px rgba(63, 96, 145, 0.08);
+}
+
+body.ui-tiktex {
+  --color-background: #0b0b13;
+  --color-card: #111220;
+  --color-text: #f8f9ff;
+  --color-border: #2f3258;
+  --color-muted: #b0b6dc;
+  --color-buttons: #ff375f;
+  --color-primary: #9f5bff;
+  --radius-card: 18px;
+  --radius-button: 16px;
+  --radius-field: 14px;
+  --font-family: "Montserrat", sans-serif;
+  --font-heading-weight: 800;
+}
+
+body.ui-tiktex .checkout,
+body.ui-tiktex .shipping-card,
+body.ui-tiktex .addon-card,
+body.ui-tiktex .field input,
+body.ui-tiktex .field textarea,
+body.ui-tiktex select {
+  background: #16172a;
+}
+
+body.ui-tiktex .checkout {
+  border-color: #32365f;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.42);
+}
+
+body.ui-tiktex .cta {
+  color: #ffffff;
+  font-size: 17px;
+  box-shadow: 0 10px 26px rgba(255, 55, 95, 0.35);
+}
+
+body.ui-tiktex .trust-bar {
+  border-bottom-color: #2b2d50;
+}
+
+body.ui-vegex {
+  --color-background: #f7f7f5;
+  --color-card: #ffffff;
+  --color-text: #1a1a16;
+  --color-border: #dcdacf;
+  --color-muted: #6f6b60;
+  --color-buttons: #1a1a16;
+  --color-primary: #24452e;
+  --radius-card: 22px;
+  --radius-button: 999px;
+  --radius-field: 14px;
+  --font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  --font-heading-weight: 800;
+}
+
+body.ui-vegex .checkout {
+  border-width: 0;
+  box-shadow: 0 24px 60px rgba(39, 39, 34, 0.1);
+}
+
+body.ui-vegex .product-card__prices strong {
+  color: #24452e;
+}
+
+body.ui-vegex .cta {
+  letter-spacing: 0.01em;
 }
 
 .helper,

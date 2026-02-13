@@ -63,9 +63,18 @@ function deepMerge(base, override) {
 function normalizeThemeDefaults(defaults = {}) {
   const next = deepMerge(
     {
-      palette: {},
-      typography: {},
-      radius: {},
+      palette: {
+        primary: "#f5a623",
+        button: "#f39c12",
+        buttons: "#f39c12",
+        background: "#f4f6fb",
+        text: "#1c2431",
+        card: "#ffffff",
+        border: "#dde3ee",
+        muted: "#6b7280",
+      },
+      typography: { fontFamily: "Poppins", headingWeight: 700, bodyWeight: 500, baseSize: 16 },
+      radius: { card: "16px", button: "14px", field: "12px", cards: "16px", buttons: "14px", fields: "12px" },
       header: {},
       securitySeal: {},
       effects: {
@@ -77,6 +86,7 @@ function normalizeThemeDefaults(defaults = {}) {
         i18n: { language: "pt-BR", currency: "BRL" },
       },
       layout: { type: "singleColumn" },
+      ui: { variant: "solarys" },
       elements: {
         showCountrySelector: true,
         showProductImage: true,
@@ -95,9 +105,6 @@ function normalizeThemeDefaults(defaults = {}) {
   if (!next.header.style || !["logo", "texto", "logo+texto"].includes(next.header.style)) {
     next.header.style = "logo";
   }
-  if (next.header.style === "logo+texto") {
-    next.header.style = "logo";
-  }
   if (typeof next.header.text !== "string") {
     next.header.text = "";
   }
@@ -107,6 +114,21 @@ function normalizeThemeDefaults(defaults = {}) {
   if (!next.layout.type) {
     next.layout.type = "singleColumn";
   }
+  if (!next.ui || typeof next.ui !== "object") {
+    next.ui = { variant: "solarys" };
+  }
+  if (!next.ui.variant) {
+    next.ui.variant = "solarys";
+  }
+  if (!next.palette.button && next.palette.buttons) {
+    next.palette.button = next.palette.buttons;
+  }
+  if (!next.palette.buttons && next.palette.button) {
+    next.palette.buttons = next.palette.button;
+  }
+  next.radius.card = next.radius.card || next.radius.cards || "16px";
+  next.radius.button = next.radius.button || next.radius.buttons || "14px";
+  next.radius.field = next.radius.field || next.radius.fields || "12px";
   return next;
 }
 
@@ -298,20 +320,21 @@ async function ensureThemesAndAppearanceSchema() {
     )
   `);
 
-  const minimalDefaults = normalizeThemeDefaults({
+  const baseDefaults = normalizeThemeDefaults({
     palette: {
       primary: "#f5a623",
-      buttons: "#f39c12",
+      button: "#f39c12",
       background: "#f4f6fb",
       text: "#1c2431",
       card: "#ffffff",
       border: "#dde3ee",
+      muted: "#6b7280",
     },
-    typography: { fontFamily: "Poppins" },
+    typography: { fontFamily: "Poppins", headingWeight: 700, bodyWeight: 500, baseSize: 16 },
     radius: {
-      cards: "16px",
-      buttons: "14px",
-      fields: "12px",
+      card: "16px",
+      button: "14px",
+      field: "12px",
       steps: "999px",
     },
     header: {
@@ -342,6 +365,7 @@ async function ensureThemesAndAppearanceSchema() {
       fields: { fullName: true, email: true, phone: true, cpf: true, custom: [] },
       i18n: { language: "pt-BR", currency: "BRL" },
     },
+    ui: { variant: "solarys" },
   });
 
   const ensureTheme = async (key, name, description, defaults) => {
@@ -354,7 +378,7 @@ async function ensureThemesAndAppearanceSchema() {
     );
   };
 
-  await ensureTheme("solarys", "Solarys", "Tema Solarys", JSON.stringify(minimalDefaults));
+  await ensureTheme("solarys", "Solarys", "Tema Solarys", JSON.stringify(baseDefaults));
 
   await ensureTheme(
     "minimal",
@@ -362,16 +386,19 @@ async function ensureThemesAndAppearanceSchema() {
     "Tema Minimal",
     JSON.stringify(
       normalizeThemeDefaults({
-        ...minimalDefaults,
+        ...baseDefaults,
         palette: {
           primary: "#111827",
-          buttons: "#111827",
+          button: "#111827",
           background: "#f8fafc",
           text: "#0f172a",
           card: "#ffffff",
           border: "#e2e8f0",
+          muted: "#64748b",
         },
-        typography: { fontFamily: "Inter" },
+        typography: { fontFamily: "Inter", headingWeight: 700, bodyWeight: 500, baseSize: 16 },
+        radius: { card: "12px", button: "10px", field: "10px", steps: "10px" },
+        ui: { variant: "minimal" },
       })
     )
   );
@@ -382,16 +409,112 @@ async function ensureThemesAndAppearanceSchema() {
     "Tema escuro",
     JSON.stringify(
       normalizeThemeDefaults({
-        ...minimalDefaults,
+        ...baseDefaults,
         palette: {
           primary: "#22c55e",
-          buttons: "#16a34a",
+          button: "#16a34a",
           background: "#0b1020",
           text: "#e2e8f0",
           card: "#111827",
           border: "#24314b",
+          muted: "#9aa5b8",
         },
-        typography: { fontFamily: "Montserrat" },
+        typography: { fontFamily: "Montserrat", headingWeight: 700, bodyWeight: 500, baseSize: 16 },
+        radius: { card: "18px", button: "14px", field: "12px", steps: "999px" },
+        header: {
+          ...baseDefaults.header,
+          centerLogo: true,
+          bgColor: "#0b1020",
+          textColor: "#e2e8f0",
+        },
+        ui: { variant: "dark" },
+      })
+    )
+  );
+
+  await ensureTheme(
+    "mercadex",
+    "Mercadex",
+    "Estilo marketplace claro e confiavel.",
+    JSON.stringify(
+      normalizeThemeDefaults({
+        ...baseDefaults,
+        palette: {
+          primary: "#2f69ff",
+          button: "#2f69ff",
+          background: "#eef2f6",
+          text: "#1c1f28",
+          card: "#ffffff",
+          border: "#d6dde8",
+          muted: "#64748b",
+        },
+        typography: { fontFamily: "Inter", headingWeight: 700, bodyWeight: 500, baseSize: 16 },
+        radius: { card: "16px", button: "14px", field: "12px", steps: "999px" },
+        header: { ...baseDefaults.header, bgColor: "#f7f9fc", textColor: "#1f2a44", logoUrl: "" },
+        layout: { type: "twoColumn" },
+        ui: { variant: "mercadex" },
+      })
+    )
+  );
+
+  await ensureTheme(
+    "tiktex",
+    "TikTex",
+    "E-commerce social moderno com contraste forte.",
+    JSON.stringify(
+      normalizeThemeDefaults({
+        ...baseDefaults,
+        palette: {
+          primary: "#9f5bff",
+          button: "#ff375f",
+          background: "#0b0b13",
+          text: "#f8f9ff",
+          card: "#111220",
+          border: "#2f3258",
+          muted: "#b0b6dc",
+        },
+        typography: { fontFamily: "Montserrat", headingWeight: 800, bodyWeight: 500, baseSize: 16 },
+        radius: { card: "18px", button: "16px", field: "14px", steps: "999px" },
+        header: { ...baseDefaults.header, bgColor: "#0f1020", textColor: "#f8f9ff", logoUrl: "" },
+        securitySeal: {
+          ...baseDefaults.securitySeal,
+          textColor: "#f8f9ff",
+          bgColor: "#181a30",
+          iconColor: "#9f5bff",
+        },
+        layout: { type: "twoColumn" },
+        ui: { variant: "tiktex" },
+      })
+    )
+  );
+
+  await ensureTheme(
+    "vegex",
+    "Vegex",
+    "Checkout minimal premium com tipografia forte.",
+    JSON.stringify(
+      normalizeThemeDefaults({
+        ...baseDefaults,
+        palette: {
+          primary: "#24452e",
+          button: "#1a1a16",
+          background: "#f7f7f5",
+          text: "#1a1a16",
+          card: "#ffffff",
+          border: "#dcdacf",
+          muted: "#6f6b60",
+        },
+        typography: { fontFamily: "Plus Jakarta Sans", headingWeight: 800, bodyWeight: 500, baseSize: 16 },
+        radius: { card: "22px", button: "999px", field: "14px", steps: "999px" },
+        header: { ...baseDefaults.header, bgColor: "#ffffff", textColor: "#1a1a16", logoUrl: "" },
+        securitySeal: {
+          ...baseDefaults.securitySeal,
+          textColor: "#1a1a16",
+          bgColor: "#f0efe9",
+          iconColor: "#24452e",
+        },
+        layout: { type: "singleColumn" },
+        ui: { variant: "vegex" },
       })
     )
   );

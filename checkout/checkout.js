@@ -185,6 +185,7 @@ function normalizeElementsConfig(next = {}) {
 
 function applyLayoutType(nextLayoutType) {
   layoutType = nextLayoutType === "twoColumn" ? "twoColumn" : "singleColumn";
+  document.body.classList.toggle("layout-two-column", layoutType === "twoColumn");
   if (checkoutLayout) {
     checkoutLayout.dataset.layout = layoutType;
   }
@@ -270,20 +271,39 @@ function applyAppearanceConfig(config) {
   const root = document.documentElement;
 
   root.style.setProperty("--color-primary", config?.palette?.primary || "#f5a623");
-  root.style.setProperty("--color-buttons", config?.palette?.buttons || "#f39c12");
+  root.style.setProperty("--color-buttons", config?.palette?.button || config?.palette?.buttons || "#f39c12");
   root.style.setProperty("--color-background", config?.palette?.background || "#f4f6fb");
   root.style.setProperty("--color-text", config?.palette?.text || "#1c2431");
   root.style.setProperty("--color-card", config?.palette?.card || "#ffffff");
   root.style.setProperty("--color-border", config?.palette?.border || "#dde3ee");
+  root.style.setProperty("--color-muted", config?.palette?.muted || "#6b7280");
 
-  root.style.setProperty("--radius-card", config?.radius?.cards || "16px");
-  root.style.setProperty("--radius-button", config?.radius?.buttons || "14px");
-  root.style.setProperty("--radius-field", config?.radius?.fields || "12px");
+  root.style.setProperty("--radius-card", config?.radius?.card || config?.radius?.cards || "16px");
+  root.style.setProperty("--radius-button", config?.radius?.button || config?.radius?.buttons || "14px");
+  root.style.setProperty("--radius-field", config?.radius?.field || config?.radius?.fields || "12px");
   root.style.setProperty("--radius-steps", config?.radius?.steps || "999px");
 
   const fontFamily = config?.typography?.fontFamily || "Poppins";
   loadGoogleFontIfNeeded(fontFamily);
   root.style.setProperty("--font-family", `"${fontFamily}", sans-serif`);
+  root.style.setProperty("--font-heading-weight", String(config?.typography?.headingWeight || 700));
+  root.style.setProperty("--font-body-weight", String(config?.typography?.bodyWeight || 500));
+  root.style.setProperty("--font-base-size", `${Number(config?.typography?.baseSize || 16)}px`);
+
+  const variant = ["mercadex", "tiktex", "vegex", "solarys", "minimal", "dark"].includes(
+    config?.ui?.variant
+  )
+    ? config.ui.variant
+    : "solarys";
+  document.body.classList.remove(
+    "ui-solarys",
+    "ui-minimal",
+    "ui-dark",
+    "ui-mercadex",
+    "ui-tiktex",
+    "ui-vegex"
+  );
+  document.body.classList.add(`ui-${variant}`);
 
   const header = config?.header || {};
   root.style.setProperty("--header-bg", header.bgColor || "#ffffff");
