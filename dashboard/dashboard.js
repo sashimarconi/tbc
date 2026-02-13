@@ -17,7 +17,14 @@ window.addEventListener('DOMContentLoaded', () => {
       // Renderizar lista de cidades do dia
       const listEl = document.getElementById('live-view-list');
       if (listEl) {
-        listEl.innerHTML = cityCounts.map(s => `<li><span style="color:#00FF85;font-weight:700;">•</span> ${s.count} ${s.city}</li>`).join('');
+        const rows = Array.isArray(cityCounts) ? cityCounts : [];
+        listEl.innerHTML = rows
+          .map((session) => {
+            const city = (session?.city || "Sem cidade").toString();
+            const count = Number(session?.count) || 0;
+            return `<li><span style="color:#00FF85;font-weight:700;">•</span> ${count} ${city}</li>`;
+          })
+          .join("");
       }
       // Atualizar pontos do globo
       if (window.liveGlobe && typeof window.liveGlobe.pointsData === 'function') {
@@ -43,7 +50,8 @@ window.addEventListener('DOMContentLoaded', () => {
   window.liveGlobe = globe;
   // Responsivo
   function resizeGlobe() {
-    const w = Math.min(380, globeEl.offsetWidth);
+    const containerWidth = globeEl.parentElement?.offsetWidth || globeEl.offsetWidth || 360;
+    const w = Math.max(220, Math.min(420, Math.floor(containerWidth - 16)));
     globe.width(w);
     globe.height(w);
   }
@@ -103,6 +111,7 @@ const cartsTableBody = document.getElementById("carts-table-body");
 const ordersRefreshBtn = document.getElementById("orders-refresh");
 const cartsRefreshBtn = document.getElementById("carts-refresh");
 const integrationsRefreshBtn = document.getElementById("integrations-refresh");
+const dashboardRefreshBtn = document.getElementById("dashboard-refresh");
 const integrationForm = document.getElementById("integration-form");
 const integrationIdInput = document.getElementById("integration-id");
 const integrationProviderInput = document.getElementById("integration-provider");
@@ -1664,6 +1673,18 @@ logoutBtn.addEventListener("click", () => {
 ordersRefreshBtn?.addEventListener("click", () => loadOrders());
 cartsRefreshBtn?.addEventListener("click", () => loadCarts());
 integrationsRefreshBtn?.addEventListener("click", () => loadIntegrations());
+dashboardRefreshBtn?.addEventListener("click", () => {
+  loadSummary();
+  const activeView = document.querySelector(".panel-view:not(.hidden)");
+  if (!activeView) return;
+  if (activeView.id === "orders-view") {
+    loadOrders();
+  } else if (activeView.id === "carts-view") {
+    loadCarts();
+  } else if (activeView.id === "integrations-view") {
+    loadIntegrations();
+  }
+});
 integrationProviderButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
     updateIntegrationProviderUI(btn.dataset.provider || "meta");

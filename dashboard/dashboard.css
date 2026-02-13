@@ -1825,3 +1825,201 @@ button.ghost {
     grid-template-columns: 1fr;
   }
 }
+
+/* === Dashboard UI/UX Refresh === */
+body {
+  background: #050505 !important;
+  color: #ededed !important;
+}
+
+#main-content {
+  margin-left: 260px !important;
+  background: #050505 !important;
+  padding: 40px 32px 28px !important;
+}
+
+#panel {
+  padding: 0 !important;
+  max-width: 1320px !important;
+  margin: 0 auto !important;
+}
+
+.panel-header {
+  padding: 0 0 20px !important;
+  border-bottom: 1px solid rgba(161, 0, 255, 0.18) !important;
+  margin-bottom: 20px !important;
+}
+
+.dashboard-overview-head {
+  background: rgba(13, 13, 18, 0.6) !important;
+  border: 1px solid rgba(161, 0, 255, 0.18) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.24) !important;
+}
+
+.panel-tabs {
+  display: none !important;
+}
+
+.panel-view {
+  gap: 18px !important;
+}
+
+.live-view-card {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.1fr) minmax(260px, 1fr) !important;
+  align-items: center !important;
+  background: rgba(13, 13, 18, 0.65) !important;
+  border: 1px solid rgba(161, 0, 255, 0.18) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.24) !important;
+}
+
+.live-globe-wrap {
+  position: relative;
+  min-height: 320px;
+}
+
+.live-globe-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: min(78%, 320px);
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(0, 255, 133, 0.14), rgba(0, 255, 133, 0.02) 55%, transparent 70%);
+  filter: blur(12px);
+  pointer-events: none;
+}
+
+#live-globe {
+  width: min(100%, 420px) !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1 !important;
+  max-width: 100% !important;
+  max-height: 420px !important;
+  margin: 0 auto !important;
+  overflow: hidden !important;
+  background-position: center !important;
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+}
+
+.stats-grid--compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+.stat-card {
+  background: rgba(13, 13, 18, 0.6) !important;
+  border: 1px solid rgba(161, 0, 255, 0.18) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22) !important;
+  padding: 18px 16px !important;
+}
+
+.stat-card strong {
+  color: #a100ff !important;
+}
+
+.funnel-card,
+.timeline-card,
+.table-card,
+.products-table-card {
+  background: rgba(13, 13, 18, 0.64) !important;
+  border: 1px solid rgba(161, 0, 255, 0.18) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.24) !important;
+}
+
+.view-header {
+  padding-bottom: 6px;
+}
+
+.view-header h2 {
+  margin: 0;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.data-table th,
+.data-table td,
+.products-table th,
+.products-table td {
+  white-space: nowrap;
+}
+
+.data-table td:first-child,
+.products-table td:first-child {
+  white-space: normal;
+}
+
+@media (max-width: 1280px) {
+  .stats-grid,
+  .stats-grid--compact {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  #main-content {
+    padding: 92px 22px 22px !important;
+  }
+
+  .live-view-card {
+    grid-template-columns: 1fr !important;
+    gap: 18px !important;
+  }
+
+  .live-globe-wrap {
+    min-height: 280px;
+  }
+
+  .stats-grid,
+  .stats-grid--compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  #main-content {
+    margin-left: 0 !important;
+    padding: 84px 16px 18px !important;
+  }
+
+  .panel-header {
+    gap: 10px !important;
+  }
+
+  .panel-header > div:first-child {
+    gap: 10px !important;
+  }
+
+  .panel-header h1 {
+    font-size: 1.5rem !important;
+  }
+
+  .dashboard-overview-head {
+    padding: 14px !important;
+  }
+
+  .stats-grid,
+  .stats-grid--compact {
+    grid-template-columns: 1fr !important;
+  }
+
+  .live-globe-wrap {
+    min-height: 240px;
+  }
+
+  #live-globe {
+    max-width: 280px !important;
+    max-height: 280px !important;
+  }
+}

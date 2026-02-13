@@ -155,16 +155,41 @@
   .sidebar__nav {
     flex-direction: row;
     margin-top: 0;
-    gap: 0.2rem;
+    gap: 0.35rem;
     align-items: center;
     justify-content: flex-start;
+    overflow-x: auto;
+    padding: 0 0.55rem;
   }
   .sidebar__nav-btn {
-    padding: 0.7em 0.7em;
-    font-size: 1em;
+    padding: 0.62em;
+    min-width: 44px;
+    justify-content: center;
+    font-size: 0;
     border-radius: 10px;
+    gap: 0;
+    text-indent: -9999px;
+    white-space: nowrap;
+  }
+  .sidebar__nav-btn svg {
+    width: 20px;
+    height: 20px;
+    text-indent: 0;
   }
   .sidebar__footer {
-    display: none;
+    display: flex;
+    margin: 0 0.5rem 0 0;
+    gap: 0.35rem;
+    flex-direction: row;
+    align-items: center;
+  }
+  .sidebar__footer .ghost {
+    width: auto;
+    margin: 0;
+    padding: 0.55rem 0.8rem;
+    font-size: 0.86rem;
+  }
+  .sidebar__toggle {
+    padding: 0.46rem 0.55rem;
   }
 }
