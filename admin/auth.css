@@ -171,9 +171,45 @@ input:focus {
 }
 
 .checkbox-wrap input {
-  margin-top: 2px;
-  width: 15px;
-  height: 15px;
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  margin: 0;
+  width: 44px;
+  min-width: 44px;
+  height: 24px;
+  border: 1px solid #5b00b5;
+  border-radius: 999px;
+  background: #0d0d12;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.checkbox-wrap input::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ededed;
+  transition: transform 180ms ease;
+}
+
+.checkbox-wrap input:checked {
+  background: #a100ff;
+  border-color: #a100ff;
+}
+
+.checkbox-wrap input:checked::before {
+  transform: translateX(20px);
+}
+
+.checkbox-wrap input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(161, 0, 255, 0.35);
 }
 
 .btn-primary {
