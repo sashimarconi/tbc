@@ -971,60 +971,65 @@ function getPathSegments(req) {
 }
 
 module.exports = async (req, res) => {
-  const segments = getPathSegments(req);
-  const path = segments[0] || "";
+  try {
+    const segments = getPathSegments(req);
+    const path = segments[0] || "";
 
-  if (["items", "orders", "carts"].includes(path) && segments.length > 1 && !req.query.id) {
-    req.query.id = segments[1];
-  }
-
-  if (path === "login") {
     req.query = req.query || {};
-    req.query.path = ["login"];
-    await authHandler(req, res);
-    return;
-  }
+    if (["items", "orders", "carts"].includes(path) && segments.length > 1 && !req.query.id) {
+      req.query.id = segments[1];
+    }
 
-  const user = requireAuth(req, res);
-  if (!user) {
-    return;
-  }
+    if (path === "login") {
+      req.query.path = ["login"];
+      await authHandler(req, res);
+      return;
+    }
 
-  switch (path) {
-    case "items":
-      await handleItems(req, res, user);
+    const user = requireAuth(req, res);
+    if (!user) {
       return;
-    case "orders":
-      await handleOrders(req, res, user);
-      return;
-    case "carts":
-      await handleCarts(req, res, user);
-      return;
-    case "uploads":
-      await handleUploads(req, res, user);
-      return;
-    case "upload":
-      if (req.query?.id === "logo") {
-        await handleLogoUpload(req, res, user);
+    }
+
+    switch (path) {
+      case "items":
+        await handleItems(req, res, user);
         return;
-      }
-      res.status(404).json({ error: "Not found" });
-      return;
-    case "themes":
-      await handleThemes(req, res);
-      return;
-    case "appearance":
-      await handleAppearance(req, res, user);
-      return;
-    case "payment-settings":
-      await handlePaymentSettings(req, res, user);
-      return;
-    case "analytics":
-      req.query = req.query || {};
-      req.query.path = segments.slice(1);
-      await analyticsHandler(req, res);
-      return;
-    default:
-      res.status(404).json({ error: "Not found" });
+      case "orders":
+        await handleOrders(req, res, user);
+        return;
+      case "carts":
+        await handleCarts(req, res, user);
+        return;
+      case "uploads":
+        await handleUploads(req, res, user);
+        return;
+      case "upload":
+        if (req.query?.id === "logo") {
+          await handleLogoUpload(req, res, user);
+          return;
+        }
+        res.status(404).json({ error: "Not found" });
+        return;
+      case "themes":
+        await handleThemes(req, res);
+        return;
+      case "appearance":
+        await handleAppearance(req, res, user);
+        return;
+      case "payment-settings":
+        await handlePaymentSettings(req, res, user);
+        return;
+      case "analytics":
+        req.query.path = segments.slice(1);
+        await analyticsHandler(req, res);
+        return;
+      default:
+        res.status(404).json({ error: "Not found" });
+    }
+  } catch (error) {
+    if (!res.headersSent) {
+      res.status(500).json({ error: error?.message || "Internal server error" });
+    }
   }
 };
