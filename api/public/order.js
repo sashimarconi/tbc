@@ -19,8 +19,25 @@ function asNumber(value) {
   return Number.isFinite(num) ? Math.max(0, Math.round(num)) : 0;
 }
 
+function normalizeOrderStatus(value) {
+  const raw = sanitizeText(value).toLowerCase();
+  if (!raw || raw === "pending") return "waiting_payment";
+  const allowed = new Set([
+    "waiting_payment",
+    "paid",
+    "refused",
+    "refunded",
+    "cancelled",
+    "pending",
+  ]);
+  return allowed.has(raw) ? raw : "waiting_payment";
+}
+
 async function resolveOwnerBySlug(slug) {
-  const result = await query("select owner_user_id from products where slug = $1 and type = 'base' limit 1", [slug]);
+  const result = await query(
+    "select owner_user_id from products where slug = $1 and owner_user_id is not null order by case when type = 'base' then 0 else 1 end, created_at desc limit 1",
+    [slug]
+  );
   return result.rows?.[0]?.owner_user_id || null;
 }
 
@@ -69,7 +86,7 @@ module.exports = async (req, res) => {
   const utm = asObject(body.utm);
   const tracking = asObject(body.tracking);
   const pix = asObject(body.pix) || {};
-  const status = sanitizeText(body.status) || "pending";
+  const status = normalizeOrderStatus(body.status);
   const source = sanitizeText(body.source || (tracking && tracking.src) || req.headers.referer || "");
   const trackingParameters = normalizeTrackingParameters({
     utm,
@@ -148,6 +165,14 @@ module.exports = async (req, res) => {
     );
 
     const savedOrder = result.rows?.[0] || null;
+    if (savedOrder && (!savedOrder.owner_user_id || String(savedOrder.owner_user_id) !== String(ownerUserId))) {
+      console.error("[public/order] owner_user_id mismatch", {
+        expectedOwnerUserId: ownerUserId,
+        actualOwnerUserId: savedOrder.owner_user_id,
+        slug,
+        cartKey,
+      });
+    }
     if (savedOrder) {
       try {
         await dispatchUtmifyEvent({ order: savedOrder, status: "waiting_payment" });

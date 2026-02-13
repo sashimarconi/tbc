@@ -112,6 +112,11 @@ const ordersRefreshBtn = document.getElementById("orders-refresh");
 const cartsRefreshBtn = document.getElementById("carts-refresh");
 const integrationsRefreshBtn = document.getElementById("integrations-refresh");
 const dashboardRefreshBtn = document.getElementById("dashboard-refresh");
+const dashboardPeriodSelect = document.getElementById("dashboard-period");
+const dashboardOrdersBody = document.getElementById("dashboard-orders-body");
+const dashboardSeeAllOrdersBtn = document.getElementById("dashboard-see-all-orders");
+const statRevenueEl = document.getElementById("stat-revenue");
+const statOrdersTotalEl = document.getElementById("stat-orders-total");
 const integrationForm = document.getElementById("integration-form");
 const integrationIdInput = document.getElementById("integration-id");
 const integrationProviderInput = document.getElementById("integration-provider");
@@ -274,6 +279,7 @@ function showPanel() {
   startSummaryPolling();
   activateView("dashboard-view");
   loadItems();
+  loadDashboardOrdersPreview();
 }
 
 function showLogin() {
@@ -322,7 +328,9 @@ async function loadItems() {
 }
 
 async function loadSummary() {
-  const res = await fetch("/api/dashboard/analytics/summary", {
+  const period = (dashboardPeriodSelect?.value || "today").trim();
+  const query = period && period !== "today" ? `?period=${encodeURIComponent(period)}` : "";
+  const res = await fetch(`/api/dashboard/analytics/summary${query}`, {
     headers: { ...setAuthHeader() },
   });
 
@@ -353,6 +361,16 @@ function renderSummary(data = {}) {
   statElements.pix.textContent = formatNumber(data.pixGeneratedToday);
   statElements.purchases.textContent = formatNumber(data.purchasesToday);
   statElements.conversion.textContent = formatPercent(data.conversionRate);
+  if (statOrdersTotalEl) {
+    const ordersTotal = Number(data.ordersToday ?? data.purchasesToday ?? 0);
+    statOrdersTotalEl.textContent = formatNumber(ordersTotal);
+  }
+  if (statRevenueEl) {
+    const revenueCents = Number(
+      data.revenueTodayCents ?? data.revenueCents ?? data.totalRevenueCents ?? 0
+    );
+    statRevenueEl.textContent = formatCurrency(revenueCents);
+  }
 
   if (statsUpdated) {
     const updatedAt = new Date();
@@ -640,8 +658,17 @@ function mapOrderStatus(status) {
   if (normalized === "paid") {
     return { label: "Pago", tone: "paid" };
   }
-  if (normalized === "failed") {
-    return { label: "Falhou", tone: "pending" };
+  if (normalized === "waiting_payment" || normalized === "pending") {
+    return { label: "Aguardando", tone: "waiting" };
+  }
+  if (normalized === "refused") {
+    return { label: "Recusado", tone: "danger" };
+  }
+  if (normalized === "refunded") {
+    return { label: "Reembolsado", tone: "danger" };
+  }
+  if (normalized === "cancelled") {
+    return { label: "Cancelado", tone: "danger" };
   }
   return { label: "Pendente", tone: "pending" };
 }
@@ -678,7 +705,7 @@ function renderOrdersStats(stats = {}) {
   ordersStatsElements.total.textContent = formatNumber(Number(stats.total) || 0);
   ordersStatsElements.pending.textContent = formatNumber(Number(stats.pending) || 0);
   ordersStatsElements.paid.textContent = formatNumber(Number(stats.paid) || 0);
-  ordersStatsElements.amount.textContent = formatCurrency(stats.total_amount);
+  ordersStatsElements.amount.textContent = formatCurrency(stats.revenue_paid ?? stats.total_amount);
 }
 
 function renderCartsStats(stats = {}) {
@@ -885,6 +912,45 @@ function activateView(targetId) {
     renderOrderBumpsList();
   } else if (targetId === "integrations-view") {
     loadIntegrations();
+  }
+}
+
+async function loadDashboardOrdersPreview() {
+  if (!dashboardOrdersBody) return;
+  try {
+    const res = await fetch("/api/dashboard/recent-orders", {
+      headers: { ...setAuthHeader() },
+    });
+    if (!res.ok) {
+      dashboardOrdersBody.innerHTML = `<tr><td colspan="4">Não foi possível carregar pedidos.</td></tr>`;
+      return;
+    }
+    const data = await res.json();
+    const rows = Array.isArray(data.orders) ? data.orders.slice(0, 5) : [];
+    if (!rows.length) {
+      dashboardOrdersBody.innerHTML = `<tr><td colspan="4">Nenhum pedido recente.</td></tr>`;
+      return;
+    }
+    dashboardOrdersBody.innerHTML = rows
+      .map((order) => {
+        const customer = order?.customer?.name || "Cliente";
+        const email = order?.customer?.email || "--";
+        const statusConfig = mapOrderStatus(order?.status || "waiting_payment");
+        const value = formatCurrency(order?.total_cents ?? order?.summary?.total_cents ?? 0);
+        const dateLabel = formatDateTime(order?.created_at);
+        const productName = order?.product_name || "Produto";
+        return `
+          <tr>
+            <td>${escapeHtml(dateLabel)}</td>
+            <td><strong>${escapeHtml(customer)}</strong><br/><small>${escapeHtml(email)}</small><br/><small>${escapeHtml(productName)}</small></td>
+            <td><span class="status-pill status-pill--${escapeHtml(statusConfig.tone)}">${escapeHtml(statusConfig.label)}</span></td>
+            <td>${escapeHtml(value)}</td>
+          </tr>
+        `;
+      })
+      .join("");
+  } catch (_error) {
+    dashboardOrdersBody.innerHTML = `<tr><td colspan="4">Erro ao carregar pedidos.</td></tr>`;
   }
 }
 
@@ -1675,6 +1741,7 @@ cartsRefreshBtn?.addEventListener("click", () => loadCarts());
 integrationsRefreshBtn?.addEventListener("click", () => loadIntegrations());
 dashboardRefreshBtn?.addEventListener("click", () => {
   loadSummary();
+  loadDashboardOrdersPreview();
   const activeView = document.querySelector(".panel-view:not(.hidden)");
   if (!activeView) return;
   if (activeView.id === "orders-view") {
@@ -1683,6 +1750,18 @@ dashboardRefreshBtn?.addEventListener("click", () => {
     loadCarts();
   } else if (activeView.id === "integrations-view") {
     loadIntegrations();
+  }
+});
+dashboardPeriodSelect?.addEventListener("change", () => {
+  loadSummary();
+  loadDashboardOrdersPreview();
+});
+dashboardSeeAllOrdersBtn?.addEventListener("click", () => {
+  const ordersNavBtn = document.querySelector('.sidebar__nav-btn[data-target="orders-view"]');
+  if (ordersNavBtn) {
+    ordersNavBtn.click();
+  } else {
+    activateView("orders-view");
   }
 });
 integrationProviderButtons.forEach((btn) => {

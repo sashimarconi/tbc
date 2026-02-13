@@ -33,183 +33,239 @@
       </nav>
 
       <div class="sidebar__footer">
-        <button id="logout-btn" class="ghost" style="width:80%;margin-bottom:1.2rem;">Sair</button>
+        <button id="logout-btn" class="ghost sidebar-logout-btn">Sair</button>
         <button class="sidebar__toggle" id="sidebar-toggle" title="Minimizar sidebar"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z" fill="currentColor"/></svg></button>
       </div>
     </div>
-    <main class="page" style="background:#050505;min-height:100vh;margin-left:250px;transition:margin-left 0.2s;" id="main-content">
-      <section id="login" class="card" style="max-width:400px;margin:4rem auto 0;box-shadow:var(--shadow-dark);">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:2rem;">
-          <img src="/assets/logo.png" alt="Blackout Logo" style="width:64px;height:64px;margin-bottom:1rem;" />
-          <h1 style="font-family:var(--font-title);font-weight:900;font-size:2.2rem;letter-spacing:-1px;">The Black Checkout</h1>
+    <main class="page" id="main-content">
+      <section id="login" class="card dashboard-login-card">
+        <div class="dashboard-login-brand">
+          <img src="/assets/logo.png" alt="Blackout Logo" class="dashboard-login-logo" />
+          <h1 class="dashboard-login-title">The Black Checkout</h1>
         </div>
-        <form id="login-form" class="form" style="margin-top:2rem;">
-          <label style="width:100%;color:var(--color-text-secondary);font-weight:600;">E-mail
-            <input id="email" type="email" style="width:100%;margin-top:0.5rem;" autocomplete="email" />
+        <form id="login-form" class="form dashboard-login-form">
+          <label class="dashboard-login-field">E-mail
+            <input id="email" type="email" class="dashboard-login-input" autocomplete="email" />
           </label>
-          <label style="width:100%;color:var(--color-text-secondary);font-weight:600;">Senha
-            <input id="password" type="password" style="width:100%;margin-top:0.5rem;" autocomplete="current-password" />
+          <label class="dashboard-login-field">Senha
+            <input id="password" type="password" class="dashboard-login-input" autocomplete="current-password" />
           </label>
-          <button id="login-btn" type="submit" style="width:100%;margin-top:1.5rem;">Entrar</button>
-          <p id="login-error" class="error" style="color:var(--color-error);"></p>
+          <button id="login-btn" type="submit" class="dashboard-login-submit">Entrar</button>
+          <p id="login-error" class="error dashboard-login-error"></p>
         </form>
       </section>
 
-      <section id="panel" class="panel-main hidden" hidden style="padding:3.5rem 4vw 2.5rem 4vw;max-width:100vw;background:transparent;border:none;box-shadow:none;">
-        <header class="panel-header" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:1.5rem;background:#0D0D12;">
-          <div style="display:flex;align-items:center;gap:1.5rem;">
+      <section id="panel" class="panel-main hidden" hidden>
+        <header class="panel-header">
+          <div class="panel-title-wrap">
             <svg width="40" height="40" viewBox="0 0 64 64" fill="none" aria-hidden="true"><rect x="8" y="40" width="48" height="8" rx="4" fill="#1B1B22"/><ellipse cx="32" cy="36" rx="18" ry="8" fill="#0D0D12"/><path d="M16 36c0-8 6-18 16-18s16 10 16 18" stroke="#A100FF" stroke-width="3" stroke-linecap="round" fill="none"/></svg>
             <div>
-              <h1 style="font-family:var(--font-title);font-weight:900;font-size:2rem;letter-spacing:-1px;">Dashboard</h1>
-              <p style="color:var(--color-text-secondary);font-weight:500;">Visão geral do desempenho</p>
+              <h1 class="dashboard-title">Dashboard</h1>
+              <p class="dashboard-subtitle">Visão geral do desempenho</p>
             </div>
           </div>
-          <div class="panel-header__actions" style="display:flex;align-items:center;gap:1.5rem;">
-            <button id="dashboard-refresh" type="button" class="ghost" style="font-weight:700;">Atualizar</button>
+          <div class="panel-header__actions dashboard-header-actions">
+            <label class="period-control" for="dashboard-period">
+              <span>Período</span>
+              <select id="dashboard-period">
+                <option value="today">Hoje</option>
+                <option value="7d">7 dias</option>
+                <option value="30d">30 dias</option>
+              </select>
+            </label>
+            <button id="dashboard-refresh" type="button" class="ghost dashboard-refresh-btn">Atualizar</button>
           </div>
         </header>
 
         <section id="dashboard-view" class="panel-view">
-                <section class="dashboard-overview-head card" style="padding:1.2rem 1.3rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;">
-                  <div>
-                    <h2 style="margin:0;font-family:var(--font-title);font-weight:900;font-size:1.35rem;">Resumo do desempenho</h2>
-                    <p style="margin:0.35rem 0 0;color:var(--color-text-secondary);font-weight:500;">Métricas em tempo real do checkout e conversão.</p>
-                  </div>
-                </section>
-                <!-- LIVE VIEW SECTION -->
-                <section id="live-view" class="card live-view-card" style="margin-bottom:2.5rem;padding:2.5rem 2vw 2.5rem 2vw;display:flex;align-items:center;gap:3vw;background:#0D0D12;border:1.5px solid #232336;box-shadow:0 2px 32px 0 #00FF8511;">
-                  <div style="flex:1;min-width:320px;max-width:520px;display:flex;flex-direction:column;gap:1.2rem;">
-                    <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.5rem;margin:0 0 0.7rem 0;color:#00FF85;letter-spacing:-1px;">Live View</h2>
-                    <p style="color:var(--color-text-secondary);font-size:1.08rem;max-width:420px;">Veja em tempo real onde há pessoas online na sua loja. Os pontos verdes representam sessões ativas.</p>
-                    <ul id="live-view-list" style="margin:1.2rem 0 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:0.7rem;font-size:1.08rem;color:#EDEDED;"></ul>
-                  </div>
-                  <div class="live-globe-wrap" style="flex:2;min-width:320px;display:flex;justify-content:center;align-items:center;">
-                    <div id="live-globe" style="width:380px;height:380px;max-width:100%;background:transparent;border-radius:50%;box-shadow:0 0 32px 0 #00FF8533;"></div>
-                  </div>
-                </section>
-          <div class="stats-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:2.2rem;">
-            <article class="stat-card card" style="padding:2.2rem 1.5rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 24px 0 #A100FF11;">
-              <p style="color:var(--color-text-secondary);font-weight:600;">Pessoas ao vivo</p>
-              <strong id="stat-online" style="font-size:2.3rem;font-family:var(--font-title);font-weight:900;letter-spacing:-1px;">0</strong>
-              <small style="color:var(--color-text-secondary);">Atualiza a cada 20s</small>
-            </article>
-            <article class="stat-card card" style="padding:2.2rem 1.5rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 24px 0 #A100FF11;">
-              <p style="color:var(--color-text-secondary);font-weight:600;">Visitantes no dia</p>
-              <strong id="stat-visitors" style="font-size:2.3rem;font-family:var(--font-title);font-weight:900;letter-spacing:-1px;">0</strong>
-              <small style="color:var(--color-text-secondary);">Únicos</small>
-            </article>
-            <article class="stat-card card" style="padding:2.2rem 1.5rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 24px 0 #A100FF11;">
-              <p style="color:var(--color-text-secondary);font-weight:600;">Foram ao checkout</p>
-              <strong id="stat-checkout-visits" style="font-size:2.3rem;font-family:var(--font-title);font-weight:900;letter-spacing:-1px;">0</strong>
-              <small style="color:var(--color-text-secondary);">Visitantes únicos</small>
-            </article>
-            <article class="stat-card card" style="padding:2.2rem 1.5rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 24px 0 #A100FF11;">
-              <p style="color:var(--color-text-secondary);font-weight:600;">Checkout iniciado</p>
-              <strong id="stat-checkout-starts" style="font-size:2.3rem;font-family:var(--font-title);font-weight:900;letter-spacing:-1px;">0</strong>
-              <small style="color:var(--color-text-secondary);">Cliques no botão pagar</small>
-            </article>
-            <article class="stat-card card" style="padding:2.2rem 1.5rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 24px 0 #A100FF11;">
-              <p style="color:var(--color-text-secondary);font-weight:600;">Pix gerados</p>
-              <strong id="stat-pix" style="font-size:2.3rem;font-family:var(--font-title);font-weight:900;letter-spacing:-1px;">0</strong>
-              <small style="color:var(--color-text-secondary);">Total do dia</small>
-            </article>
-            <article class="stat-card card" style="padding:2.2rem 1.5rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 24px 0 #A100FF11;">
-              <p style="color:var(--color-text-secondary);font-weight:600;">Compras</p>
-              <strong id="stat-purchases" style="font-size:2.3rem;font-family:var(--font-title);font-weight:900;letter-spacing:-1px;">0</strong>
-              <small style="color:var(--color-text-secondary);">Clientes únicos</small>
-            </article>
-            <article class="stat-card card stat-card--accent" style="padding:2.2rem 1.5rem;text-align:center;background:linear-gradient(120deg,#181825 60%,#A100FF22 100%);border:1.5px solid #A100FF;box-shadow:0 2px 32px 0 #A100FF33;">
-              <p style="color:var(--color-brand);font-weight:700;">Conversão do checkout</p>
-              <strong id="stat-conversion" style="font-size:2.3rem;font-family:var(--font-title);font-weight:900;letter-spacing:-1px;">0%</strong>
-              <small style="color:var(--color-text-secondary);">Compras ÷ Inícios</small>
-            </article>
-          </div>
-
-          <section class="funnel-card card" style="margin-top:2.5rem;padding:2rem;">
-            <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.3rem;margin-bottom:1.5rem;">Funil do dia</h2>
-            <div class="funnel-bar-visual">
-              <div class="funnel-bar-labels">
-                <div>Visitantes<br><span id="funnel-visitors" class="funnel-bar-value">0</span></div>
-                <div>Checkout<br><span id="funnel-checkout" class="funnel-bar-value">0</span></div>
-                <div>Checkout iniciado<br><span id="funnel-starts" class="funnel-bar-value">0</span></div>
-                <div>Compras<br><span id="funnel-purchases" class="funnel-bar-value">0</span></div>
+          <section class="kpi-grid kpi-grid--main">
+            <article class="kpi-card kpi-card--hero">
+              <div class="kpi-head">
+                <span class="kpi-icon" aria-hidden="true">R$</span>
+                <p>Receita</p>
               </div>
-              <div class="funnel-bar-track">
-                <div id="funnel-bar-segment-visitors" class="funnel-bar-segment"></div>
-                <div id="funnel-bar-segment-checkout" class="funnel-bar-segment"></div>
-                <div id="funnel-bar-segment-starts" class="funnel-bar-segment"></div>
-                <div id="funnel-bar-segment-purchases" class="funnel-bar-segment"></div>
+              <strong id="stat-revenue">R$ 0,00</strong>
+              <small>Receita estimada no período</small>
+            </article>
+            <article class="kpi-card kpi-card--hero">
+              <div class="kpi-head">
+                <span class="kpi-icon" aria-hidden="true">#</span>
+                <p>Pedidos</p>
               </div>
-            </div>
+              <strong id="stat-orders-total">0</strong>
+              <small>Total de pedidos no período</small>
+            </article>
+            <article class="kpi-card kpi-card--hero">
+              <div class="kpi-head">
+                <span class="kpi-icon" aria-hidden="true">%</span>
+                <p>Conversão</p>
+              </div>
+              <strong id="stat-conversion">0%</strong>
+              <small>Compras ÷ inícios de checkout</small>
+            </article>
           </section>
 
-          <section class="timeline-card">
-            <header>
-              <div>
-                <h2>Últimas 12 horas</h2>
-                <p>Comparativo de visitas, checkout e Pix.</p>
+          <section class="kpi-grid kpi-grid--secondary">
+            <article class="kpi-card">
+              <p>Visitantes</p>
+              <strong id="stat-visitors">0</strong>
+            </article>
+            <article class="kpi-card">
+              <p>Checkout visitado</p>
+              <strong id="stat-checkout-visits">0</strong>
+            </article>
+            <article class="kpi-card">
+              <p>Checkout iniciado</p>
+              <strong id="stat-checkout-starts">0</strong>
+            </article>
+            <article class="kpi-card">
+              <p>Pix gerados</p>
+              <strong id="stat-pix">0</strong>
+            </article>
+            <article class="kpi-card">
+              <p>Compras</p>
+              <strong id="stat-purchases">0</strong>
+            </article>
+          </section>
+
+          <section class="dashboard-grid">
+            <article class="dashboard-card dashboard-card--timeline">
+              <header class="dashboard-card-head">
+                <div>
+                  <h2>Últimas 12 horas</h2>
+                  <p>Comparativo de visitas, checkout e Pix.</p>
+                </div>
+                <small id="stats-updated">--</small>
+              </header>
+              <div class="timeline-table__wrap">
+                <table class="timeline-table">
+                  <thead>
+                    <tr>
+                      <th>Hora</th>
+                      <th>Visitantes</th>
+                      <th>Checkout</th>
+                      <th>Checkout iniciado</th>
+                      <th>Pix</th>
+                    </tr>
+                  </thead>
+                  <tbody id="timeline-body">
+                    <tr>
+                      <td colspan="5">Carregando...</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              <small id="stats-updated">--</small>
-            </header>
-            <div class="timeline-table__wrap">
-              <table class="timeline-table">
-                <thead>
-                  <tr>
-                    <th>Hora</th>
-                    <th>Visitantes</th>
-                    <th>Checkout</th>
-                    <th>Checkout iniciado</th>
-                    <th>Pix</th>
-                  </tr>
-                </thead>
-                <tbody id="timeline-body">
-                  <tr>
-                    <td colspan="5">Carregando...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            </article>
+
+            <article id="live-view" class="dashboard-card dashboard-card--online">
+              <header class="dashboard-card-head">
+                <div>
+                  <h2>Online agora</h2>
+                  <p>Acompanhamento em tempo real</p>
+                </div>
+              </header>
+              <div class="online-now-value">
+                <span id="stat-online">0</span>
+                <small>usuários simultâneos</small>
+              </div>
+              <div class="live-globe-wrap">
+                <div id="live-globe"></div>
+              </div>
+              <ul id="live-view-list" class="live-session-list"></ul>
+            </article>
+          </section>
+
+          <section class="dashboard-grid">
+            <article class="dashboard-card dashboard-card--funnel">
+              <header class="dashboard-card-head">
+                <div>
+                  <h2>Funil do dia</h2>
+                  <p>Entenda onde os clientes avançam.</p>
+                </div>
+              </header>
+              <div class="funnel-bar-visual">
+                <div class="funnel-bar-labels">
+                  <div>Visitantes<br><span id="funnel-visitors" class="funnel-bar-value">0</span></div>
+                  <div>Checkout<br><span id="funnel-checkout" class="funnel-bar-value">0</span></div>
+                  <div>Checkout iniciado<br><span id="funnel-starts" class="funnel-bar-value">0</span></div>
+                  <div>Compras<br><span id="funnel-purchases" class="funnel-bar-value">0</span></div>
+                </div>
+                <div class="funnel-bar-track">
+                  <div id="funnel-bar-segment-visitors" class="funnel-bar-segment"></div>
+                  <div id="funnel-bar-segment-checkout" class="funnel-bar-segment"></div>
+                  <div id="funnel-bar-segment-starts" class="funnel-bar-segment"></div>
+                  <div id="funnel-bar-segment-purchases" class="funnel-bar-segment"></div>
+                </div>
+              </div>
+            </article>
+
+            <article class="dashboard-card dashboard-card--orders">
+              <header class="dashboard-card-head">
+                <div>
+                  <h2>Pedidos recentes</h2>
+                  <p>Últimos pedidos capturados</p>
+                </div>
+                <button id="dashboard-see-all-orders" type="button" class="ghost">Ver todos</button>
+              </header>
+              <div class="table-scroll">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Cliente / Email</th>
+                      <th>Status</th>
+                      <th>Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashboard-orders-body">
+                    <tr>
+                      <td colspan="4">Carregando pedidos...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
           </section>
         </section>
 
         <section id="orders-view" class="panel-view hidden" hidden>
-          <header class="view-header" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:1.5rem;">
+          <header class="view-header">
             <div>
-              <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.5rem;">Pedidos</h2>
-              <p style="color:var(--color-text-secondary);font-weight:500;">Acompanhe os Pix gerados e o status financeiro de cada pedido.</p>
+              <h2 class="section-title">Pedidos</h2>
+              <p class="section-subtitle">Acompanhe os Pix gerados e o status financeiro de cada pedido.</p>
             </div>
             <div class="view-header__actions">
               <button id="orders-refresh" type="button" class="ghost">Atualizar</button>
             </div>
           </header>
-          <div class="stats-grid stats-grid--compact" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:2rem;">
-            <article class="stat-card card" style="padding:1.5rem 1.2rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 16px 0 #A100FF22;">
-              <p style="color:var(--color-text-secondary);font-weight:600;">Pedidos totais</p>
-              <strong id="orders-total" style="font-size:1.5rem;font-family:var(--font-title);font-weight:900;">0</strong>
+          <div class="stats-grid stats-grid--compact">
+            <article class="stat-card card stat-card--compact">
+              <p class="stat-label">Pedidos totais</p>
+              <strong id="orders-total" class="stat-value-md">0</strong>
             </article>
-            <article class="stat-card card" style="padding:1.5rem 1.2rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 16px 0 #A100FF22;">
-              <p style="color:var(--color-text-secondary);font-weight:600;">Pix pendentes</p>
-              <strong id="orders-pending" style="font-size:1.5rem;font-family:var(--font-title);font-weight:900;">0</strong>
+            <article class="stat-card card stat-card--compact">
+              <p class="stat-label">Pix pendentes</p>
+              <strong id="orders-pending" class="stat-value-md">0</strong>
             </article>
-            <article class="stat-card card" style="padding:1.5rem 1.2rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 16px 0 #A100FF22;">
-              <p style="color:var(--color-text-secondary);font-weight:600;">Pix compensados</p>
-              <strong id="orders-paid" style="font-size:1.5rem;font-family:var(--font-title);font-weight:900;">0</strong>
+            <article class="stat-card card stat-card--compact">
+              <p class="stat-label">Pix compensados</p>
+              <strong id="orders-paid" class="stat-value-md">0</strong>
             </article>
-            <article class="stat-card card stat-card--accent" style="padding:1.5rem 1.2rem;text-align:center;background:linear-gradient(90deg,#181825 60%,#A100FF22 100%);border:1.5px solid #A100FF;box-shadow:0 2px 32px 0 #A100FF33;">
-              <p style="color:var(--color-brand);font-weight:700;">Faturamento potencial</p>
-              <strong id="orders-amount" style="font-size:1.5rem;font-family:var(--font-title);font-weight:900;">R$ 0,00</strong>
-              <small style="color:var(--color-text-secondary);">Total bruto registrado</small>
+            <article class="stat-card card stat-card--accent stat-card--compact">
+              <p class="stat-label stat-label-accent">Faturamento potencial</p>
+              <strong id="orders-amount" class="stat-value-md">R$ 0,00</strong>
+              <small class="stat-note">Total bruto registrado</small>
             </article>
           </div>
-          <section class="table-card card" style="margin-top:2rem;padding:0.5rem 0.5rem 1.5rem 0.5rem;background:#181825;border-radius:18px;border:1.5px solid #232336;box-shadow:0 4px 24px 0 #0008;">
-            <header style="padding:1.2rem 1.2rem 0.5rem 1.2rem;background:transparent;">
+          <section class="table-card card table-card--section">
+            <header class="table-card-header">
               <div>
-                <h3 style="font-family:var(--font-title);font-weight:900;font-size:1.1rem;">Últimos pedidos</h3>
-                <p style="color:var(--color-text-secondary);font-size:0.95em;">Mostrando até 150 registros</p>
+                <h3 class="table-title">Últimos pedidos</h3>
+                <p class="table-subtitle">Mostrando até 150 registros</p>
               </div>
             </header>
-            <div class="table-scroll" style="background:transparent;border-radius:14px;">
-              <table class="data-table" style="width:100%;background:transparent;">
+            <div class="table-scroll table-scroll--rounded">
+              <table class="data-table data-table--full">
                 <thead>
                   <tr>
                     <th>Cliente</th>
@@ -230,43 +286,43 @@
         </section>
 
         <section id="carts-view" class="panel-view hidden" hidden>
-          <header class="view-header" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:1.5rem;">
+          <header class="view-header">
             <div>
-              <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.5rem;">Carrinhos abandonados</h2>
-              <p style="color:var(--color-text-secondary);font-weight:500;">Veja em que etapa os leads pararam e recupere oportunidades.</p>
+              <h2 class="section-title">Carrinhos abandonados</h2>
+              <p class="section-subtitle">Veja em que etapa os leads pararam e recupere oportunidades.</p>
             </div>
             <div class="view-header__actions">
               <button id="carts-refresh" type="button" class="ghost">Atualizar</button>
             </div>
           </header>
-          <div class="stats-grid stats-grid--compact" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:2rem;">
-            <article class="stat-card card" style="padding:1.5rem 1.2rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 16px 0 #A100FF22;">
-              <p style="color:var(--color-text-secondary);font-weight:600;">Total capturado</p>
-              <strong id="carts-total" style="font-size:1.5rem;font-family:var(--font-title);font-weight:900;">0</strong>
+          <div class="stats-grid stats-grid--compact">
+            <article class="stat-card card stat-card--compact">
+              <p class="stat-label">Total capturado</p>
+              <strong id="carts-total" class="stat-value-md">0</strong>
             </article>
-            <article class="stat-card card" style="padding:1.5rem 1.2rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 16px 0 #A100FF22;">
-              <p style="color:var(--color-text-secondary);font-weight:600;">Abertos</p>
-              <strong id="carts-open" style="font-size:1.5rem;font-family:var(--font-title);font-weight:900;">0</strong>
+            <article class="stat-card card stat-card--compact">
+              <p class="stat-label">Abertos</p>
+              <strong id="carts-open" class="stat-value-md">0</strong>
             </article>
-            <article class="stat-card card" style="padding:1.5rem 1.2rem;text-align:center;background:#13131A;border:1.5px solid #232336;box-shadow:0 2px 16px 0 #A100FF22;">
-              <p style="color:var(--color-text-secondary);font-weight:600;">Convertidos</p>
-              <strong id="carts-converted" style="font-size:1.5rem;font-family:var(--font-title);font-weight:900;">0</strong>
+            <article class="stat-card card stat-card--compact">
+              <p class="stat-label">Convertidos</p>
+              <strong id="carts-converted" class="stat-value-md">0</strong>
             </article>
-            <article class="stat-card card stat-card--accent" style="padding:1.5rem 1.2rem;text-align:center;background:linear-gradient(90deg,#181825 60%,#A100FF22 100%);border:1.5px solid #A100FF;box-shadow:0 2px 32px 0 #A100FF33;">
-              <p style="color:var(--color-brand);font-weight:700;">Valor em jogo</p>
-              <strong id="carts-value" style="font-size:1.5rem;font-family:var(--font-title);font-weight:900;">R$ 0,00</strong>
-              <small style="color:var(--color-text-secondary);">Soma dos carrinhos</small>
+            <article class="stat-card card stat-card--accent stat-card--compact">
+              <p class="stat-label stat-label-accent">Valor em jogo</p>
+              <strong id="carts-value" class="stat-value-md">R$ 0,00</strong>
+              <small class="stat-note">Soma dos carrinhos</small>
             </article>
           </div>
-          <section class="table-card card" style="margin-top:2rem;padding:0.5rem 0.5rem 1.5rem 0.5rem;background:#181825;border-radius:18px;border:1.5px solid #232336;box-shadow:0 4px 24px 0 #0008;">
-            <header style="padding:1.2rem 1.2rem 0.5rem 1.2rem;background:transparent;">
+          <section class="table-card card table-card--section">
+            <header class="table-card-header">
               <div>
-                <h3 style="font-family:var(--font-title);font-weight:900;font-size:1.1rem;">Últimas interações</h3>
-                <p style="color:var(--color-text-secondary);font-size:0.95em;">Ordenado pelo último contato</p>
+                <h3 class="table-title">Últimas interações</h3>
+                <p class="table-subtitle">Ordenado pelo último contato</p>
               </div>
             </header>
-            <div class="table-scroll" style="background:transparent;border-radius:14px;">
-              <table class="data-table" style="width:100%;background:transparent;">
+            <div class="table-scroll table-scroll--rounded">
+              <table class="data-table data-table--full">
                 <thead>
                   <tr>
                     <th>Cliente</th>
@@ -288,21 +344,21 @@
         </section>
 
         <section id="integrations-view" class="panel-view hidden" hidden>
-          <header class="view-header" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:1.5rem;">
+          <header class="view-header">
             <div>
-              <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.5rem;">Integrações</h2>
-              <p style="color:var(--color-text-secondary);font-weight:500;">Meta Pixel, TikTok Pixel e UTMify (sem webhook por enquanto).</p>
+              <h2 class="section-title">Integrações</h2>
+              <p class="section-subtitle">Meta Pixel, TikTok Pixel e UTMify (sem webhook por enquanto).</p>
             </div>
             <button id="integrations-refresh" type="button" class="ghost">Atualizar</button>
           </header>
 
-          <section class="card" style="padding:1.2rem;margin-bottom:1rem;">
-            <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:1rem;">
+          <section class="card integration-card">
+            <div class="integration-provider-row">
               <button type="button" class="ghost integration-provider is-active" data-provider="meta">Meta</button>
               <button type="button" class="ghost integration-provider" data-provider="tiktok">TikTok</button>
               <button type="button" class="ghost integration-provider" data-provider="utmify">UTMify</button>
             </div>
-            <form id="integration-form" style="display:grid;gap:0.75rem;">
+            <form id="integration-form" class="integration-form-grid">
               <input id="integration-id" type="hidden" />
               <input id="integration-provider" type="hidden" value="meta" />
               <label>Nome
@@ -324,7 +380,7 @@
                 </label>
               </div>
 
-              <div id="integration-fields-utmify" class="hidden" style="display:grid;gap:0.75rem;">
+              <div id="integration-fields-utmify" class="hidden integration-utmify-fields">
                 <label>UTMify API URL
                   <input id="utmify-api-url" type="url" placeholder="https://api.utmify.com.br/api/events" />
                 </label>
@@ -339,17 +395,17 @@
                 </label>
               </div>
 
-              <div style="display:flex;gap:0.6rem;">
+              <div class="integration-actions-row">
                 <button id="integration-save" type="submit" class="ghost">Salvar</button>
                 <button id="integration-cancel" type="button" class="ghost">Cancelar edição</button>
               </div>
             </form>
           </section>
 
-          <section class="card" style="padding:1.2rem;">
-            <h3 style="margin-top:0;">Integrações cadastradas</h3>
+          <section class="card integration-card">
+            <h3 class="integration-list-title">Integrações cadastradas</h3>
             <div class="table-scroll">
-              <table class="data-table" style="width:100%;">
+              <table class="data-table data-table--full">
                 <thead>
                   <tr>
                     <th>Provider</th>
@@ -367,27 +423,27 @@
         </section>
 
         <section id="products-view" class="panel-view hidden">
-          <header class="products-head" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:1.5rem;">
+          <header class="products-head">
             <div>
-              <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.5rem;">Produtos</h2>
-              <p style="color:var(--color-text-secondary);font-weight:500;">Gerencie o catálogo e os links de checkout.</p>
+              <h2 class="section-title">Produtos</h2>
+              <p class="section-subtitle">Gerencie o catálogo e os links de checkout.</p>
             </div>
-            <button id="create-product-btn" type="button" class="ghost" style="font-weight:700;">Criar novo produto</button>
+            <button id="create-product-btn" type="button" class="ghost dashboard-cta-btn">Criar novo produto</button>
           </header>
 
-          <div class="products-toolbar" style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1.5rem;">
-            <label class="products-search" aria-label="Buscar produtos" style="display:flex;align-items:center;gap:0.5rem;background:var(--color-bg-card);border-radius:var(--radius-btn);padding:0.5rem 1rem;">
-              <svg viewBox="0 0 20 20" aria-hidden="true" style="width:1.2em;height:1.2em;color:var(--color-brand);">
+          <div class="products-toolbar">
+            <label class="products-search products-search--dark" aria-label="Buscar produtos">
+              <svg viewBox="0 0 20 20" aria-hidden="true" class="search-icon">
                 <path d="M9 3a6 6 0 104.47 10.03l3.75 3.75 1.42-1.42-3.75-3.75A6 6 0 009 3zm0 2a4 4 0 110 8 4 4 0 010-8z" fill="currentColor" />
               </svg>
-              <input id="products-search" type="search" placeholder="Buscar produtos..." style="background:transparent;border:none;color:var(--color-text-main);outline:none;" />
+              <input id="products-search" type="search" placeholder="Buscar produtos..." class="search-input-dark" />
             </label>
             <button id="products-filters" type="button" class="ghost" disabled>Filtros</button>
           </div>
 
-          <div class="products-table-card card" style="padding:0.5rem 0.5rem 1.5rem 0.5rem;background:#181825;border-radius:18px;border:1.5px solid #232336;box-shadow:0 2px 16px 0 #A100FF22;">
-            <div style="background:transparent;border-radius:14px;">
-              <table class="products-table" style="width:100%;background:transparent;">
+          <div class="products-table-card card products-table-card--section">
+            <div class="products-table-wrap">
+              <table class="products-table products-table--full">
                 <thead>
                   <tr>
                     <th>Produto</th>
@@ -408,33 +464,33 @@
         </section>
 
         <section id="order-bumps-view" class="panel-view hidden" hidden>
-          <header class="bumps-head" style="display:flex;align-items:center;justify-content:space-between;padding-bottom:1.5rem;">
+          <header class="bumps-head">
             <div>
-              <h2 style="font-family:var(--font-title);font-weight:900;font-size:1.5rem;">Order Bumps</h2>
-              <p style="color:var(--color-text-secondary);font-weight:500;">Configure ofertas adicionais para aumentar o ticket médio.</p>
+              <h2 class="section-title">Order Bumps</h2>
+              <p class="section-subtitle">Configure ofertas adicionais para aumentar o ticket médio.</p>
             </div>
-            <button id="create-bump-btn" type="button" class="ghost" style="font-weight:700;">Novo order bump</button>
+            <button id="create-bump-btn" type="button" class="ghost dashboard-cta-btn">Novo order bump</button>
           </header>
 
-          <div class="bumps-toolbar" style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1.5rem;">
-            <label class="products-search" aria-label="Buscar order bumps" style="display:flex;align-items:center;gap:0.5rem;background:var(--color-bg-card);border-radius:var(--radius-btn);padding:0.5rem 1rem;">
-              <svg viewBox="0 0 20 20" aria-hidden="true" style="width:1.2em;height:1.2em;color:var(--color-brand);">
+          <div class="bumps-toolbar">
+            <label class="products-search products-search--dark" aria-label="Buscar order bumps">
+              <svg viewBox="0 0 20 20" aria-hidden="true" class="search-icon">
                 <path d="M9 3a6 6 0 104.47 10.03l3.75 3.75 1.42-1.42-3.75-3.75A6 6 0 009 3zm0 2a4 4 0 110 8 4 4 0 010-8z" fill="currentColor" />
               </svg>
-              <input id="order-bumps-search" type="search" placeholder="Buscar por nome ou descrição..." style="background:transparent;border:none;color:var(--color-text-main);outline:none;" />
+              <input id="order-bumps-search" type="search" placeholder="Buscar por nome ou descrição..." class="search-input-dark" />
             </label>
-            <div class="bumps-counters" style="display:flex;gap:1.2rem;">
+            <div class="bumps-counters">
               <span><strong id="bumps-active-count">0</strong> ativos</span>
               <span><strong id="bumps-inactive-count">0</strong> inativos</span>
               <span><strong id="bumps-total-count">0</strong> total</span>
             </div>
           </div>
 
-          <div id="order-bumps-empty" class="bumps-empty" style="margin-bottom:2rem;">
-            <div class="bumps-empty__card card" style="text-align:center;padding:2.5rem 1.5rem;background:#181825;border-radius:18px;border:1.5px solid #232336;box-shadow:0 2px 16px 0 #A100FF22;">
-              <p style="font-size:1.1rem;font-weight:700;color:#A100FF;">Nenhum order bump cadastrado</p>
-              <small style="color:var(--color-text-secondary);">Crie seu primeiro order bump para oferecer ofertas complementares.</small>
-              <button type="button" id="order-bumps-empty-btn" class="ghost" style="margin-top:1.5rem;color:#A100FF;border:1.5px solid #A100FF;">Criar order bump</button>
+          <div id="order-bumps-empty" class="bumps-empty bumps-empty--spaced">
+            <div class="bumps-empty__card card bumps-empty__card--dark">
+              <p class="bumps-empty-title">Nenhum order bump cadastrado</p>
+              <small class="bumps-empty-subtitle">Crie seu primeiro order bump para oferecer ofertas complementares.</small>
+              <button type="button" id="order-bumps-empty-btn" class="ghost bumps-empty-btn">Criar order bump</button>
             </div>
           </div>
 
@@ -528,7 +584,7 @@
 
                 <div data-image-panel="upload" class="media-panel">
                   <label class="upload-tile" id="product-upload-tile">
-                    <input id="product-image-upload" type="file" accept="image/*" style="display:none" />
+                  <input id="product-image-upload" type="file" accept="image/*" hidden />
                     <span>Arraste ou clique para enviar (PNG, JPG ou WEBP)</span>
                     <small>Imagem principal do produto</small>
                     <em class="upload-tile__btn">Selecionar arquivo</em>
@@ -663,7 +719,7 @@
             </header>
             <div data-bump-image-panel="upload" class="media-panel">
               <label class="upload-tile" id="bump-upload-tile">
-                <input id="bump-image-upload" type="file" accept="image/*" style="display:none" />
+                  <input id="bump-image-upload" type="file" accept="image/*" hidden />
                 <span>Arraste ou clique para enviar</span>
                 <small>Formatos PNG, JPG ou WEBP</small>
               </label>

@@ -135,7 +135,7 @@ create table if not exists checkout_orders (
   items jsonb,
   shipping jsonb,
   summary jsonb,
-  status text not null default 'pending' check (status in ('pending', 'paid', 'cancelled')),
+  status text not null default 'waiting_payment' check (status in ('waiting_payment', 'pending', 'paid', 'refused', 'refunded', 'cancelled')),
   pix jsonb,
   total_cents integer default 0,
   subtotal_cents integer default 0,

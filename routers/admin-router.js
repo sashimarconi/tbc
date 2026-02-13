@@ -856,6 +856,7 @@ async function handleOrders(req, res, user) {
 
   try {
     await ensureSalesTables();
+    console.log("[dashboard/orders] filtering by owner_user_id", user.id);
 
     if (id) {
       const detail = await query(
@@ -872,7 +873,7 @@ async function handleOrders(req, res, user) {
 
     const [ordersResult, statsResult] = await Promise.all([
       query(
-        `select id, cart_key, customer, summary, status, pix, created_at
+        `select id, cart_key, customer, summary, status, pix, total_cents, created_at
          from checkout_orders
          where owner_user_id = $1
          order by created_at desc
@@ -882,9 +883,10 @@ async function handleOrders(req, res, user) {
       query(
         `select
            count(*) as total,
-           count(*) filter (where status = 'pending') as pending,
+           count(*) filter (where status in ('waiting_payment','pending')) as pending,
            count(*) filter (where status = 'paid') as paid,
-           coalesce(sum(total_cents),0) as total_amount
+           count(*) filter (where status in ('refused','refunded','cancelled')) as failed,
+           coalesce(sum(total_cents) filter (where status = 'paid'),0) as revenue_paid
          from checkout_orders
          where owner_user_id = $1`,
         [user.id]
@@ -893,8 +895,49 @@ async function handleOrders(req, res, user) {
 
     res.json({
       orders: ordersResult.rows || [],
-      stats: statsResult.rows?.[0] || { total: 0, pending: 0, paid: 0, total_amount: 0 },
+      stats: statsResult.rows?.[0] || { total: 0, pending: 0, paid: 0, failed: 0, revenue_paid: 0 },
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+async function handleRecentOrders(req, res, user) {
+  if (req.method !== "GET") {
+    res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
+
+  try {
+    await ensureSalesTables();
+    console.log("[dashboard/recent-orders] filtering by owner_user_id", user.id);
+    const result = await query(
+      `select
+         id,
+         cart_key,
+         customer,
+         items,
+         summary,
+         status,
+         total_cents,
+         created_at
+       from checkout_orders
+       where owner_user_id = $1
+       order by created_at desc
+       limit 10`,
+      [user.id]
+    );
+
+    const orders = (result.rows || []).map((row) => {
+      const items = Array.isArray(row.items) ? row.items : [];
+      const firstItem = items.find((item) => item && typeof item === "object") || null;
+      const productName = firstItem?.name || row.summary?.product_name || row.summary?.title || "Produto";
+      return {
+        ...row,
+        product_name: productName,
+      };
+    });
+    res.json({ orders });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1318,6 +1361,9 @@ module.exports = async (req, res) => {
           return;
         }
         await handleOrders(req, res, user);
+        return;
+      case "recent-orders":
+        await handleRecentOrders(req, res, user);
         return;
       case "carts":
         await handleCarts(req, res, user);

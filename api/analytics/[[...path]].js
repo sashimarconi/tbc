@@ -176,6 +176,7 @@ async function handleSummary(req, res) {
 
   try {
     await ensureAnalyticsTables();
+    console.log("[dashboard/analytics/summary] filtering by owner_user_id", user.id);
 
     const [summaryResult, timelineResult, liveResult] = await Promise.all([
       query(

@@ -1350,7 +1350,7 @@ async function recordOrder(pixData, checkoutPayload) {
     items,
     shipping: checkoutPayload.shipping,
     summary,
-    status: "pending",
+    status: "waiting_payment",
     pix: {
       txid: pixData?.txid || "",
       expires_at: pixData?.expires_at || null,
