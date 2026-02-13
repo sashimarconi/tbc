@@ -276,7 +276,16 @@ function applyAppearanceConfig(config) {
   root.style.setProperty("--color-text", config?.palette?.text || "#1c2431");
   root.style.setProperty("--color-card", config?.palette?.card || "#ffffff");
   root.style.setProperty("--color-border", config?.palette?.border || "#dde3ee");
-  root.style.setProperty("--color-muted", config?.palette?.muted || "#6b7280");
+  root.style.setProperty("--color-muted", config?.palette?.mutedText || config?.palette?.muted || "#6b7280");
+  root.style.setProperty("--color-primary-text", config?.palette?.primaryText || "#111111");
+  root.style.setProperty("--color-primary-hover", config?.palette?.primaryHover || config?.palette?.button || "#e58e0a");
+  root.style.setProperty("--color-link", config?.palette?.link || "#2b67f6");
+  root.style.setProperty("--color-link-hover", config?.palette?.linkHover || "#1f56ad");
+  root.style.setProperty("--color-button-secondary-bg", config?.palette?.buttonSecondaryBg || "#f6f8fb");
+  root.style.setProperty("--color-button-secondary-text", config?.palette?.buttonSecondaryText || "#1c2431");
+  root.style.setProperty("--color-success", config?.palette?.success || "#1d9f55");
+  root.style.setProperty("--color-warning", config?.palette?.warning || "#f39c12");
+  root.style.setProperty("--color-danger", config?.palette?.danger || "#c22525");
 
   root.style.setProperty("--radius-card", config?.radius?.card || config?.radius?.cards || "16px");
   root.style.setProperty("--radius-button", config?.radius?.button || config?.radius?.buttons || "14px");

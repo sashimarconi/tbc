@@ -6,6 +6,15 @@
   --color-card: #ffffff;
   --color-border: #dde3ee;
   --color-muted: #6b7280;
+  --color-primary-text: #111111;
+  --color-primary-hover: #e58e0a;
+  --color-link: #2b67f6;
+  --color-link-hover: #1f56ad;
+  --color-button-secondary-bg: #f6f8fb;
+  --color-button-secondary-text: #1c2431;
+  --color-success: #1d9f55;
+  --color-warning: #f39c12;
+  --color-danger: #c22525;
   --radius-card: 16px;
   --radius-button: 14px;
   --radius-field: 12px;
@@ -267,6 +276,14 @@ select {
   font: inherit;
 }
 
+.field input:focus,
+.field textarea:focus,
+select:focus {
+  outline: 2px solid color-mix(in srgb, var(--color-link) 45%, transparent);
+  outline-offset: 1px;
+  border-color: var(--color-link);
+}
+
 .phone-field {
   display: flex;
   border: 1px solid var(--color-border);
@@ -470,17 +487,30 @@ select {
   padding: 13px;
   font-size: 16px;
   font-weight: 700;
-  color: #111111;
+  color: var(--color-primary-text);
   background: var(--color-buttons);
   cursor: pointer;
+}
+
+.cta:hover {
+  background: var(--color-primary-hover);
 }
 
 .ghost {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-button);
   padding: 10px 12px;
-  background: #fff;
+  background: var(--color-button-secondary-bg);
+  color: var(--color-button-secondary-text);
   font-weight: 600;
+}
+
+a {
+  color: var(--color-link);
+}
+
+a:hover {
+  color: var(--color-link-hover);
 }
 
 .trust {
@@ -520,13 +550,22 @@ select {
 }
 
 body.ui-mercadex {
-  --color-background: #eef2f6;
+  --color-background: #f5f6f8;
   --color-card: #ffffff;
-  --color-text: #1c1f28;
-  --color-border: #d6dde8;
-  --color-muted: #64748b;
-  --color-buttons: #2f69ff;
-  --color-primary: #2f69ff;
+  --color-text: #111318;
+  --color-border: rgba(17, 19, 24, 0.1);
+  --color-muted: #5b616e;
+  --color-primary: #ffe600;
+  --color-buttons: #ffe600;
+  --color-primary-text: #111318;
+  --color-primary-hover: #ffd500;
+  --color-link: #2d68c4;
+  --color-link-hover: #1f56ad;
+  --color-button-secondary-bg: #eef0f3;
+  --color-button-secondary-text: #111318;
+  --color-success: #00a650;
+  --color-warning: #ffb020;
+  --color-danger: #e53935;
   --radius-card: 16px;
   --radius-button: 14px;
   --radius-field: 12px;
@@ -535,6 +574,24 @@ body.ui-mercadex {
 
 body.ui-mercadex .checkout {
   box-shadow: 0 18px 40px rgba(40, 61, 92, 0.14);
+}
+
+body.ui-mercadex .trust-bar {
+  background: #ffe600;
+}
+
+body.ui-mercadex .field input,
+body.ui-mercadex .field textarea,
+body.ui-mercadex select,
+body.ui-mercadex .phone-field {
+  background: #ffffff;
+}
+
+body.ui-mercadex .field input:focus,
+body.ui-mercadex .field textarea:focus,
+body.ui-mercadex select:focus {
+  outline-color: color-mix(in srgb, #2d68c4 42%, transparent);
+  border-color: #2d68c4;
 }
 
 body.ui-mercadex .product-card,
