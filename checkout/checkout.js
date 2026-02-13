@@ -672,7 +672,7 @@ window.addEventListener("message", (ev) => {
   }
 });
 
-function showOfferUnavailable(message = "Oferta nÃ£o encontrada") {
+function showOfferUnavailable(message = "Oferta nao encontrada") {
   offerData = null;
   if (productTitle) {
     productTitle.textContent = message;
@@ -685,7 +685,7 @@ function showOfferUnavailable(message = "Oferta nÃ£o encontrada") {
   }
   if (payBtn) {
     payBtn.disabled = true;
-    payBtn.textContent = "IndisponÃ­vel";
+    payBtn.textContent = "Indisponivel";
   }
   form?.classList.add("form--disabled");
   addonsSection?.classList.add("hidden");
@@ -724,6 +724,20 @@ function initCartId() {
 
 function formatPrice(cents) {
   return (cents / 100).toFixed(2).replace(".", ",");
+}
+
+function normalizeDisplayText(value) {
+  if (typeof value !== "string") return "";
+  const text = value.trim();
+  if (!text) return "";
+  if (!/[ÃÂâ€�]/.test(text)) return text;
+  try {
+    const bytes = Uint8Array.from([...text].map((char) => char.charCodeAt(0) & 0xff));
+    const decoded = new TextDecoder("utf-8").decode(bytes).trim();
+    return decoded || text;
+  } catch (error) {
+    return text;
+  }
 }
 
 function getUtmParams() {
@@ -988,7 +1002,7 @@ async function recordOrder(pixData, checkoutPayload) {
       body: JSON.stringify(orderPayload),
     });
   } catch (error) {
-    console.warn("NÃ£o foi possÃ­vel registrar o pedido", error);
+    console.warn("Nao foi possivel registrar o pedido", error);
   }
 }
 
@@ -1004,7 +1018,7 @@ function updateSummary() {
 
   const lines = [
     {
-      label: offerData.base.name,
+      label: normalizeDisplayText(offerData.base.name),
       value: offerData.base.price_cents,
     },
   ];
@@ -1012,7 +1026,7 @@ function updateSummary() {
   selectedBumps.forEach((id) => {
     const bump = bumpMap.get(id);
     if (bump) {
-      lines.push({ label: bump.name, value: bump.price_cents });
+      lines.push({ label: normalizeDisplayText(bump.name), value: bump.price_cents });
     }
   });
 
@@ -1032,7 +1046,7 @@ function updateSummary() {
   const total = Math.max(subtotal + shipping, 0);
   summarySubtotal.textContent = `R$ ${formatPrice(subtotal)}`;
   if (summaryShipping) {
-    summaryShipping.textContent = shipping === 0 ? "Frete GrÃ¡tis" : `R$ ${formatPrice(shipping)}`;
+    summaryShipping.textContent = shipping === 0 ? "Frete Gratis" : `R$ ${formatPrice(shipping)}`;
   }
   summaryTotal.textContent = `R$ ${formatPrice(total)}`;
   if (summaryCount) {
@@ -1078,6 +1092,7 @@ function renderBumps(bumps = []) {
     .map((bump) => {
       bumpMap.set(bump.id, bump);
       const image = bump.image_url || productCover.src;
+      const bumpName = normalizeDisplayText(bump.name);
       return `
         <label class="addon-card">
           <input type="checkbox" data-bump-id="${bump.id}" />
@@ -1085,10 +1100,10 @@ function renderBumps(bumps = []) {
             <span class="addon-card__tag">Oferta adicionada</span>
             <div class="addon-card__info">
               <div class="addon-card__media">
-                <img src="${image}" alt="${bump.name}" />
+                <img src="${image}" alt="${bumpName}" />
               </div>
               <div class="addon-card__body">
-                <p class="addon-card__title">${bump.name}</p>
+                <p class="addon-card__title">${bumpName}</p>
                 <p class="addon-card__price">R$ ${formatPrice(bump.price_cents)}</p>
               </div>
             </div>
@@ -1180,8 +1195,10 @@ function renderShipping(options = []) {
     .map((option) => {
       const selected = option.id === selectedShippingId;
       const priceText = option.price_cents === 0
-        ? "Frete GrÃ¡tis"
+        ? "Frete Gratis"
         : `R$ ${formatPrice(option.price_cents)}`;
+      const optionName = normalizeDisplayText(option.name);
+      const optionDescription = normalizeDisplayText(option.description || "");
       const classes = [
         "shipping-card",
         selected ? "shipping-card--selected" : "",
@@ -1192,8 +1209,8 @@ function renderShipping(options = []) {
       return `
         <label class="${classes}" data-shipping-id="${option.id}">
           <div class="shipping-card__info">
-            <strong>${option.name}</strong>
-            <small>${option.description || ""}</small>
+            <strong>${optionName}</strong>
+            <small>${optionDescription}</small>
           </div>
           <div class="shipping-card__price">${priceText}</div>
           <input type="radio" name="shipping" ${selected ? "checked" : ""} />
@@ -1275,13 +1292,13 @@ function fillAddressFields(data) {
 async function lookupCep(value) {
   const cep = normalizeCep(value);
   if (!cep) {
-    showCepError("Informe um CEP vÃ¡lido.");
+    showCepError("Informe um CEP valido.");
     resetAutoAddressFields();
     return;
   }
 
   if (cep.length !== 8) {
-    showCepError("CEP precisa ter 8 dÃ­gitos.");
+    showCepError("CEP precisa ter 8 digitos.");
     resetAutoAddressFields();
     return;
   }
@@ -1290,11 +1307,11 @@ async function lookupCep(value) {
   try {
     const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
     if (!response.ok) {
-      throw new Error("CEP invÃ¡lido");
+      throw new Error("CEP invalido");
     }
     const data = await response.json();
     if (data.erro) {
-      throw new Error("CEP nÃ£o encontrado");
+      throw new Error("CEP nao encontrado");
     }
     fillAddressFields(data);
     if (cepInput) {
@@ -1302,11 +1319,11 @@ async function lookupCep(value) {
     }
     const missingInfo = !data.logradouro || !data.localidade || !data.uf;
     setAddressReadOnly(!missingInfo);
-    showCepError(missingInfo ? "Complete os dados de endereÃ§o manualmente." : "");
+    showCepError(missingInfo ? "Complete os dados de endereco manualmente." : "");
     scheduleCartSync("address");
   } catch (error) {
     setAddressReadOnly(false);
-    showCepError("NÃ£o encontramos o CEP. Preencha os dados manualmente.");
+    showCepError("Nao encontramos o CEP. Preencha os dados manualmente.");
     resetAutoAddressFields({ preserveManual: true });
     scheduleCartSync("address");
   }
@@ -1336,7 +1353,7 @@ function setAddressSection(open) {
   addressOpen = open;
   addressCard.classList.toggle("address--collapsed", !open);
   addressContent.classList.toggle("hidden", !open);
-  addressToggle.textContent = open ? "Editar endereÃ§o" : "Adicionar endereÃ§o";
+  addressToggle.textContent = open ? "Editar endereco" : "Adicionar endereco";
   if (open) {
     cepInput?.focus();
   }
@@ -1420,7 +1437,7 @@ if (cepInput) {
 
 async function loadOffer() {
   if (!activeOfferSlug) {
-    showOfferUnavailable("Link invÃ¡lido");
+    showOfferUnavailable("Link invalido");
     return;
   }
 
@@ -1428,12 +1445,12 @@ async function loadOffer() {
   try {
     response = await fetch(`/api/public/offer?slug=${encodeURIComponent(activeOfferSlug)}`);
   } catch (error) {
-    showOfferUnavailable("NÃ£o foi possÃ­vel carregar a oferta.");
+    showOfferUnavailable("Nao foi possivel carregar a oferta.");
     return;
   }
 
   if (!response.ok) {
-    let errorMessage = "Oferta indisponÃ­vel";
+    let errorMessage = "Oferta indisponivel";
     try {
       const info = await response.json();
       if (info?.error) {
@@ -1450,7 +1467,7 @@ async function loadOffer() {
   offerData = data;
 
   if (!offerData?.base) {
-    showOfferUnavailable("Oferta indisponÃ­vel");
+    showOfferUnavailable("Oferta indisponivel");
     return;
   }
 
@@ -1469,9 +1486,9 @@ async function loadOffer() {
       ? formFactor !== "digital"
       : Boolean(base.requires_address);
   applyAddressRequirement(requiresAddressFlag);
-  productTitle.textContent = base.name;
-  productDescription.textContent = base.description ||
-    "Receba seu material imediatamente apÃ³s a confirmaÃ§Ã£o.";
+  productTitle.textContent = normalizeDisplayText(base.name);
+  productDescription.textContent =
+    normalizeDisplayText(base.description) || "Receba seu material imediatamente apos a confirmacao.";
   productPrice.textContent = `R$ ${formatPrice(base.price_cents)}`;
   if (productComparePrice) {
     if (base.compare_price_cents && base.compare_price_cents > base.price_cents) {
@@ -1510,17 +1527,17 @@ form.addEventListener("submit", async (event) => {
 
   if (baseRequiresAddress) {
     if (!addressOpen) {
-      alert("Abra o box de entrega e informe o endereÃ§o completo.");
+      alert("Abra o box de entrega e informe o endereco completo.");
       return;
     }
 
     if (!cep || normalizeCep(cep).length !== 8 || !street || !city || !state || !number) {
-      alert("Preencha o endereÃ§o de entrega para continuar.");
+      alert("Preencha o endereco de entrega para continuar.");
       return;
     }
 
     if (shippingOptions.length && !shippingOption) {
-      alert("Selecione uma opÃ§Ã£o de frete.");
+      alert("Selecione uma opcao de frete.");
       return;
     }
   }
@@ -1593,7 +1610,7 @@ form.addEventListener("submit", async (event) => {
     recordOrder(data, payload);
   } catch (error) {
     trackCheckout("checkout_error", { message: error.message });
-    alert(error.message || "Erro na conexÃ£o com Pix");
+    alert(error.message || "Erro na conexao com Pix");
   } finally {
     payBtn.disabled = false;
     payBtn.textContent = originalText;
@@ -1605,7 +1622,7 @@ copyBtn.addEventListener("click", async () => {
   await navigator.clipboard.writeText(pixCode.value);
   copyBtn.textContent = "Copiado";
   setTimeout(() => {
-    copyBtn.textContent = "Copiar cÃ³digo";
+    copyBtn.textContent = "Copiar codigo";
   }, 1500);
 });
 
