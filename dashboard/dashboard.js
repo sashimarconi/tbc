@@ -6,7 +6,12 @@ window.addEventListener('DOMContentLoaded', () => {
   // Fetch liveView data
   async function updateLiveView() {
     try {
-      const res = await fetch('/api/dashboard/analytics/summary');
+      const token = localStorage.getItem("admin_token");
+      if (!token) return;
+      const res = await fetch('/api/dashboard/analytics/summary', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
       const data = await res.json();
       const { onlineSessions = [], cityCounts = [] } = data.liveView || {};
       // Renderizar lista de cidades do dia
@@ -271,9 +276,18 @@ async function loadItems() {
   const res = await fetch("/api/dashboard/items", {
     headers: { ...setAuthHeader() },
   });
-  const data = await res.json();
+  let data = {};
+  try {
+    data = await res.json();
+  } catch (_error) {
+    data = {};
+  }
   if (!res.ok) {
-    showLogin();
+    if (res.status === 401) {
+      showLogin();
+    } else {
+      console.error("Falha ao carregar itens", data);
+    }
     return;
   }
   renderItems(data.items || []);
