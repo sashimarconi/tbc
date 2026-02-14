@@ -99,7 +99,8 @@ let selectedShippingId = null;
 let addressOpen = false;
 let manualAddressMode = false;
 const CART_STAGE_PRIORITY = { contact: 1, address: 2, payment: 3 };
-const CART_STORAGE_KEY = "checkout_cart_id";
+const CART_STORAGE_KEY = `checkout_cart_id:${activeOfferSlug || "default"}`;
+const LEGACY_CART_STORAGE_KEY = "checkout_cart_id";
 let cartId = initCartId();
 let cartStageLevel = 0;
 let cartSyncTimeout = null;
@@ -955,6 +956,11 @@ function initCartId() {
     const stored = window.localStorage?.getItem(CART_STORAGE_KEY);
     if (stored) {
       return stored;
+    }
+    const legacyStored = window.localStorage?.getItem(LEGACY_CART_STORAGE_KEY);
+    if (legacyStored && activeOfferSlug) {
+      window.localStorage?.setItem(CART_STORAGE_KEY, legacyStored);
+      return legacyStored;
     }
     const fresh = nextId();
     window.localStorage?.setItem(CART_STORAGE_KEY, fresh);
@@ -1949,7 +1955,7 @@ async function bootstrapCheckout() {
 
     if (!firedCheckoutView) {
       firedCheckoutView = true;
-      trackCheckout("checkout_view", {
+      trackCheckout("checkout_visited", {
         slug: activeOfferSlug,
       });
     }

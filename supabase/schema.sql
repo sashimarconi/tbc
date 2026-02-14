@@ -152,6 +152,24 @@ create table if not exists checkout_orders (
 create index if not exists checkout_orders_created_idx
   on checkout_orders (owner_user_id, created_at desc);
 
+create table if not exists shipping_methods (
+  id uuid primary key default gen_random_uuid(),
+  owner_user_id uuid not null references users(id) on delete cascade,
+  name text not null,
+  price_cents integer not null default 0 check (price_cents >= 0),
+  min_order_cents integer not null default 0 check (min_order_cents >= 0),
+  min_days integer not null default 0 check (min_days >= 0),
+  max_days integer not null default 0 check (max_days >= 0),
+  description text,
+  is_default boolean not null default false,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists shipping_methods_owner_updated_idx
+  on shipping_methods (owner_user_id, updated_at desc);
+
 create table if not exists checkout_themes (
   id serial primary key,
   key text unique not null,

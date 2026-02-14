@@ -12,12 +12,34 @@ const { ensurePaymentGatewayTable } = require("../lib/ensure-payment-gateway");
 const { encryptText } = require("../lib/credentials-crypto");
 const { ensureIntegrationsSchema } = require("../lib/ensure-integrations");
 const { dispatchUtmifyEvent } = require("../lib/utmify");
+const { ensureAnalyticsTables } = require("../lib/ensure-analytics");
 const DEFAULT_SEALPAY_API_URL =
   process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix";
+const DASHBOARD_TZ = process.env.DASHBOARD_TZ || "America/Sao_Paulo";
 const LOGO_MAX_BYTES = Number(process.env.LOGO_UPLOAD_MAX_BYTES || 4 * 1024 * 1024);
 const LOGO_MAX_MB_LABEL = `${Math.round(LOGO_MAX_BYTES / (1024 * 1024))}MB`;
 const authHandler = require("../api/auth/[[...path]]");
 const analyticsHandler = require("../api/analytics/[[...path]]");
+
+function resolvePeriodFilter(periodRaw) {
+  const period = String(periodRaw || "today").trim().toLowerCase();
+  if (period === "7d") {
+    return {
+      sql: "and created_at >= now() - interval '7 days'",
+      params: [],
+    };
+  }
+  if (period === "30d") {
+    return {
+      sql: "and created_at >= now() - interval '30 days'",
+      params: [],
+    };
+  }
+  return {
+    sql: "and created_at >= (date_trunc('day', now() at time zone $2) at time zone $2)",
+    params: [DASHBOARD_TZ],
+  };
+}
 
 function deepMerge(base, override) {
   if (Array.isArray(base)) {
@@ -871,14 +893,18 @@ async function handleOrders(req, res, user) {
       return;
     }
 
+    const periodFilter = resolvePeriodFilter(req.query?.period);
+    const baseParams = [user.id, ...periodFilter.params];
+
     const [ordersResult, statsResult] = await Promise.all([
       query(
         `select id, cart_key, customer, items, summary, status, pix, total_cents, created_at
          from checkout_orders
          where owner_user_id = $1
+           ${periodFilter.sql}
          order by created_at desc
          limit 150`,
-        [user.id]
+        baseParams
       ),
       query(
         `select
@@ -888,8 +914,9 @@ async function handleOrders(req, res, user) {
            count(*) filter (where status in ('refused','refunded','cancelled')) as failed,
            coalesce(sum(total_cents) filter (where status = 'paid'),0) as revenue_paid
          from checkout_orders
-         where owner_user_id = $1`,
-        [user.id]
+         where owner_user_id = $1
+           ${periodFilter.sql}`,
+        baseParams
       ),
     ]);
 
@@ -1302,6 +1329,16 @@ async function handleMarkOrderPaid(req, res, user) {
     }
 
     try {
+      await ensureAnalyticsTables();
+      await query(
+        `insert into analytics_events (owner_user_id, session_id, event_type, page, payload)
+         values ($1, $2, 'purchase', 'checkout', $3::jsonb)`,
+        [
+          user.id,
+          order.cart_key || String(order.id),
+          JSON.stringify({ order_id: order.id, total_cents: order.total_cents || 0, status: "paid" }),
+        ]
+      );
       await dispatchUtmifyEvent({ order, status: "paid" });
     } catch (_error) {
       // Keep manual status update resilient.
@@ -1394,6 +1431,10 @@ module.exports = async (req, res) => {
         return;
       case "analytics":
         req.query.path = segments.slice(1);
+        await analyticsHandler(req, res);
+        return;
+      case "metrics":
+        req.query.path = ["summary"];
         await analyticsHandler(req, res);
         return;
       default:

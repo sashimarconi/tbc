@@ -1,6 +1,7 @@
 ﻿const { parseJson } = require("../../lib/parse-json");
 const { query } = require("../../lib/db");
 const { ensureSalesTables } = require("../../lib/ensure-sales");
+const { ensureAnalyticsTables } = require("../../lib/ensure-analytics");
 
 const STAGE_PRIORITY = {
   contact: 1,
@@ -39,6 +40,58 @@ function asNumber(value) {
 function toJsonb(value) {
   if (value === null || value === undefined) return null;
   return JSON.stringify(value);
+}
+
+function buildCartEventType(stage) {
+  if (stage === "payment") {
+    return "checkout_started";
+  }
+  return "checkout_view";
+}
+
+async function registerCartAnalytics({ ownerUserId, cartKey, stage, source, utm }) {
+  try {
+    await ensureAnalyticsTables();
+    const eventType = buildCartEventType(stage);
+    await query(
+      `insert into analytics_events (owner_user_id, session_id, event_type, page, payload)
+       select $1, $2, $3, 'checkout', $4::jsonb
+       where not exists (
+         select 1
+         from analytics_events
+         where owner_user_id = $1
+           and session_id = $2
+           and event_type = $3
+           and created_at >= now() - interval '15 seconds'
+       )`,
+      [ownerUserId, cartKey, eventType, JSON.stringify({ stage })]
+    );
+
+    await query(
+      `insert into analytics_sessions (session_id, owner_user_id, last_page, last_event, source, utm)
+       values ($1, $2, 'checkout', $3, $4, $5::jsonb)
+       on conflict (session_id)
+       do update set
+         last_seen = now(),
+         owner_user_id = coalesce(analytics_sessions.owner_user_id, excluded.owner_user_id),
+         last_page = 'checkout',
+         last_event = excluded.last_event,
+         source = coalesce(analytics_sessions.source, excluded.source),
+         utm = case
+                 when analytics_sessions.utm is null or jsonb_typeof(analytics_sessions.utm) = 'null'
+                   then excluded.utm
+                 else analytics_sessions.utm
+               end`,
+      [cartKey, ownerUserId, eventType, source || null, toJsonb(utm)]
+    );
+  } catch (error) {
+    console.warn("[public/cart] analytics sync failed", {
+      ownerUserId,
+      cartKey,
+      stage,
+      error: error?.message,
+    });
+  }
 }
 
 async function resolveOwnerBySlug(slug) {
@@ -121,7 +174,12 @@ module.exports = async (req, res) => {
          set owner_user_id = $1,
              customer = coalesce($3::jsonb, customer),
              address = coalesce($4::jsonb, address),
-             items = case when coalesce(jsonb_array_length($5::jsonb),0) > 0 then $5::jsonb else items end,
+             items = case
+               when $5::jsonb is null then items
+               when jsonb_typeof($5::jsonb) = 'array' and jsonb_array_length($5::jsonb) > 0 then $5::jsonb
+               when jsonb_typeof($5::jsonb) = 'array' then $5::jsonb
+               else items
+             end,
              shipping = coalesce($6::jsonb, shipping),
              summary = coalesce($7::jsonb, summary),
              stage = case when $9 > stage_level then $8 else stage end,
@@ -157,6 +215,14 @@ module.exports = async (req, res) => {
         params
       );
     }
+
+    await registerCartAnalytics({
+      ownerUserId,
+      cartKey,
+      stage,
+      source,
+      utm,
+    });
 
     res.json({ ok: true });
   } catch (error) {

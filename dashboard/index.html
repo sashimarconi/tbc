@@ -44,6 +44,7 @@
         <button class="sidebar__nav-btn" data-target="carts-view"><i data-lucide="shopping-cart"></i>Carrinhos</button>
         <button class="sidebar__nav-btn" data-target="integrations-view"><i data-lucide="plug"></i>Integrações</button>
         <button class="sidebar__nav-btn" data-target="products-view"><i data-lucide="package"></i>Produtos</button>
+        <button class="sidebar__nav-btn" data-target="shipping-view"><i data-lucide="truck"></i>Fretes</button>
         <button class="sidebar__nav-btn" data-target="order-bumps-view"><i data-lucide="sparkles"></i>Order Bumps</button>
       </nav>
 
@@ -560,6 +561,33 @@
           }
         </style>
         </section>
+
+        <section id="shipping-view" class="panel-view hidden" hidden>
+          <header class="view-header">
+            <div>
+              <h2 class="section-title">Logística</h2>
+              <p class="section-subtitle">Cadastre e gerencie métodos de frete da sua operação.</p>
+            </div>
+            <div class="view-header__actions">
+              <button id="shipping-refresh" type="button" class="ghost">Atualizar</button>
+              <button id="shipping-create-btn" type="button" class="ghost dashboard-cta-btn">Novo frete</button>
+            </div>
+          </header>
+
+          <section class="table-card card table-card--section shipping-section-card">
+            <header class="table-card-header">
+              <div>
+                <h3 class="table-title">Métodos de frete</h3>
+                <p class="table-subtitle">Ative, edite e remova os métodos disponíveis no checkout.</p>
+              </div>
+            </header>
+            <div id="shipping-methods-list" class="shipping-methods-list">
+              <article class="shipping-method-row shipping-method-row--empty">
+                <p>Carregando fretes...</p>
+              </article>
+            </div>
+          </section>
+        </section>
       </section>
     </main>
 
@@ -801,6 +829,60 @@
         <div id="inspector-body" class="inspector__body">
           <p class="muted">Escolha um pedido ou carrinho para ver as informações completas.</p>
         </div>
+      </div>
+    </aside>
+
+    <aside id="shipping-modal" class="modal hidden" hidden role="dialog" aria-modal="true">
+      <div class="modal__panel shipping-modal__panel">
+        <header class="modal__header">
+          <div>
+            <p class="modal__eyebrow">Fretes</p>
+            <h3 id="shipping-modal-title">Novo método de frete</h3>
+          </div>
+          <button type="button" class="ghost" data-close-shipping>Fechar</button>
+        </header>
+
+        <form id="shipping-form" class="shipping-form">
+          <section class="shipping-form-grid">
+            <label>
+              Nome do método
+              <input id="shipping-name" type="text" required placeholder="Ex: Sedex Expresso" />
+            </label>
+            <label>
+              Preço (R$)
+              <input id="shipping-price" type="text" inputmode="decimal" placeholder="0,00" />
+            </label>
+            <label>
+              Pedido mínimo (R$)
+              <input id="shipping-min-order" type="text" inputmode="decimal" placeholder="0,00" />
+            </label>
+            <label>
+              Prazo mínimo (dias)
+              <input id="shipping-min-days" type="number" min="0" step="1" placeholder="0" />
+            </label>
+            <label>
+              Prazo máximo (dias)
+              <input id="shipping-max-days" type="number" min="0" step="1" placeholder="0" />
+            </label>
+            <label class="shipping-form-grid__full">
+              Descrição personalizada
+              <textarea id="shipping-description" rows="3" placeholder="Opcional: observação para o comprador."></textarea>
+            </label>
+            <label class="switch">
+              <input id="shipping-default" type="checkbox" />
+              <span>Pré-selecionada</span>
+            </label>
+            <label class="switch">
+              <input id="shipping-active" type="checkbox" checked />
+              <span>Ativo</span>
+            </label>
+          </section>
+
+          <footer class="modal__footer">
+            <button type="button" class="ghost" data-close-shipping>Cancelar</button>
+            <button type="submit" id="shipping-submit">Salvar</button>
+          </footer>
+        </form>
       </div>
     </aside>
 

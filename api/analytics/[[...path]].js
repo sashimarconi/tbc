@@ -206,8 +206,13 @@ async function handleSummary(req, res) {
     const [summaryResult, timelineResult, liveResult, ordersSummaryResult] = await Promise.all([
       query(
         `select
-           count(*) filter (where event_type = 'page_view') as visitors_today,
-           count(*) filter (where event_type = 'checkout_view' or (event_type = 'page_view' and page = 'checkout')) as checkout_visits_today,
+           count(distinct session_id) filter (
+             where event_type in ('page_view','checkout_view','checkout_visited','checkout_start','checkout_started','pix_generated','purchase','paid')
+           ) as visitors_today,
+           count(*) filter (
+             where event_type in ('checkout_view','checkout_visited')
+                or (event_type = 'page_view' and page = 'checkout')
+           ) as checkout_visits_today,
            count(*) filter (where event_type in ('checkout_start','checkout_started')) as checkout_starts_today,
            count(*) filter (where event_type = 'pix_generated') as pix_generated_today,
            count(*) filter (where event_type in ('purchase','paid')) as purchases_today
@@ -219,8 +224,13 @@ async function handleSummary(req, res) {
       query(
         `select
            date_trunc('hour', created_at) as bucket,
-           count(*) filter (where event_type = 'page_view') as visits,
-           count(*) filter (where event_type = 'checkout_view' or (event_type = 'page_view' and page = 'checkout')) as "checkoutViews",
+           count(distinct session_id) filter (
+             where event_type in ('page_view','checkout_view','checkout_visited','checkout_start','checkout_started','pix_generated','purchase','paid')
+           ) as visits,
+           count(*) filter (
+             where event_type in ('checkout_view','checkout_visited')
+                or (event_type = 'page_view' and page = 'checkout')
+           ) as "checkoutViews",
            count(*) filter (where event_type in ('checkout_start','checkout_started')) as "checkoutStarts",
            count(*) filter (where event_type = 'pix_generated') as pix
          from analytics_events

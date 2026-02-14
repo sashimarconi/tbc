@@ -195,6 +195,20 @@ const bumpImageUpload = document.getElementById("bump-image-upload");
 const bumpImageUrlInput = document.getElementById("bump-image-url");
 const bumpImagePreview = document.querySelector("#bump-image-preview img");
 const bumpUploadLabel = document.querySelector("#bump-upload-tile span");
+const shippingRefreshBtn = document.getElementById("shipping-refresh");
+const shippingCreateBtn = document.getElementById("shipping-create-btn");
+const shippingMethodsList = document.getElementById("shipping-methods-list");
+const shippingModal = document.getElementById("shipping-modal");
+const shippingModalTitle = document.getElementById("shipping-modal-title");
+const shippingForm = document.getElementById("shipping-form");
+const shippingNameInput = document.getElementById("shipping-name");
+const shippingPriceInput = document.getElementById("shipping-price");
+const shippingMinOrderInput = document.getElementById("shipping-min-order");
+const shippingMinDaysInput = document.getElementById("shipping-min-days");
+const shippingMaxDaysInput = document.getElementById("shipping-max-days");
+const shippingDescriptionInput = document.getElementById("shipping-description");
+const shippingDefaultInput = document.getElementById("shipping-default");
+const shippingActiveInput = document.getElementById("shipping-active");
 const numberFormatter = new Intl.NumberFormat("pt-BR");
 const percentFormatter = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
@@ -227,6 +241,9 @@ let currentBumpImageMode = "upload";
 let currentBumpImageValue = "";
 const fallbackProductImage = "https://dummyimage.com/200x200/ede9df/8a8277&text=Produto";
 let integrationsCache = [];
+let shippingMethodsCache = [];
+let shippingModalMode = "create";
+let editingShippingId = null;
 let authStatus = "loading";
 
 function setDashboardChromeVisible(visible) {
@@ -372,7 +389,7 @@ async function loadItems() {
 async function loadSummary() {
   const period = (dashboardPeriodSelect?.value || "today").trim();
   const query = period && period !== "today" ? `?period=${encodeURIComponent(period)}` : "";
-  const res = await fetch(`/api/dashboard/analytics/summary${query}`, {
+  const res = await fetch(`/api/dashboard/metrics${query}`, {
     headers: { ...setAuthHeader() },
   });
 
@@ -882,7 +899,9 @@ async function loadOrders() {
     return;
   }
   try {
-    const res = await fetch("/api/dashboard/orders", {
+    const period = (dashboardPeriodSelect?.value || "today").trim();
+    const query = period && period !== "today" ? `?period=${encodeURIComponent(period)}` : "";
+    const res = await fetch(`/api/dashboard/orders${query}`, {
       headers: { ...setAuthHeader() },
     });
     if (!res.ok) {
@@ -960,13 +979,17 @@ function activateView(targetId) {
     renderOrderBumpsList();
   } else if (targetId === "integrations-view") {
     loadIntegrations();
+  } else if (targetId === "shipping-view") {
+    loadShippingMethods();
   }
 }
 
 async function loadDashboardOrdersPreview() {
   if (!dashboardOrdersBody) return;
   try {
-    const res = await fetch("/api/dashboard/orders", {
+    const period = (dashboardPeriodSelect?.value || "today").trim();
+    const query = period && period !== "today" ? `?period=${encodeURIComponent(period)}` : "";
+    const res = await fetch(`/api/dashboard/orders${query}`, {
       headers: { ...setAuthHeader() },
     });
     if (!res.ok) {
@@ -1798,6 +1821,8 @@ dashboardRefreshBtn?.addEventListener("click", () => {
     loadCarts();
   } else if (activeView.id === "integrations-view") {
     loadIntegrations();
+  } else if (activeView.id === "shipping-view") {
+    loadShippingMethods();
   }
 });
 dashboardPeriodSelect?.addEventListener("change", () => {
@@ -1875,6 +1900,57 @@ integrationsTableBody?.addEventListener("click", async (event) => {
     } catch (_error) {
       alert("Erro ao excluir integração.");
     }
+  }
+});
+
+shippingRefreshBtn?.addEventListener("click", () => loadShippingMethods());
+shippingCreateBtn?.addEventListener("click", () => openShippingModal("create"));
+shippingForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  try {
+    await saveShippingMethod();
+  } catch (error) {
+    alert(error?.message || "Erro ao salvar frete.");
+  }
+});
+document.querySelectorAll("[data-close-shipping]").forEach((btn) => {
+  btn.addEventListener("click", closeShippingModal);
+});
+shippingModal?.addEventListener("click", (event) => {
+  if (event.target === shippingModal) {
+    closeShippingModal();
+  }
+});
+shippingMethodsList?.addEventListener("click", async (event) => {
+  const actionNode = event.target.closest("[data-shipping-action]");
+  if (!actionNode) return;
+  const action = actionNode.dataset.shippingAction;
+  const id = String(actionNode.dataset.shippingId || "");
+  const method = shippingMethodsCache.find((item) => item.id === id);
+  if (!id || !method) return;
+
+  if (action === "edit") {
+    openShippingModal("edit", method);
+    return;
+  }
+  if (action === "delete") {
+    if (!confirm("Remover este método de frete?")) return;
+    try {
+      await deleteShippingMethod(id);
+    } catch (error) {
+      alert(error?.message || "Erro ao remover frete.");
+    }
+  }
+});
+shippingMethodsList?.addEventListener("change", async (event) => {
+  const input = event.target.closest('input[data-shipping-action="toggle"]');
+  if (!input) return;
+  const id = String(input.dataset.shippingId || "");
+  try {
+    await updateShippingMethod(id, { isActive: input.checked === true });
+  } catch (error) {
+    input.checked = !input.checked;
+    alert(error?.message || "Erro ao atualizar status do frete.");
   }
 });
 
@@ -2004,6 +2080,7 @@ document.addEventListener("keydown", (event) => {
     closeInspector();
     closeProductModal();
     closeBumpModal();
+    closeShippingModal();
   }
 });
 
@@ -2168,6 +2245,212 @@ async function loadIntegrations() {
   }
 }
 
+function resetShippingForm() {
+  if (!shippingForm) return;
+  shippingForm.reset();
+  shippingNameInput.value = "";
+  shippingPriceInput.value = "";
+  shippingMinOrderInput.value = "";
+  shippingMinDaysInput.value = "";
+  shippingMaxDaysInput.value = "";
+  shippingDescriptionInput.value = "";
+  shippingDefaultInput.checked = false;
+  shippingActiveInput.checked = true;
+}
+
+function fillShippingForm(method) {
+  if (!method) return;
+  shippingNameInput.value = method.name || "";
+  shippingPriceInput.value = formatCentsForField(method.priceCents || 0);
+  shippingMinOrderInput.value = formatCentsForField(method.minOrderCents || 0);
+  shippingMinDaysInput.value = String(Number(method.minDays) || 0);
+  shippingMaxDaysInput.value = String(Number(method.maxDays) || 0);
+  shippingDescriptionInput.value = method.description || "";
+  shippingDefaultInput.checked = method.isDefault === true;
+  shippingActiveInput.checked = method.isActive !== false;
+}
+
+function openShippingModal(mode = "create", method = null) {
+  if (!shippingModal || !shippingForm) return;
+  shippingModalMode = mode;
+  editingShippingId = method?.id || null;
+  shippingModalTitle.textContent =
+    mode === "edit" ? `Editar ${method?.name || "frete"}` : "Novo método de frete";
+  resetShippingForm();
+  if (mode === "edit" && method) {
+    fillShippingForm(method);
+  }
+  shippingModal.classList.remove("hidden");
+  shippingModal.hidden = false;
+  setTimeout(() => shippingNameInput?.focus(), 60);
+}
+
+function closeShippingModal() {
+  if (!shippingModal) return;
+  shippingModal.classList.add("hidden");
+  shippingModal.hidden = true;
+  editingShippingId = null;
+}
+
+function getShippingPayloadFromForm() {
+  const minDays = Math.max(0, Number(shippingMinDaysInput.value || 0));
+  const maxDaysValue = Math.max(0, Number(shippingMaxDaysInput.value || 0));
+  return {
+    name: shippingNameInput.value.trim(),
+    priceCents: parseCurrencyInput(shippingPriceInput.value || "0"),
+    minOrderCents: parseCurrencyInput(shippingMinOrderInput.value || "0"),
+    minDays,
+    maxDays: Math.max(maxDaysValue, minDays),
+    description: shippingDescriptionInput.value.trim(),
+    isDefault: shippingDefaultInput.checked === true,
+    isActive: shippingActiveInput.checked === true,
+  };
+}
+
+function renderShippingMethods() {
+  if (!shippingMethodsList) return;
+  if (!shippingMethodsCache.length) {
+    shippingMethodsList.innerHTML = `
+      <article class="shipping-method-row shipping-method-row--empty">
+        <p>Nenhum método de frete cadastrado ainda.</p>
+      </article>
+    `;
+    return;
+  }
+
+  shippingMethodsList.innerHTML = shippingMethodsCache
+    .map((method) => {
+      const statusLabel = method.isActive !== false ? "Ativo" : "Inativo";
+      const defaultBadge = method.isDefault ? '<span class="shipping-pill">Padrão</span>' : "";
+      return `
+        <article class="shipping-method-row" data-shipping-id="${escapeHtml(method.id)}">
+          <div class="shipping-method-row__main">
+            <h4>${escapeHtml(method.name || "Frete sem nome")} ${defaultBadge}</h4>
+            <p class="shipping-method-row__meta">
+              Prazo: ${escapeHtml(String(method.minDays ?? 0))}-${escapeHtml(String(method.maxDays ?? 0))} dias
+              • Preço: ${escapeHtml(formatCurrency(method.priceCents || 0))}
+              • Pedido mínimo: ${escapeHtml(formatCurrency(method.minOrderCents || 0))}
+            </p>
+            <small>${escapeHtml(method.description || "Sem descrição personalizada.")}</small>
+          </div>
+          <div class="shipping-method-row__actions">
+            <label class="switch small">
+              <input type="checkbox" data-shipping-action="toggle" data-shipping-id="${escapeHtml(
+                method.id
+              )}" ${method.isActive !== false ? "checked" : ""} />
+              <span>${statusLabel}</span>
+            </label>
+            <button type="button" class="ghost" data-shipping-action="edit" data-shipping-id="${escapeHtml(
+              method.id
+            )}">Editar</button>
+            <button type="button" class="ghost" data-shipping-action="delete" data-shipping-id="${escapeHtml(
+              method.id
+            )}">Remover</button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+async function loadShippingMethods() {
+  if (!shippingMethodsList) return;
+  try {
+    const res = await fetch("/api/shipping-methods", {
+      headers: { ...setAuthHeader() },
+    });
+    if (!res.ok) {
+      if (res.status === 401) showLogin();
+      shippingMethodsList.innerHTML = `
+        <article class="shipping-method-row shipping-method-row--empty">
+          <p>Não foi possível carregar os fretes.</p>
+        </article>
+      `;
+      return;
+    }
+    const data = await res.json();
+    shippingMethodsCache = Array.isArray(data.shippingMethods) ? data.shippingMethods : [];
+    renderShippingMethods();
+  } catch (_error) {
+    shippingMethodsList.innerHTML = `
+      <article class="shipping-method-row shipping-method-row--empty">
+        <p>Erro ao carregar métodos de frete.</p>
+      </article>
+    `;
+  }
+}
+
+async function saveShippingMethod() {
+  const payload = getShippingPayloadFromForm();
+  if (!payload.name) {
+    alert("Informe o nome do método de frete.");
+    return;
+  }
+
+  const endpoint = editingShippingId
+    ? `/api/shipping-methods/${encodeURIComponent(editingShippingId)}`
+    : "/api/shipping-methods";
+  const method = editingShippingId ? "PUT" : "POST";
+
+  const res = await fetch(endpoint, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      ...setAuthHeader(),
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || "Falha ao salvar método de frete.");
+  }
+  closeShippingModal();
+  await loadShippingMethods();
+}
+
+async function deleteShippingMethod(id) {
+  const res = await fetch(`/api/shipping-methods/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: { ...setAuthHeader() },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || "Falha ao remover método de frete.");
+  }
+  await loadShippingMethods();
+}
+
+async function updateShippingMethod(id, patch = {}) {
+  const method = shippingMethodsCache.find((item) => item.id === id);
+  if (!method) return;
+
+  const payload = {
+    name: method.name || "",
+    priceCents: Number(method.priceCents) || 0,
+    minOrderCents: Number(method.minOrderCents) || 0,
+    minDays: Number(method.minDays) || 0,
+    maxDays: Number(method.maxDays) || 0,
+    description: method.description || "",
+    isDefault: method.isDefault === true,
+    isActive: method.isActive !== false,
+    ...patch,
+  };
+
+  const res = await fetch(`/api/shipping-methods/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...setAuthHeader(),
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || "Falha ao atualizar frete.");
+  }
+  await loadShippingMethods();
+}
+
 bootstrapAuth();
 
 const sidebar = document.getElementById("sidebar");
@@ -2176,23 +2459,43 @@ const sidebarToggle = document.getElementById("sidebar-toggle");
 const mobileMenuBtn = document.getElementById("mobile-menu-btn");
 const sidebarOverlay = document.getElementById("sidebar-overlay");
 const mobileSidebarMediaQuery = window.matchMedia("(max-width: 768px)");
-let isSidebarOpen = false;
+let sidebarOpen = false;
+let lastFocusedElement = null;
+
+function getSidebarFocusableElements() {
+  if (!sidebar) return [];
+  return Array.from(
+    sidebar.querySelectorAll(
+      'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])'
+    )
+  ).filter((node) => !node.classList.contains("hidden"));
+}
 
 function setSidebarOpen(nextOpen) {
   if (!sidebar) {
     return;
   }
   const isMobile = mobileSidebarMediaQuery.matches;
-  isSidebarOpen = Boolean(nextOpen) && isMobile;
-  sidebar.classList.toggle("is-open", isSidebarOpen);
+  sidebarOpen = Boolean(nextOpen) && isMobile;
+  sidebar.classList.toggle("is-open", sidebarOpen);
   if (sidebarOverlay) {
-    sidebarOverlay.classList.toggle("is-visible", isSidebarOpen);
-    sidebarOverlay.setAttribute("aria-hidden", isSidebarOpen ? "false" : "true");
+    sidebarOverlay.classList.toggle("is-visible", sidebarOpen);
+    sidebarOverlay.setAttribute("aria-hidden", sidebarOpen ? "false" : "true");
   }
   if (mobileMenuBtn) {
-    mobileMenuBtn.setAttribute("aria-expanded", isSidebarOpen ? "true" : "false");
+    mobileMenuBtn.setAttribute("aria-expanded", sidebarOpen ? "true" : "false");
   }
-  document.body.style.overflow = isSidebarOpen ? "hidden" : "";
+  document.body.style.overflow = sidebarOpen ? "hidden" : "";
+
+  if (sidebarOpen) {
+    lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const [firstFocusable] = getSidebarFocusableElements();
+    if (firstFocusable) {
+      requestAnimationFrame(() => firstFocusable.focus());
+    }
+  } else if (mobileSidebarMediaQuery.matches) {
+    (mobileMenuBtn || lastFocusedElement)?.focus?.();
+  }
 }
 
 function closeSidebar() {
@@ -2200,12 +2503,12 @@ function closeSidebar() {
 }
 
 function toggleSidebar() {
-  setSidebarOpen(!isSidebarOpen);
+  setSidebarOpen(!sidebarOpen);
 }
 
 function syncSidebarForViewport() {
   if (!mobileSidebarMediaQuery.matches) {
-    isSidebarOpen = false;
+    sidebarOpen = false;
     sidebar?.classList.remove("is-open");
     sidebarOverlay?.classList.remove("is-visible");
     if (sidebarOverlay) {
@@ -2227,8 +2530,29 @@ if (sidebarOverlay) {
 }
 
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && isSidebarOpen) {
+  if (event.key === "Escape" && sidebarOpen) {
     closeSidebar();
+    return;
+  }
+  if (event.key === "Tab" && sidebarOpen && mobileSidebarMediaQuery.matches) {
+    const focusable = getSidebarFocusableElements();
+    if (!focusable.length) {
+      event.preventDefault();
+      return;
+    }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+    if (event.shiftKey && active === first) {
+      event.preventDefault();
+      last.focus();
+      return;
+    }
+    if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      first.focus();
+      return;
+    }
   }
 });
 

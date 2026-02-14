@@ -2,6 +2,7 @@ const { parseJson } = require("../../lib/parse-json");
 const { query } = require("../../lib/db");
 const { ensureSalesTables } = require("../../lib/ensure-sales");
 const { dispatchUtmifyEvent, normalizeTrackingParameters } = require("../../lib/utmify");
+const { ensureAnalyticsTables } = require("../../lib/ensure-analytics");
 
 function asObject(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -36,6 +37,32 @@ function normalizeOrderStatus(value) {
     "pending",
   ]);
   return allowed.has(raw) ? raw : "waiting_payment";
+}
+
+async function registerOrderAnalytics({ ownerUserId, cartKey, status, totalCents }) {
+  try {
+    await ensureAnalyticsTables();
+    await query(
+      `insert into analytics_events (owner_user_id, session_id, event_type, page, payload)
+       values ($1, $2, 'pix_generated', 'checkout', $3::jsonb)`,
+      [ownerUserId, cartKey, JSON.stringify({ total_cents: totalCents || 0, status })]
+    );
+
+    if (status === "paid") {
+      await query(
+        `insert into analytics_events (owner_user_id, session_id, event_type, page, payload)
+         values ($1, $2, 'purchase', 'checkout', $3::jsonb)`,
+        [ownerUserId, cartKey, JSON.stringify({ total_cents: totalCents || 0, status })]
+      );
+    }
+  } catch (error) {
+    console.warn("[public/order] analytics sync failed", {
+      ownerUserId,
+      cartKey,
+      status,
+      error: error?.message,
+    });
+  }
 }
 
 async function resolveOwnerBySlug(slug) {
@@ -185,6 +212,12 @@ module.exports = async (req, res) => {
       });
     }
     if (savedOrder) {
+      await registerOrderAnalytics({
+        ownerUserId,
+        cartKey,
+        status,
+        totalCents,
+      });
       try {
         await dispatchUtmifyEvent({ order: savedOrder, status: "waiting_payment" });
       } catch (_error) {
