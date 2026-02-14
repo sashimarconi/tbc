@@ -13,6 +13,7 @@ const { encryptText } = require("../lib/credentials-crypto");
 const { ensureIntegrationsSchema } = require("../lib/ensure-integrations");
 const { dispatchUtmifyEvent } = require("../lib/utmify");
 const { ensureAnalyticsTables } = require("../lib/ensure-analytics");
+const { ensureShippingMethodsTable } = require("../lib/ensure-shipping-methods");
 const DEFAULT_SEALPAY_API_URL =
   process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix";
 const DASHBOARD_TZ = process.env.DASHBOARD_TZ || "America/Sao_Paulo";
@@ -1219,6 +1220,167 @@ function sanitizeIntegrationRow(row = {}) {
   };
 }
 
+function sanitizeShippingRow(row = {}) {
+  return {
+    id: row.id,
+    tenantId: row.owner_user_id,
+    storeId: row.owner_user_id,
+    name: row.name || "",
+    priceCents: Number(row.price_cents) || 0,
+    minOrderCents: Number(row.min_order_cents) || 0,
+    minDays: Number(row.min_days) || 0,
+    maxDays: Number(row.max_days) || 0,
+    description: row.description || "",
+    isDefault: row.is_default === true,
+    isActive: row.is_active !== false,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function normalizeShippingNumber(value, fallback = 0) {
+  if (value === null || value === undefined || value === "") return fallback;
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  return Math.max(0, Math.round(num));
+}
+
+function parseShippingPayload(body = {}) {
+  const name = String(body.name || "").trim();
+  const minDays = normalizeShippingNumber(body.minDays, 0);
+  const maxDaysInput = normalizeShippingNumber(body.maxDays, 0);
+  return {
+    name,
+    priceCents: normalizeShippingNumber(body.priceCents, 0),
+    minOrderCents: normalizeShippingNumber(body.minOrderCents, 0),
+    minDays,
+    maxDays: Math.max(maxDaysInput, minDays),
+    description: String(body.description || "").trim(),
+    isDefault: body.isDefault === true,
+    isActive: body.isActive !== false,
+  };
+}
+
+async function handleShippingMethods(req, res, user) {
+  try {
+    await ensureShippingMethodsTable();
+    const { id } = req.query || {};
+
+    if (req.method === "GET") {
+      const rows = await query(
+        `select id, owner_user_id, name, price_cents, min_order_cents, min_days, max_days,
+                description, is_default, is_active, created_at, updated_at
+           from shipping_methods
+          where owner_user_id = $1
+          order by is_default desc, updated_at desc, created_at desc`,
+        [user.id]
+      );
+      res.json({ shippingMethods: (rows.rows || []).map((row) => sanitizeShippingRow(row)) });
+      return;
+    }
+
+    if (req.method === "POST") {
+      const payload = parseShippingPayload(await parseJson(req));
+      if (!payload.name) {
+        res.status(400).json({ error: "Nome do método é obrigatório." });
+        return;
+      }
+
+      if (payload.isDefault) {
+        await query("update shipping_methods set is_default = false, updated_at = now() where owner_user_id = $1", [
+          user.id,
+        ]);
+      }
+
+      const created = await query(
+        `insert into shipping_methods (
+           owner_user_id, name, price_cents, min_order_cents, min_days, max_days, description, is_default, is_active, updated_at
+         ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9, now())
+         returning id, owner_user_id, name, price_cents, min_order_cents, min_days, max_days,
+                   description, is_default, is_active, created_at, updated_at`,
+        [
+          user.id,
+          payload.name,
+          payload.priceCents,
+          payload.minOrderCents,
+          payload.minDays,
+          payload.maxDays,
+          payload.description || null,
+          payload.isDefault,
+          payload.isActive,
+        ]
+      );
+      res.status(201).json({ shippingMethod: sanitizeShippingRow(created.rows?.[0] || {}) });
+      return;
+    }
+
+    if (req.method === "PUT") {
+      if (!id) {
+        res.status(400).json({ error: "Missing id" });
+        return;
+      }
+      const payload = parseShippingPayload(await parseJson(req));
+      if (!payload.name) {
+        res.status(400).json({ error: "Nome do método é obrigatório." });
+        return;
+      }
+      if (payload.isDefault) {
+        await query(
+          "update shipping_methods set is_default = false, updated_at = now() where owner_user_id = $1 and id <> $2",
+          [user.id, id]
+        );
+      }
+      const updated = await query(
+        `update shipping_methods
+            set name = $3,
+                price_cents = $4,
+                min_order_cents = $5,
+                min_days = $6,
+                max_days = $7,
+                description = $8,
+                is_default = $9,
+                is_active = $10,
+                updated_at = now()
+          where id = $1 and owner_user_id = $2
+          returning id, owner_user_id, name, price_cents, min_order_cents, min_days, max_days,
+                    description, is_default, is_active, created_at, updated_at`,
+        [
+          id,
+          user.id,
+          payload.name,
+          payload.priceCents,
+          payload.minOrderCents,
+          payload.minDays,
+          payload.maxDays,
+          payload.description || null,
+          payload.isDefault,
+          payload.isActive,
+        ]
+      );
+      if (!updated.rows?.length) {
+        res.status(404).json({ error: "Método de frete não encontrado." });
+        return;
+      }
+      res.json({ shippingMethod: sanitizeShippingRow(updated.rows[0]) });
+      return;
+    }
+
+    if (req.method === "DELETE") {
+      if (!id) {
+        res.status(400).json({ error: "Missing id" });
+        return;
+      }
+      await query("delete from shipping_methods where id = $1 and owner_user_id = $2", [id, user.id]);
+      res.json({ ok: true });
+      return;
+    }
+
+    res.status(405).json({ error: "Method not allowed" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
 async function handleIntegrations(req, res, user) {
   try {
     await ensureIntegrationsSchema();
@@ -1372,7 +1534,11 @@ module.exports = async (req, res) => {
     const path = segments[0] || "";
 
     req.query = req.query || {};
-    if (["items", "orders", "carts", "upload", "integrations"].includes(path) && segments.length > 1 && !req.query.id) {
+    if (
+      ["items", "orders", "carts", "upload", "integrations", "shipping-methods"].includes(path) &&
+      segments.length > 1 &&
+      !req.query.id
+    ) {
       req.query.id = segments[1];
     }
     if (path === "orders" && segments.length > 2 && !req.query.action) {
@@ -1428,6 +1594,9 @@ module.exports = async (req, res) => {
         return;
       case "integrations":
         await handleIntegrations(req, res, user);
+        return;
+      case "shipping-methods":
+        await handleShippingMethods(req, res, user);
         return;
       case "analytics":
         req.query.path = segments.slice(1);

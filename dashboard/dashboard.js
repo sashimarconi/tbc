@@ -2356,7 +2356,7 @@ function renderShippingMethods() {
 async function loadShippingMethods() {
   if (!shippingMethodsList) return;
   try {
-    const res = await fetch("/api/shipping-methods", {
+    const res = await fetch("/api/dashboard/shipping-methods", {
       headers: { ...setAuthHeader() },
     });
     if (!res.ok) {
@@ -2388,8 +2388,8 @@ async function saveShippingMethod() {
   }
 
   const endpoint = editingShippingId
-    ? `/api/shipping-methods/${encodeURIComponent(editingShippingId)}`
-    : "/api/shipping-methods";
+    ? `/api/dashboard/shipping-methods/${encodeURIComponent(editingShippingId)}`
+    : "/api/dashboard/shipping-methods";
   const method = editingShippingId ? "PUT" : "POST";
 
   const res = await fetch(endpoint, {
@@ -2409,7 +2409,7 @@ async function saveShippingMethod() {
 }
 
 async function deleteShippingMethod(id) {
-  const res = await fetch(`/api/shipping-methods/${encodeURIComponent(id)}`, {
+  const res = await fetch(`/api/dashboard/shipping-methods/${encodeURIComponent(id)}`, {
     method: "DELETE",
     headers: { ...setAuthHeader() },
   });
@@ -2436,7 +2436,7 @@ async function updateShippingMethod(id, patch = {}) {
     ...patch,
   };
 
-  const res = await fetch(`/api/shipping-methods/${encodeURIComponent(id)}`, {
+  const res = await fetch(`/api/dashboard/shipping-methods/${encodeURIComponent(id)}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
