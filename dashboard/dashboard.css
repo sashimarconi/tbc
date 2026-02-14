@@ -2866,3 +2866,38 @@ select option {
     padding: 84px 16px 18px !important;
   }
 }
+
+.dashboard-auth-loading {
+  min-height: 260px;
+  max-width: 420px;
+  margin: 4rem auto 0;
+  display: grid;
+  place-items: center;
+  gap: 14px;
+  text-align: center;
+  background: rgba(13, 13, 18, 0.72);
+  border: 1px solid rgba(161, 0, 255, 0.24);
+  border-radius: 18px;
+}
+
+.dashboard-auth-loading h2 {
+  margin: 0;
+  color: #ededed;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.dashboard-auth-loading__spinner {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid rgba(161, 0, 255, 0.24);
+  border-top-color: #a100ff;
+  animation: dashboardAuthSpin 0.9s linear infinite;
+}
+
+@keyframes dashboardAuthSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}

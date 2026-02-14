@@ -68,6 +68,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 const loginSection = document.getElementById("login");
 const panelSection = document.getElementById("panel");
+const authLoadingSection = document.getElementById("auth-loading");
 const loginForm = document.getElementById("login-form");
 const loginBtn = document.getElementById("login-btn");
 const logoutBtn = document.getElementById("logout-btn");
@@ -226,6 +227,44 @@ let currentBumpImageMode = "upload";
 let currentBumpImageValue = "";
 const fallbackProductImage = "https://dummyimage.com/200x200/ede9df/8a8277&text=Produto";
 let integrationsCache = [];
+let authStatus = "loading";
+
+function setDashboardChromeVisible(visible) {
+  const sidebarNode = document.getElementById("sidebar");
+  const topbarNode = document.querySelector(".mobile-topbar");
+  const overlayNode = document.getElementById("sidebar-overlay");
+  if (sidebarNode) {
+    sidebarNode.classList.toggle("hidden", !visible);
+  }
+  if (topbarNode) {
+    topbarNode.classList.toggle("hidden", !visible);
+  }
+  if (overlayNode && !visible) {
+    overlayNode.classList.remove("is-visible");
+    overlayNode.setAttribute("aria-hidden", "true");
+  }
+}
+
+function setAuthStatus(nextStatus) {
+  authStatus = nextStatus;
+  const isLoading = authStatus === "loading";
+  const isAuthenticated = authStatus === "authenticated";
+  const isUnauthenticated = authStatus === "unauthenticated";
+
+  if (authLoadingSection) {
+    authLoadingSection.classList.toggle("hidden", !isLoading);
+    authLoadingSection.hidden = !isLoading;
+  }
+  if (loginSection) {
+    loginSection.classList.toggle("hidden", !isUnauthenticated);
+    loginSection.hidden = !isUnauthenticated;
+  }
+  if (panelSection) {
+    panelSection.classList.toggle("hidden", !isAuthenticated);
+    panelSection.hidden = !isAuthenticated;
+  }
+  setDashboardChromeVisible(isAuthenticated);
+}
 
 function setAuthHeader() {
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -281,10 +320,7 @@ async function login() {
 }
 
 function showPanel() {
-  loginSection.classList.add("hidden");
-  loginSection.hidden = true;
-  panelSection.classList.remove("hidden");
-  panelSection.hidden = false;
+  setAuthStatus("authenticated");
   startSummaryPolling();
   activateView("dashboard-view");
   loadItems();
@@ -292,10 +328,7 @@ function showPanel() {
 }
 
 function showLogin() {
-  loginSection.classList.remove("hidden");
-  loginSection.hidden = false;
-  panelSection.classList.add("hidden");
-  panelSection.hidden = true;
+  setAuthStatus("unauthenticated");
   stopSummaryPolling();
   stopOrdersPolling();
   stopCartsPolling();
@@ -1994,6 +2027,7 @@ resetIntegrationForm();
 updateIntegrationProviderUI("meta");
 
 async function bootstrapAuth() {
+  setAuthStatus("loading");
   if (!token) {
     showLogin();
     return;

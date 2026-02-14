@@ -19,7 +19,7 @@
     </style>
   </head>
   <body>
-    <header class="mobile-topbar" aria-label="Barra de navegação mobile">
+    <header class="mobile-topbar hidden" aria-label="Barra de navegação mobile">
       <button
         id="mobile-menu-btn"
         type="button"
@@ -33,7 +33,7 @@
       <img src="/assets/logo.png" alt="Blackout" class="mobile-topbar__logo" />
     </header>
 
-    <div class="sidebar" id="sidebar">
+    <div class="sidebar hidden" id="sidebar">
       <div class="sidebar__logo">
         <img src="/assets/logo.png" alt="Blackout Logo" class="sidebar-logo-img-full" />
       </div>
@@ -54,7 +54,12 @@
     </div>
     <div id="sidebar-overlay" class="sidebar-overlay" aria-hidden="true"></div>
     <main class="page" id="main-content">
-      <section id="login" class="card dashboard-login-card">
+      <section id="auth-loading" class="card dashboard-auth-loading" aria-live="polite">
+        <div class="dashboard-auth-loading__spinner" aria-hidden="true"></div>
+        <h2>Carregando...</h2>
+      </section>
+
+      <section id="login" class="card dashboard-login-card hidden" hidden>
         <div class="dashboard-login-brand">
           <img src="/assets/logo.png" alt="Blackout Logo" class="dashboard-login-logo" />
           <h1 class="dashboard-login-title">The Black Checkout</h1>
