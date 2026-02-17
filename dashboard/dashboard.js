@@ -2025,7 +2025,10 @@ shippingMethodsList?.addEventListener("change", async (event) => {
 domainsRefreshBtn?.addEventListener("click", () => loadDomains());
 domainsForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const domain = (domainsInput?.value || "").trim();
+  const domain = sanitizeDomainInputValue(domainsInput?.value);
+  if (domainsInput) {
+    domainsInput.value = domain;
+  }
   if (!domain) {
     setDomainsFeedback("Informe um domínio.", true);
     return;
@@ -2074,16 +2077,22 @@ domainsList?.addEventListener("click", async (event) => {
   if (action === "verify") {
     setDomainsFeedback(`Verificando ${domain}...`);
     try {
-      const result = await verifyDomain(domain);
-      setDomainsFeedback(
-        result?.verified === true
-          ? `Domínio ${domain} verificado com sucesso.`
-          : `Domínio ${domain} ainda pendente de DNS.`
-      );
+      await verifyDomain(domain);
     } catch (error) {
       setDomainsFeedback(error?.message || "Falha ao verificar domínio.", true);
     } finally {
       await loadDomains();
+      const refreshed = domainsCache.find(
+        (item) => String(item?.domain || "").toLowerCase() === String(domain).toLowerCase()
+      );
+      if (refreshed) {
+        setDomainsFeedback(
+          refreshed.is_verified === true
+            ? `Domínio ${domain} verificado com sucesso.`
+            : `Domínio ${domain} ainda pendente de DNS.`,
+          false
+        );
+      }
     }
     return;
   }
@@ -2101,6 +2110,16 @@ domainsList?.addEventListener("click", async (event) => {
     }
   }
 });
+
+if (domainsInput) {
+  const cleaned = sanitizeDomainInputValue(domainsInput.value);
+  if (cleaned !== domainsInput.value) {
+    domainsInput.value = cleaned;
+  }
+  domainsInput.addEventListener("blur", () => {
+    domainsInput.value = sanitizeDomainInputValue(domainsInput.value);
+  });
+}
 
 productsSearchInput?.addEventListener("input", () => renderProductsTable());
 createProductBtn?.addEventListener("click", () => openProductModal("create"));
@@ -2603,6 +2622,14 @@ function setDomainsFeedback(message = "", isError = false) {
   if (!domainsFeedback) return;
   domainsFeedback.textContent = message;
   domainsFeedback.style.color = isError ? "#ff6b6b" : "";
+}
+
+function sanitizeDomainInputValue(value) {
+  const normalized = String(value ?? "").trim();
+  if (!normalized || /^null$/i.test(normalized) || /^undefined$/i.test(normalized)) {
+    return "";
+  }
+  return normalized;
 }
 
 function getDomainDnsRecords(domainItem) {

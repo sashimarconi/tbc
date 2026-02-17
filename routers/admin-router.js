@@ -14,7 +14,7 @@ const { ensureIntegrationsSchema } = require("../lib/ensure-integrations");
 const { dispatchUtmifyEvent } = require("../lib/utmify");
 const { ensureAnalyticsTables } = require("../lib/ensure-analytics");
 const { ensureShippingMethodsTable } = require("../lib/ensure-shipping-methods");
-const dns = require("node:dns").promises;
+const dns = require("node:dns");
 const {
   ensureCustomDomainsTable,
   normalizeCustomDomain,
@@ -1473,6 +1473,8 @@ async function hasPublicDnsRecord(domain) {
     return false;
   }
 
+  const resolver = new dns.Resolver();
+  resolver.setServers(["1.1.1.1", "8.8.8.8"]);
   const timeoutMs = 2500;
   const withTimeout = (promise) =>
     Promise.race([
@@ -1481,17 +1483,17 @@ async function hasPublicDnsRecord(domain) {
     ]);
 
   try {
-    const cname = await withTimeout(dns.resolveCname(hostname));
+    const cname = await withTimeout(resolver.resolveCname(hostname));
     if (Array.isArray(cname) && cname.length > 0) return true;
   } catch (_error) {}
 
   try {
-    const a = await withTimeout(dns.resolve4(hostname));
+    const a = await withTimeout(resolver.resolve4(hostname));
     if (Array.isArray(a) && a.length > 0) return true;
   } catch (_error) {}
 
   try {
-    const aaaa = await withTimeout(dns.resolve6(hostname));
+    const aaaa = await withTimeout(resolver.resolve6(hostname));
     if (Array.isArray(aaaa) && aaaa.length > 0) return true;
   } catch (_error) {}
 
@@ -1602,7 +1604,7 @@ async function handleCustomDomains(req, res, user) {
                     last_verified_at = now(),
                     last_error = $5,
                     updated_at = now()
-              where owner_user_id = $1 and domain = $2
+              where owner_user_id = $1 and lower(domain) = lower($2)
               returning *`,
             [
               user.id,
@@ -1643,7 +1645,7 @@ async function handleCustomDomains(req, res, user) {
                 last_verified_at = now(),
                 last_error = $5,
                 updated_at = now()
-          where owner_user_id = $1 and domain = $2
+          where owner_user_id = $1 and lower(domain) = lower($2)
           returning *`,
         [
           user.id,
