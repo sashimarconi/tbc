@@ -2048,6 +2048,23 @@ domainsForm?.addEventListener("submit", async (event) => {
   }
 });
 domainsList?.addEventListener("click", async (event) => {
+  const copyBtn = event.target.closest("[data-domain-copy]");
+  if (copyBtn) {
+    const value = String(copyBtn.dataset.copyValue || "").trim();
+    if (!value) return;
+    try {
+      await copyToClipboard(value);
+      const originalLabel = copyBtn.textContent;
+      copyBtn.textContent = "Copiado";
+      setTimeout(() => {
+        copyBtn.textContent = originalLabel || "Copiar";
+      }, 1200);
+    } catch (_error) {
+      setDomainsFeedback("Não foi possível copiar o valor DNS.", true);
+    }
+    return;
+  }
+
   const actionNode = event.target.closest("[data-domain-action]");
   if (!actionNode) return;
   const action = actionNode.dataset.domainAction;
@@ -2586,37 +2603,76 @@ function setDomainsFeedback(message = "", isError = false) {
   domainsFeedback.style.color = isError ? "#ff6b6b" : "";
 }
 
-function renderDomainVerificationRows(domainItem) {
+function getDomainDnsRecords(domainItem) {
   const verification = domainItem?.verification_data;
   if (!verification || typeof verification !== "object") {
-    return "<small>Sem instruções DNS adicionais no momento.</small>";
+    return [];
   }
-  const rows = [];
+  const candidates = [];
   if (Array.isArray(verification)) {
-    verification.forEach((entry) => rows.push(entry));
+    verification.forEach((entry) => candidates.push(entry));
   } else if (Array.isArray(verification?.verification)) {
-    verification.verification.forEach((entry) => rows.push(entry));
+    verification.verification.forEach((entry) => candidates.push(entry));
+  } else if (Array.isArray(verification?.dnsRecords)) {
+    verification.dnsRecords.forEach((entry) => candidates.push(entry));
   } else {
-    rows.push(verification);
+    candidates.push(verification);
   }
-  if (!rows.length) {
-    return "<small>Sem instruções DNS adicionais no momento.</small>";
+
+  return candidates
+    .map((entry) => ({
+      type: String(entry?.type || entry?.recordType || "").trim().toUpperCase(),
+      name: String(entry?.domain || entry?.name || "").trim(),
+      value: String(entry?.value || entry?.target || "").trim(),
+    }))
+    .filter((record) => record.type || record.name || record.value);
+}
+
+function renderDomainVerificationRows(domainItem) {
+  const records = getDomainDnsRecords(domainItem);
+  if (!records.length) {
+    return `<div class="domain-dns-empty">Sem instruções DNS adicionais no momento.</div>`;
   }
-  return rows
-    .map((entry) => {
-      const type = escapeHtml(String(entry?.type || entry?.recordType || "-"));
-      const domain = escapeHtml(String(entry?.domain || entry?.name || "-"));
-      const value = escapeHtml(String(entry?.value || entry?.target || "-"));
-      return `<small><strong>${type}</strong> ${domain} -> ${value}</small>`;
-    })
-    .join("<br/>");
+
+  return `
+    <div class="domain-dns-table">
+      <div class="domain-dns-head">
+        <span>Tipo</span>
+        <span>Nome</span>
+        <span>Valor</span>
+        <span></span>
+      </div>
+      ${records
+        .map((record) => {
+          const type = escapeHtml(record.type || "-");
+          const name = escapeHtml(record.name || "-");
+          const value = escapeHtml(record.value || "-");
+          return `
+            <div class="domain-dns-row">
+              <span class="domain-dns-type">${type}</span>
+              <span class="domain-dns-name">${name}</span>
+              <span class="domain-dns-value">${value}</span>
+              <button
+                type="button"
+                class="ghost domain-dns-copy"
+                data-domain-copy="true"
+                data-copy-value="${escapeHtml(record.value || "")}"
+              >
+                Copiar
+              </button>
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
 }
 
 function renderDomains() {
   if (!domainsList) return;
   if (!domainsCache.length) {
     domainsList.innerHTML = `
-      <article class="shipping-method-row shipping-method-row--empty">
+      <article class="shipping-method-row shipping-method-row--empty domains-empty">
         <p>Nenhum domínio conectado ainda.</p>
       </article>
     `;
@@ -2627,17 +2683,22 @@ function renderDomains() {
     .map((item) => {
       const domain = escapeHtml(item.domain || "");
       const statusLabel = item.is_verified === true ? "Verificado" : "Pendente";
-      const statusTone = item.is_verified === true ? "Ativo" : "Inativo";
+      const statusToneClass = item.is_verified === true ? "is-ok" : "is-pending";
       return `
-        <article class="shipping-method-row" data-domain="${domain}">
-          <div class="shipping-method-row__main">
-            <h4>${domain}</h4>
-            <p class="shipping-method-row__meta">Status: ${escapeHtml(statusLabel)}</p>
-            ${renderDomainVerificationRows(item)}
-            ${item.last_error ? `<small style="color:#ff6b6b;">${escapeHtml(item.last_error)}</small>` : ""}
+        <article class="shipping-method-row domain-card" data-domain="${domain}">
+          <div class="shipping-method-row__main domain-card__main">
+            <h4 class="domain-card__title">${domain}</h4>
+            <div class="domain-card__status ${statusToneClass}">${escapeHtml(statusLabel)}</div>
+            <div class="domain-card__dns">
+              ${renderDomainVerificationRows(item)}
+            </div>
+            ${
+              item.last_error
+                ? `<small class="domain-card__error">${escapeHtml(item.last_error)}</small>`
+                : ""
+            }
           </div>
-          <div class="shipping-method-row__actions">
-            <label class="switch small"><input type="checkbox" checked disabled /><span>${escapeHtml(statusTone)}</span></label>
+          <div class="shipping-method-row__actions domain-card__actions">
             <button type="button" class="ghost" data-domain-action="verify" data-domain="${domain}">Verificar</button>
             <button type="button" class="ghost" data-domain-action="delete" data-domain="${domain}">Remover</button>
           </div>

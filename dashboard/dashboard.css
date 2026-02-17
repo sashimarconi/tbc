@@ -2732,6 +2732,130 @@ body {
   }
 }
 
+/* === Custom Domains === */
+.domain-card {
+  align-items: start;
+}
+
+.domain-card__main {
+  display: grid;
+  gap: 10px;
+}
+
+.domain-card__title {
+  margin: 0;
+  color: #ededed;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.domain-card__status {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.domain-card__status.is-ok {
+  color: #0b5130;
+  background: #d2f5e2;
+  border-color: #9ae3bd;
+}
+
+.domain-card__status.is-pending {
+  color: #5f4700;
+  background: #fff1b8;
+  border-color: #f0d16c;
+}
+
+.domain-card__dns {
+  border: 1px solid rgba(161, 0, 255, 0.18);
+  border-radius: 12px;
+  background: rgba(8, 8, 12, 0.6);
+  padding: 10px;
+}
+
+.domain-dns-empty {
+  color: #9b90b0;
+  font-size: 12px;
+}
+
+.domain-dns-table {
+  display: grid;
+  gap: 8px;
+}
+
+.domain-dns-head,
+.domain-dns-row {
+  display: grid;
+  grid-template-columns: 72px minmax(90px, 0.7fr) minmax(140px, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.domain-dns-head {
+  color: #8f86a2;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.domain-dns-row {
+  border: 1px solid rgba(161, 0, 255, 0.16);
+  border-radius: 10px;
+  background: rgba(13, 13, 18, 0.92);
+  padding: 8px 10px;
+}
+
+.domain-dns-type {
+  color: #d4bcff;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.domain-dns-name,
+.domain-dns-value {
+  color: #d8cee8;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.domain-dns-copy {
+  font-size: 12px;
+  padding: 6px 10px;
+  min-width: 78px;
+}
+
+.domain-card__error {
+  color: #ff6b6b;
+  font-size: 12px;
+}
+
+.domains-empty {
+  min-height: 92px;
+  display: grid;
+  place-items: center;
+}
+
+@media (max-width: 880px) {
+  .domain-dns-head,
+  .domain-dns-row {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+  .domain-dns-head span:nth-child(3),
+  .domain-dns-head span:nth-child(4) {
+    display: none;
+  }
+  .domain-dns-row .domain-dns-value {
+    grid-column: 1 / -1;
+  }
+  .domain-dns-row .domain-dns-copy {
+    justify-self: start;
+  }
+}
+
 .panel-header.panel-header--inline .dashboard-subtitle {
   margin-top: 6px;
 }
