@@ -14,6 +14,7 @@ const { ensureIntegrationsSchema } = require("../lib/ensure-integrations");
 const { dispatchUtmifyEvent } = require("../lib/utmify");
 const { ensureAnalyticsTables } = require("../lib/ensure-analytics");
 const { ensureShippingMethodsTable } = require("../lib/ensure-shipping-methods");
+const dns = require("node:dns").promises;
 const {
   ensureCustomDomainsTable,
   normalizeCustomDomain,
@@ -1429,6 +1430,37 @@ function extractVerificationData(payload = {}) {
   return hasDnsShape ? verification : null;
 }
 
+async function hasPublicDnsRecord(domain) {
+  const hostname = String(domain || "").trim().toLowerCase();
+  if (!hostname) {
+    return false;
+  }
+
+  const timeoutMs = 2500;
+  const withTimeout = (promise) =>
+    Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error("dns-timeout")), timeoutMs)),
+    ]);
+
+  try {
+    const cname = await withTimeout(dns.resolveCname(hostname));
+    if (Array.isArray(cname) && cname.length > 0) return true;
+  } catch (_error) {}
+
+  try {
+    const a = await withTimeout(dns.resolve4(hostname));
+    if (Array.isArray(a) && a.length > 0) return true;
+  } catch (_error) {}
+
+  try {
+    const aaaa = await withTimeout(dns.resolve6(hostname));
+    if (Array.isArray(aaaa) && aaaa.length > 0) return true;
+  } catch (_error) {}
+
+  return false;
+}
+
 async function handleCustomDomains(req, res, user) {
   try {
     await ensureCustomDomainsTable();
@@ -1462,10 +1494,15 @@ async function handleCustomDomains(req, res, user) {
     const runDomainVerification = async (domainValue) => {
       try {
         const payload = await verifyProjectDomain(domainValue);
+        const verifiedByVercel = payload?.verified === true;
+        const dnsOk = await hasPublicDnsRecord(domainValue);
         return {
-          verified: payload?.verified === true,
+          verified: verifiedByVercel && dnsOk,
           verificationData: extractVerificationData(payload),
-          lastError: "",
+          lastError:
+            verifiedByVercel && !dnsOk
+              ? "DNS ainda nao propagou publicamente. Configure/aguarde e clique em Verificar."
+              : "",
           payload,
         };
       } catch (error) {
