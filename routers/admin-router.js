@@ -1406,28 +1406,65 @@ function extractVerificationData(payload = {}) {
   if (!payload || typeof payload !== "object") {
     return null;
   }
-  const verification = payload.verification || payload.config || payload.dnsRecords || null;
-  if (!verification) {
-    return null;
-  }
-  if (Array.isArray(verification)) {
-    return verification;
-  }
-  if (typeof verification !== "object") {
-    return null;
-  }
-  if (Array.isArray(verification.verification)) {
-    return verification.verification;
-  }
-  if (Array.isArray(verification.dnsRecords)) {
-    return verification.dnsRecords;
-  }
-  const hasDnsShape =
-    typeof verification.type === "string" ||
-    typeof verification.recordType === "string" ||
-    typeof verification.value === "string" ||
-    typeof verification.target === "string";
-  return hasDnsShape ? verification : null;
+  const records = [];
+  const seen = new Set();
+  const isObject = (value) => value && typeof value === "object" && !Array.isArray(value);
+
+  const normalizeRecord = (entry) => {
+    if (!isObject(entry)) return null;
+    const type = String(entry.type || entry.recordType || entry.record || "")
+      .trim()
+      .toUpperCase();
+    const name = String(entry.domain || entry.name || entry.host || entry.recordName || "").trim();
+    const value = String(entry.value || entry.target || entry.data || entry.content || "").trim();
+    if (!type || !value) return null;
+    return { type, name, value };
+  };
+
+  const addRecord = (entry) => {
+    const normalized = normalizeRecord(entry);
+    if (!normalized) return;
+    const key = `${normalized.type}|${normalized.name}|${normalized.value}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    records.push(normalized);
+  };
+
+  const walk = (node, depth = 0) => {
+    if (depth > 6 || node === null || node === undefined) return;
+    if (Array.isArray(node)) {
+      node.forEach((item) => walk(item, depth + 1));
+      return;
+    }
+    if (!isObject(node)) return;
+
+    addRecord(node);
+
+    const priorityKeys = [
+      "verification",
+      "dnsRecords",
+      "records",
+      "config",
+      "result",
+      "details",
+      "error",
+      "errors",
+    ];
+    priorityKeys.forEach((key) => {
+      if (key in node) {
+        walk(node[key], depth + 1);
+      }
+    });
+
+    Object.keys(node).forEach((key) => {
+      if (!priorityKeys.includes(key)) {
+        walk(node[key], depth + 1);
+      }
+    });
+  };
+
+  walk(payload, 0);
+  return records.length ? records : null;
 }
 
 async function hasPublicDnsRecord(domain) {

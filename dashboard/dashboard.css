@@ -2833,6 +2833,36 @@ body {
   font-size: 12px;
 }
 
+.domain-setup-guide {
+  border: 1px solid rgba(161, 0, 255, 0.16);
+  border-radius: 12px;
+  background: rgba(11, 11, 16, 0.74);
+  padding: 12px;
+  margin-top: 2px;
+}
+
+.domain-setup-guide__title {
+  margin: 0 0 8px;
+  color: #e9e0f4;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.domain-setup-guide__steps {
+  margin: 0;
+  padding-left: 18px;
+  color: #bfb3d5;
+  font-size: 12px;
+  line-height: 1.5;
+  display: grid;
+  gap: 6px;
+}
+
+.domain-setup-guide__steps strong {
+  color: #ece6f7;
+  font-weight: 700;
+}
+
 .domains-empty {
   min-height: 92px;
   display: grid;

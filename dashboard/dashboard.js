@@ -2641,9 +2641,33 @@ function getDomainDnsRecords(domainItem) {
     .filter((record) => record.type && record.value);
 }
 
+function getDomainSetupSuggestion(domainItem) {
+  const domain = String(domainItem?.domain || "").trim().toLowerCase();
+  if (!domain) return null;
+  const labels = domain.split(".").filter(Boolean);
+  if (labels.length < 2) return null;
+  const host = labels.length > 2 ? labels[0] : "@";
+  return {
+    domain,
+    host,
+    cnameValue: "cname.vercel-dns.com",
+    txtName: "_vercel",
+    txtValue: `vc-domain-verify=${domain},<token-da-vercel>`,
+  };
+}
+
 function renderDomainVerificationRows(domainItem) {
   const records = getDomainDnsRecords(domainItem);
-  if (!records.length) {
+  const suggestion = getDomainSetupSuggestion(domainItem);
+  const recordsToRender =
+    records.length || !suggestion || domainItem?.is_verified === true
+      ? records
+      : [
+          { type: "CNAME", name: suggestion.host, value: suggestion.cnameValue },
+          { type: "TXT", name: suggestion.txtName, value: suggestion.txtValue },
+        ];
+
+  if (!recordsToRender.length) {
     if (domainItem?.is_verified === true) {
       return `<div class="domain-dns-empty">Domínio verificado. Nenhum ajuste DNS pendente.</div>`;
     }
@@ -2658,7 +2682,7 @@ function renderDomainVerificationRows(domainItem) {
         <span>Valor</span>
         <span></span>
       </div>
-      ${records
+      ${recordsToRender
         .map((record) => {
           const type = escapeHtml(record.type || "-");
           const name = escapeHtml(record.name || "-");
@@ -2680,6 +2704,32 @@ function renderDomainVerificationRows(domainItem) {
           `;
         })
         .join("")}
+    </div>
+  `;
+}
+
+function renderDomainSetupGuide(domainItem) {
+  if (domainItem?.is_verified === true) {
+    return "";
+  }
+  const suggestion = getDomainSetupSuggestion(domainItem);
+  if (!suggestion) {
+    return "";
+  }
+  const hostLabel = suggestion.host === "@" ? "@" : suggestion.host;
+  return `
+    <div class="domain-setup-guide">
+      <h5 class="domain-setup-guide__title">Como configurar seu domínio</h5>
+      <ol class="domain-setup-guide__steps">
+        <li>Acesse o painel DNS do seu provedor (Cloudflare, Registro.br, GoDaddy).</li>
+        <li>Adicione CNAME: <strong>${escapeHtml(hostLabel)}</strong> apontando para <strong>${escapeHtml(
+    suggestion.cnameValue
+  )}</strong>.</li>
+        <li>Adicione TXT de verificação: <strong>${escapeHtml(
+          suggestion.txtName
+        )}</strong> com valor <strong>${escapeHtml(suggestion.txtValue)}</strong>.</li>
+        <li>Salve, aguarde propagação e clique em <strong>Verificar</strong>.</li>
+      </ol>
     </div>
   `;
 }
@@ -2709,6 +2759,7 @@ function renderDomains() {
             <div class="domain-card__dns">
               ${renderDomainVerificationRows(item)}
             </div>
+            ${renderDomainSetupGuide(item)}
             ${
               item.last_error
                 ? `<small class="domain-card__error">${escapeHtml(item.last_error)}</small>`
