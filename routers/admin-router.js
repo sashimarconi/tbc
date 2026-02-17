@@ -1459,6 +1459,25 @@ async function handleCustomDomains(req, res, user) {
       ]);
       return { status: 200, payload: { ok: true } };
     };
+    const runDomainVerification = async (domainValue) => {
+      try {
+        const payload = await verifyProjectDomain(domainValue);
+        return {
+          verified: payload?.verified === true,
+          verificationData: extractVerificationData(payload),
+          lastError: "",
+          payload,
+        };
+      } catch (error) {
+        const payload = error?.payload && typeof error.payload === "object" ? error.payload : {};
+        return {
+          verified: false,
+          verificationData: extractVerificationData(payload),
+          lastError: String(error?.message || "Falha na verificacao").slice(0, 400),
+          payload,
+        };
+      }
+    };
 
     if (req.method === "GET") {
       const rows = await query(
@@ -1480,34 +1499,25 @@ async function handleCustomDomains(req, res, user) {
           if (!domain) {
             return row;
           }
-          try {
-            const payload = await verifyProjectDomain(domain);
-            const verified = payload?.verified === true;
-            const verificationData = extractVerificationData(payload);
-            const updated = await query(
-              `update custom_domains
-                  set is_verified = $3,
-                      verification_data = $4::jsonb,
-                      last_verified_at = now(),
-                      last_error = '',
-                      updated_at = now()
-                where owner_user_id = $1 and domain = $2
-                returning *`,
-              [user.id, domain, verified, verificationData ? JSON.stringify(verificationData) : null]
-            );
-            return updated.rows?.[0] || row;
-          } catch (error) {
-            const updated = await query(
-              `update custom_domains
-                  set is_verified = false,
-                      last_error = $3,
-                      updated_at = now()
-                where owner_user_id = $1 and domain = $2
-                returning *`,
-              [user.id, domain, String(error?.message || "Falha na verificacao").slice(0, 400)]
-            );
-            return updated.rows?.[0] || row;
-          }
+          const check = await runDomainVerification(domain);
+          const updated = await query(
+            `update custom_domains
+                set is_verified = $3,
+                    verification_data = $4::jsonb,
+                    last_verified_at = now(),
+                    last_error = $5,
+                    updated_at = now()
+              where owner_user_id = $1 and domain = $2
+              returning *`,
+            [
+              user.id,
+              domain,
+              check.verified,
+              check.verificationData ? JSON.stringify(check.verificationData) : null,
+              check.lastError,
+            ]
+          );
+          return updated.rows?.[0] || row;
         })
       );
 
@@ -1530,37 +1540,30 @@ async function handleCustomDomains(req, res, user) {
         return;
       }
 
-      try {
-        const payload = await verifyProjectDomain(domainParam);
-        const verified = payload?.verified === true;
-        const verificationData = extractVerificationData(payload);
-        const updated = await query(
-          `update custom_domains
-              set is_verified = $3,
-                  verification_data = $4::jsonb,
-                  last_verified_at = now(),
-                  last_error = '',
-                  updated_at = now()
-            where owner_user_id = $1 and domain = $2
-            returning *`,
-          [user.id, domainParam, verified, verificationData ? JSON.stringify(verificationData) : null]
-        );
-        res.json({
-          domain: sanitizeDomainRow(updated.rows?.[0] || {}),
-          verified,
-          payload,
-        });
-      } catch (error) {
-        await query(
-          `update custom_domains
-              set is_verified = false,
-                  last_error = $3,
-                  updated_at = now()
-            where owner_user_id = $1 and domain = $2`,
-          [user.id, domainParam, String(error?.message || "Falha na verificacao").slice(0, 400)]
-        );
-        res.status(400).json({ error: error.message || "Falha ao verificar dominio." });
-      }
+      const check = await runDomainVerification(domainParam);
+      const updated = await query(
+        `update custom_domains
+            set is_verified = $3,
+                verification_data = $4::jsonb,
+                last_verified_at = now(),
+                last_error = $5,
+                updated_at = now()
+          where owner_user_id = $1 and domain = $2
+          returning *`,
+        [
+          user.id,
+          domainParam,
+          check.verified,
+          check.verificationData ? JSON.stringify(check.verificationData) : null,
+          check.lastError,
+        ]
+      );
+      res.json({
+        domain: sanitizeDomainRow(updated.rows?.[0] || {}),
+        verified: check.verified,
+        payload: check.payload,
+        last_error: check.lastError,
+      });
       return;
     }
 
@@ -1596,26 +1599,34 @@ async function handleCustomDomains(req, res, user) {
         return;
       }
 
-      const verified = payload?.verified === true;
-      const verificationData = extractVerificationData(payload);
+      const check = await runDomainVerification(domain);
+      const verified = check.verified;
+      const verificationData = check.verificationData || extractVerificationData(payload);
       const upsert = await query(
         `insert into custom_domains (owner_user_id, domain, is_verified, verification_data, last_verified_at, last_error, updated_at)
-         values ($1, $2, $3, $4::jsonb, case when $3 then now() else null end, '', now())
+         values ($1, $2, $3, $4::jsonb, case when $3 then now() else null end, $5, now())
          on conflict (domain)
          do update set owner_user_id = excluded.owner_user_id,
                        is_verified = excluded.is_verified,
                        verification_data = excluded.verification_data,
                        last_verified_at = case when excluded.is_verified then now() else custom_domains.last_verified_at end,
-                       last_error = '',
+                       last_error = excluded.last_error,
                        updated_at = now()
          returning *`,
-        [user.id, domain, verified, verificationData ? JSON.stringify(verificationData) : null]
+        [
+          user.id,
+          domain,
+          verified,
+          verificationData ? JSON.stringify(verificationData) : null,
+          check.lastError || "",
+        ]
       );
 
       res.status(201).json({
         domain: sanitizeDomainRow(upsert.rows?.[0] || {}),
         verified,
-        payload,
+        payload: check.payload || payload,
+        last_error: check.lastError,
       });
       return;
     }
