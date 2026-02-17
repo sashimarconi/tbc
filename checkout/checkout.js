@@ -13,6 +13,7 @@ const addonsSection = document.getElementById("addons-section");
 const addonsList = document.getElementById("addons-list");
 const selectAll = document.getElementById("select-all");
 const selectAllText = document.getElementById("select-all-text");
+const selectAllWrap = selectAll?.closest(".select-all") || null;
 const summaryLines = document.getElementById("summary-lines");
 const summarySubtotal = document.getElementById("summary-subtotal");
 const summaryShipping = document.getElementById("summary-shipping");
@@ -1576,14 +1577,27 @@ function syncSelectAllState() {
 }
 
 function renderBumps(bumps = []) {
+  const normalizedBumps = Array.isArray(bumps)
+    ? bumps.filter(
+        (bump) =>
+          bump &&
+          bump.active !== false &&
+          Number(bump.price_cents || 0) > 0 &&
+          String(bump.name || "").trim().length > 0
+      )
+    : [];
+
   bumpMap = new Map();
   selectedBumps.clear();
   if (selectAll) {
     selectAll.checked = false;
     setSelectAllLabel(false);
   }
+  if (selectAllWrap) {
+    selectAllWrap.classList.toggle("hidden", normalizedBumps.length === 0);
+  }
 
-  if (!bumps.length) {
+  if (!normalizedBumps.length) {
     addonsSection?.classList.add("hidden");
     addonsList.innerHTML = "";
     updateSummary();
@@ -1595,7 +1609,7 @@ function renderBumps(bumps = []) {
   } else {
     addonsSection?.classList.remove("hidden");
   }
-  addonsList.innerHTML = bumps
+  addonsList.innerHTML = normalizedBumps
     .map((bump) => {
       bumpMap.set(bump.id, bump);
       const image = bump.image_url || productCover.src;
