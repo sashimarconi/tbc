@@ -1555,25 +1555,12 @@ async function handleCustomDomains(req, res, user) {
         extractVerificationData(verifyErrorPayload) ||
         null;
       const payload = detailsPayload || verifyPayload || verifyErrorPayload || {};
-      try {
-        const dnsOk = await hasPublicDnsRecord(domainValue);
-        return {
-          verified: verifiedByVercel && dnsOk,
-          verificationData,
-          lastError:
-            verifiedByVercel && !dnsOk
-              ? "DNS ainda nao propagou publicamente. Configure/aguarde e clique em Verificar."
-              : verifyErrorMessage,
-          payload,
-        };
-      } catch (_error) {
-        return {
-          verified: false,
-          verificationData,
-          lastError: verifyErrorMessage || "Falha na verificacao",
-          payload,
-        };
-      }
+      return {
+        verified: verifiedByVercel,
+        verificationData,
+        lastError: verifiedByVercel ? "" : verifyErrorMessage || "Falha na verificacao",
+        payload,
+      };
     };
 
     if (req.method === "GET") {
