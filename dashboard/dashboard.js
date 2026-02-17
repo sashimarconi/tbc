@@ -2608,6 +2608,17 @@ function getDomainDnsRecords(domainItem) {
   if (!verification || typeof verification !== "object") {
     return [];
   }
+
+  const sanitizeDnsField = (value, { upper = false } = {}) => {
+    const normalized = String(value ?? "")
+      .trim()
+      .replace(/\.$/, "");
+    if (!normalized || normalized === "-" || /^null$/i.test(normalized) || /^undefined$/i.test(normalized)) {
+      return "";
+    }
+    return upper ? normalized.toUpperCase() : normalized;
+  };
+
   const candidates = [];
   if (Array.isArray(verification)) {
     verification.forEach((entry) => candidates.push(entry));
@@ -2621,17 +2632,20 @@ function getDomainDnsRecords(domainItem) {
 
   return candidates
     .map((entry) => ({
-      type: String(entry?.type || entry?.recordType || "").trim().toUpperCase(),
-      name: String(entry?.domain || entry?.name || "").trim(),
-      value: String(entry?.value || entry?.target || "").trim(),
+      type: sanitizeDnsField(entry?.type || entry?.recordType, { upper: true }),
+      name: sanitizeDnsField(entry?.domain || entry?.name || entry?.host),
+      value: sanitizeDnsField(entry?.value || entry?.target || entry?.data),
     }))
-    .filter((record) => record.type || record.name || record.value);
+    .filter((record) => record.type && record.value);
 }
 
 function renderDomainVerificationRows(domainItem) {
   const records = getDomainDnsRecords(domainItem);
   if (!records.length) {
-    return `<div class="domain-dns-empty">Sem instruções DNS adicionais no momento.</div>`;
+    if (domainItem?.is_verified === true) {
+      return `<div class="domain-dns-empty">Domínio verificado. Nenhum ajuste DNS pendente.</div>`;
+    }
+    return `<div class="domain-dns-empty">Ainda sem registros DNS detalhados. Clique em Verificar para atualizar.</div>`;
   }
 
   return `

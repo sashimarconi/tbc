@@ -1405,11 +1405,28 @@ function extractVerificationData(payload = {}) {
   if (!payload || typeof payload !== "object") {
     return null;
   }
-  const verification = payload.verification || payload.config || payload;
-  if (!verification || typeof verification !== "object") {
+  const verification = payload.verification || payload.config || payload.dnsRecords || null;
+  if (!verification) {
     return null;
   }
-  return verification;
+  if (Array.isArray(verification)) {
+    return verification;
+  }
+  if (typeof verification !== "object") {
+    return null;
+  }
+  if (Array.isArray(verification.verification)) {
+    return verification.verification;
+  }
+  if (Array.isArray(verification.dnsRecords)) {
+    return verification.dnsRecords;
+  }
+  const hasDnsShape =
+    typeof verification.type === "string" ||
+    typeof verification.recordType === "string" ||
+    typeof verification.value === "string" ||
+    typeof verification.target === "string";
+  return hasDnsShape ? verification : null;
 }
 
 async function handleCustomDomains(req, res, user) {
@@ -1458,7 +1475,7 @@ async function handleCustomDomains(req, res, user) {
                   updated_at = now()
             where owner_user_id = $1 and domain = $2
             returning *`,
-          [user.id, domainParam, verified, JSON.stringify(verificationData || {})]
+          [user.id, domainParam, verified, verificationData ? JSON.stringify(verificationData) : null]
         );
         res.json({
           domain: sanitizeDomainRow(updated.rows?.[0] || {}),
@@ -1517,7 +1534,7 @@ async function handleCustomDomains(req, res, user) {
                        last_error = '',
                        updated_at = now()
          returning *`,
-        [user.id, domain, verified, JSON.stringify(verificationData || {})]
+        [user.id, domain, verified, verificationData ? JSON.stringify(verificationData) : null]
       );
 
       res.status(201).json({
