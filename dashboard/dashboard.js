@@ -2680,12 +2680,13 @@ function getDomainSetupSuggestion(domainItem) {
     records.find((record) => record.type === "TXT" && /vc-domain-verify=/i.test(record.value)) ||
     records.find((record) => record.type === "TXT");
   const host = cnameRecord?.name || fallbackHost;
+  const txtValue = txtRecord?.value || "";
   return {
     domain,
     host,
     cnameValue: cnameRecord?.value || "cname.vercel-dns.com",
     txtName: txtRecord?.name || "_vercel",
-    txtValue: txtRecord?.value || `vc-domain-verify=${domain},(token sera gerado pela vercel ao verificar)`,
+    txtValue,
   };
 }
 
@@ -2695,10 +2696,13 @@ function renderDomainVerificationRows(domainItem) {
   const recordsToRender =
     records.length || !suggestion || domainItem?.is_verified === true
       ? records
-      : [
-          { type: "CNAME", name: suggestion.host, value: suggestion.cnameValue },
-          { type: "TXT", name: suggestion.txtName, value: suggestion.txtValue },
-        ];
+      : (() => {
+          const fallbackRecords = [{ type: "CNAME", name: suggestion.host, value: suggestion.cnameValue }];
+          if (suggestion.txtValue) {
+            fallbackRecords.push({ type: "TXT", name: suggestion.txtName, value: suggestion.txtValue });
+          }
+          return fallbackRecords;
+        })();
 
   if (!recordsToRender.length) {
     if (domainItem?.is_verified === true) {
@@ -2758,9 +2762,13 @@ function renderDomainSetupGuide(domainItem) {
         <li>Adicione CNAME: <strong>${escapeHtml(hostLabel)}</strong> apontando para <strong>${escapeHtml(
     suggestion.cnameValue
   )}</strong>.</li>
-        <li>Adicione TXT de verificação: <strong>${escapeHtml(
-          suggestion.txtName
-        )}</strong> com valor <strong>${escapeHtml(suggestion.txtValue)}</strong>.</li>
+        ${
+          suggestion.txtValue
+            ? `<li>Adicione TXT de verificação: <strong>${escapeHtml(
+                suggestion.txtName
+              )}</strong> com valor <strong>${escapeHtml(suggestion.txtValue)}</strong>.</li>`
+            : ""
+        }
         <li>Salve, aguarde propagação e clique em <strong>Verificar</strong>.</li>
       </ol>
     </div>
