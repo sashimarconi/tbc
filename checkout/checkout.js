@@ -56,6 +56,17 @@ const addressInputs = {
   state: document.getElementById("address-state"),
   country: document.getElementById("address-country"),
 };
+const addressFieldWraps = {
+  cep: cepInput?.closest("label.field") || null,
+  street: addressInputs.street?.closest("label.field") || null,
+  number: addressInputs.number?.closest("label.field") || null,
+  complement: addressInputs.complement?.closest("label.field") || null,
+  neighborhood: addressInputs.neighborhood?.closest("label.field") || null,
+  city: addressInputs.city?.closest("label.field") || null,
+  state: addressInputs.state?.closest("label.field") || null,
+  country: addressInputs.country?.closest("label.field") || null,
+};
+const addressDetailKeys = ["street", "number", "complement", "neighborhood", "city", "state", "country"];
 const contactInputs = [
   document.getElementById("full-name"),
   document.getElementById("email"),
@@ -443,9 +454,7 @@ function applyBlocksVisibility() {
   if (formFieldsBlock) formFieldsBlock.classList.toggle("hidden", visibility.form === false);
   if (addonsSection) addonsSection.classList.toggle("hidden", visibility.bumps === false || !elementsConfig.showOrderBumps);
   if (shippingSection) {
-    const shouldHide =
-      visibility.shipping === false || !elementsConfig.showShipping || !baseRequiresAddress || !(shippingOptions?.length > 0);
-    shippingSection.classList.toggle("hidden", shouldHide);
+    shippingSection.classList.toggle("hidden", shouldHideShippingSection());
   }
   if (paymentBlock) paymentBlock.classList.toggle("hidden", visibility.payment === false);
   if (footerBlock) footerBlock.classList.toggle("hidden", visibility.footer === false || !elementsConfig.showFooterSecurityText);
@@ -457,6 +466,21 @@ function isVisible(node) {
 
 function getMercadexHasEntrega() {
   return Boolean(baseRequiresAddress && elementsConfig.showShipping !== false);
+}
+
+function hasDeliveryCepFilled() {
+  return normalizeCep(cepInput?.value || "").length === 8;
+}
+
+function shouldHideShippingSection() {
+  const visibility = blocksConfig?.visibility || {};
+  return (
+    visibility.shipping === false ||
+    !elementsConfig.showShipping ||
+    !baseRequiresAddress ||
+    !(shippingOptions?.length > 0) ||
+    (mercadexEnabled && !hasDeliveryCepFilled())
+  );
 }
 
 function getRequiredValue(id, wrapperId) {
@@ -648,6 +672,31 @@ function ensureMercadexStructure() {
   mercadexRefs.continueB = continueB;
 }
 
+function updateMercadexDeliveryUI() {
+  if (!baseRequiresAddress || !addressCard) {
+    return;
+  }
+
+  if (!mercadexEnabled) {
+    addressToggle?.classList.remove("hidden");
+    addressDetailKeys.forEach((key) => {
+      addressFieldWraps[key]?.classList.remove("hidden");
+    });
+    return;
+  }
+
+  if (addressToggle) {
+    addressToggle.classList.add("hidden");
+    addressToggle.disabled = true;
+  }
+
+  setAddressSection(true, { focus: false });
+  const showDetails = hasDeliveryCepFilled();
+  addressDetailKeys.forEach((key) => {
+    addressFieldWraps[key]?.classList.toggle("hidden", !showDetails);
+  });
+}
+
 function mountMercadexBlocks() {
   ensureMercadexStructure();
   const stepA = mercadexRefs.stepBodies.identificacao;
@@ -655,8 +704,11 @@ function mountMercadexBlocks() {
   const stepC = mercadexRefs.stepBodies.pagamento;
   if (!stepA || !stepB || !stepC) return;
 
-  const fields = formFieldsBlock?.querySelectorAll(".field");
-  fields?.forEach((field) => stepA.appendChild(field));
+  const basicFieldIds = ["field-wrap-email", "field-wrap-name", "field-wrap-cpf", "field-wrap-phone"];
+  basicFieldIds.forEach((id) => {
+    const node = document.getElementById(id);
+    if (node) stepA.appendChild(node);
+  });
   if (mercadexRefs.continueA) stepA.appendChild(mercadexRefs.continueA);
 
   if (addressCard) stepB.appendChild(addressCard);
@@ -667,6 +719,7 @@ function mountMercadexBlocks() {
   if (paymentBlock) stepC.appendChild(paymentBlock);
   if (footerBlock) stepC.appendChild(footerBlock);
 
+  updateMercadexDeliveryUI();
   updateMercadexAccordionUI();
 }
 
@@ -700,9 +753,11 @@ function unmountMercadexBlocks() {
 function syncMercadexStructure() {
   if (mercadexEnabled) {
     mountMercadexBlocks();
+    updateMercadexDeliveryUI();
     return;
   }
   unmountMercadexBlocks();
+  updateMercadexDeliveryUI();
 }
 
 function applyElementsConfig(nextElements) {
@@ -721,9 +776,7 @@ function applyElementsConfig(nextElements) {
     addonsSection.classList.toggle("hidden", shouldHideBumps);
   }
   if (shippingSection) {
-    const shouldHideShipping =
-      !elementsConfig.showShipping || !baseRequiresAddress || !(shippingOptions?.length > 0);
-    shippingSection.classList.toggle("hidden", shouldHideShipping);
+    shippingSection.classList.toggle("hidden", shouldHideShippingSection());
   }
   applyElementOrder();
   applyBlocksVisibility();
@@ -1571,6 +1624,7 @@ function renderShipping(options = []) {
   if (!shippingSection || !shippingList) {
     shippingOptions = [];
     selectedShippingId = null;
+    updateMercadexDeliveryUI();
     updateSummary();
     return;
   }
@@ -1580,6 +1634,7 @@ function renderShipping(options = []) {
     shippingList.innerHTML = "";
     shippingOptions = [];
     selectedShippingId = null;
+    updateMercadexDeliveryUI();
     updateSummary();
     return;
   }
@@ -1590,15 +1645,12 @@ function renderShipping(options = []) {
     shippingSection.classList.add("hidden");
     shippingList.innerHTML = "";
     selectedShippingId = null;
+    updateMercadexDeliveryUI();
     updateSummary();
     return;
   }
 
-  if (!elementsConfig.showShipping) {
-    shippingSection.classList.add("hidden");
-  } else {
-    shippingSection.classList.remove("hidden");
-  }
+  shippingSection.classList.toggle("hidden", shouldHideShippingSection());
   if (!selectedShippingId || !options.some((opt) => opt.id === selectedShippingId)) {
     selectedShippingId = options[0].id;
   }
@@ -1644,6 +1696,7 @@ function renderShipping(options = []) {
     });
   });
 
+  updateMercadexDeliveryUI();
   updateSummary();
   scheduleCartSync();
 }
@@ -1706,12 +1759,14 @@ async function lookupCep(value) {
   if (!cep) {
     showCepError("Informe um CEP valido.");
     resetAutoAddressFields();
+    updateMercadexDeliveryUI();
     return;
   }
 
   if (cep.length !== 8) {
     showCepError("CEP precisa ter 8 digitos.");
     resetAutoAddressFields();
+    updateMercadexDeliveryUI();
     return;
   }
 
@@ -1732,11 +1787,13 @@ async function lookupCep(value) {
     const missingInfo = !data.logradouro || !data.localidade || !data.uf;
     setAddressReadOnly(!missingInfo);
     showCepError(missingInfo ? "Complete os dados de endereco manualmente." : "");
+    updateMercadexDeliveryUI();
     scheduleCartSync("address");
   } catch (error) {
     setAddressReadOnly(false);
     showCepError("Nao encontramos o CEP. Preencha os dados manualmente.");
     resetAutoAddressFields({ preserveManual: true });
+    updateMercadexDeliveryUI();
     scheduleCartSync("address");
   }
 }
@@ -1760,13 +1817,14 @@ function isAddressComplete() {
   return hasStreet && hasNumber && hasCity && hasState && hasCep;
 }
 
-function setAddressSection(open) {
+function setAddressSection(open, options = {}) {
+  const { focus = true } = options;
   if (!addressCard || !addressToggle || !addressContent) return;
   addressOpen = open;
   addressCard.classList.toggle("address--collapsed", !open);
   addressContent.classList.toggle("hidden", !open);
   addressToggle.textContent = open ? "Editar endereco" : "Adicionar endereco";
-  if (open) {
+  if (open && focus) {
     cepInput?.focus();
   }
 }
@@ -1790,8 +1848,9 @@ function applyAddressRequirement(required) {
   } else {
     addressCard.classList.remove("hidden");
     addressToggle?.classList.remove("hidden");
-    setAddressSection(false);
+    setAddressSection(mercadexEnabled, { focus: false });
   }
+  updateMercadexDeliveryUI();
   if (mercadexEnabled) {
     updateMercadexAccordionUI();
   }
@@ -1802,6 +1861,10 @@ function updateAddressToggleState() {
   if (!baseRequiresAddress) {
     addressToggle.disabled = true;
     setAddressSection(false);
+    return;
+  }
+  if (mercadexEnabled) {
+    updateMercadexDeliveryUI();
     return;
   }
   const ready = isContactComplete();
@@ -1850,6 +1913,8 @@ if (addressToggle) {
 if (cepInput) {
   cepInput.addEventListener("input", (event) => {
     event.target.value = formatCepDisplay(event.target.value);
+    updateMercadexDeliveryUI();
+    shippingSection?.classList.toggle("hidden", shouldHideShippingSection());
     scheduleCartSync("address");
   });
 

@@ -681,6 +681,10 @@ input[type="checkbox"]:focus-visible {
   gap: 2px;
 }
 
+.shipping-card__info strong {
+  font-weight: 400;
+}
+
 .shipping-card__price {
   margin-left: auto;
   font-weight: 700;
