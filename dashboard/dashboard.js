@@ -311,7 +311,20 @@ function buildCheckoutLink(slug) {
   if (!slug) {
     return "";
   }
-  const origin = window.location?.origin?.replace(/\/$/, "") || "";
+  const pickDomainFromCache = () => {
+    if (!Array.isArray(domainsCache) || !domainsCache.length) {
+      return "";
+    }
+    const verified = domainsCache.find((item) => item?.is_verified === true);
+    const fallback = verified || domainsCache[0];
+    const domain = String(fallback?.domain || "").trim().toLowerCase();
+    if (!domain) {
+      return "";
+    }
+    return `https://${domain}`;
+  };
+
+  const origin = pickDomainFromCache() || window.location?.origin?.replace(/\/$/, "") || "";
   return `${origin}/checkout/${slug}`;
 }
 
@@ -2189,6 +2202,9 @@ productsTableBody?.addEventListener("click", async (event) => {
     return;
   }
   if (action === "share" && product && product.slug) {
+    if (!domainsCache.length) {
+      await loadDomains();
+    }
     const link = buildCheckoutLink(product.slug);
     if (link) {
       await copyToClipboard(link);
