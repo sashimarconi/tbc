@@ -413,6 +413,9 @@ function bindAppearanceFields() {
     ["color-card", ["palette", "card"]],
     ["color-border", ["palette", "border"]],
     ["color-text", ["palette", "text"]],
+    ["color-buttons-text", ["palette", "primaryText"]],
+    ["color-button-secondary-bg", ["palette", "buttonSecondaryBg"]],
+    ["color-button-secondary-text", ["palette", "buttonSecondaryText"]],
     ["header-bg-color", ["header", "bgColor"]],
     ["header-text-color", ["header", "textColor"]],
     ["seal-text-color", ["securitySeal", "textColor"]],
@@ -571,6 +574,9 @@ function populateFieldsFromEffective() {
   setFieldValue("color-card", cfg.palette?.card, "#ffffff");
   setFieldValue("color-border", cfg.palette?.border, "#dde3ee");
   setFieldValue("color-text", cfg.palette?.text, "#1c2431");
+  setFieldValue("color-buttons-text", cfg.palette?.primaryText, "#111111");
+  setFieldValue("color-button-secondary-bg", cfg.palette?.buttonSecondaryBg, "#f6f8fb");
+  setFieldValue("color-button-secondary-text", cfg.palette?.buttonSecondaryText, "#1c2431");
   setFieldValue("font-family", cfg.typography?.fontFamily, "Poppins");
 
   setFieldValue("radius-cards", valueToRadiusToken(cfg.radius?.cards || "12px"), "md");

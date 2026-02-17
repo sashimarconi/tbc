@@ -167,20 +167,20 @@ body.ui-mercadex select:focus {
 body.ui-mercadex .cta {
   min-height: 48px;
   border-radius: 12px;
-  background: #ffe600;
-  color: #111318;
+  background: var(--color-buttons);
+  color: var(--color-primary-text);
 }
 
 body.ui-mercadex .cta:hover {
-  background: #ffd500;
+  background: var(--color-primary-hover);
 }
 
 body.ui-mercadex .mercadex-btn {
   min-height: 44px;
   border-radius: 12px;
   border: 1px solid rgba(17, 19, 24, 0.12);
-  background: #eef0f3;
-  color: #111318;
+  background: var(--color-button-secondary-bg);
+  color: var(--color-button-secondary-text);
   font-weight: 600;
   cursor: pointer;
 }

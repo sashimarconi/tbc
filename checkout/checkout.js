@@ -821,6 +821,14 @@ function applyAppearance(config) {
   root.style.setProperty("--font-body-weight", String(safeNumber(typography.bodyWeight, 500)));
   root.style.setProperty("--font-base-size", `${safeNumber(typography.baseSize, 16)}px`);
 
+  if (document.body) {
+    document.body.style.setProperty("--color-buttons", safeString(palette.button || palette.buttons, "#f39c12"));
+    document.body.style.setProperty("--color-primary-text", safeString(palette.primaryText, "#111111"));
+    document.body.style.setProperty("--color-primary-hover", safeString(palette.primaryHover || palette.button, "#e58e0a"));
+    document.body.style.setProperty("--color-button-secondary-bg", safeString(palette.buttonSecondaryBg, "#f6f8fb"));
+    document.body.style.setProperty("--color-button-secondary-text", safeString(palette.buttonSecondaryText, "#1c2431"));
+  }
+
   const variant = ["mercadex", "tiktex", "vegex", "solarys", "minimal", "dark"].includes(
     config?.ui?.variant
   )
