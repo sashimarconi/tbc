@@ -548,9 +548,9 @@ input[type="checkbox"] {
   min-width: 44px;
   height: 24px;
   margin: 0;
-  border: 1px solid #5b00b5;
+  border: 1px solid var(--color-buttons);
   border-radius: 999px;
-  background: #0d0d12;
+  background: color-mix(in srgb, var(--color-buttons) 10%, #0d0d12);
   cursor: pointer;
   vertical-align: middle;
   transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
@@ -569,8 +569,8 @@ input[type="checkbox"]::before {
 }
 
 input[type="checkbox"]:checked {
-  background: #a100ff;
-  border-color: #a100ff;
+  background: var(--color-buttons);
+  border-color: var(--color-buttons);
 }
 
 input[type="checkbox"]:checked::before {
@@ -822,6 +822,21 @@ input[type="checkbox"]:focus-visible {
 
 .cta:hover {
   background: var(--color-primary-hover);
+}
+
+#payment-block {
+  display: block;
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+.mercadex-step__body #payment-block {
+  margin-top: 2px;
+}
+
+.mercadex-step__body #payment-block .cta {
+  width: 100%;
 }
 
 .ghost {

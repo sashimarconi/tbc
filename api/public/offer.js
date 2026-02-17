@@ -70,7 +70,7 @@ module.exports = async (req, res) => {
     const bumps = bumpRows.filter((bump) => {
       const rule = bumpRuleMap.get(bump.id);
       if (!rule) {
-        return true;
+        return false;
       }
       if (rule.apply_to_all !== false) {
         return true;

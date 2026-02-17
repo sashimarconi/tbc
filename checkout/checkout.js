@@ -858,6 +858,10 @@ function applyAppearance(config) {
     document.body.style.setProperty("--color-button-secondary-bg", safeString(palette.buttonSecondaryBg, "#f6f8fb"));
     document.body.style.setProperty("--color-button-secondary-text", safeString(palette.buttonSecondaryText, "#1c2431"));
   }
+  if (payBtn) {
+    payBtn.style.background = safeString(palette.button || palette.buttons, "#f39c12");
+    payBtn.style.color = safeString(palette.primaryText, "#111111");
+  }
 
   const variant = ["mercadex", "tiktex", "vegex", "solarys", "minimal", "dark"].includes(
     config?.ui?.variant
