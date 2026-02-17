@@ -2644,15 +2644,21 @@ function getDomainDnsRecords(domainItem) {
 function getDomainSetupSuggestion(domainItem) {
   const domain = String(domainItem?.domain || "").trim().toLowerCase();
   if (!domain) return null;
+  const records = getDomainDnsRecords(domainItem);
   const labels = domain.split(".").filter(Boolean);
   if (labels.length < 2) return null;
-  const host = labels.length > 2 ? labels[0] : "@";
+  const fallbackHost = labels.length > 2 ? labels[0] : "@";
+  const cnameRecord = records.find((record) => record.type === "CNAME");
+  const txtRecord =
+    records.find((record) => record.type === "TXT" && /vc-domain-verify=/i.test(record.value)) ||
+    records.find((record) => record.type === "TXT");
+  const host = cnameRecord?.name || fallbackHost;
   return {
     domain,
     host,
-    cnameValue: "cname.vercel-dns.com",
-    txtName: "_vercel",
-    txtValue: `vc-domain-verify=${domain},<token-da-vercel>`,
+    cnameValue: cnameRecord?.value || "cname.vercel-dns.com",
+    txtName: txtRecord?.name || "_vercel",
+    txtValue: txtRecord?.value || `vc-domain-verify=${domain},(token sera gerado pela vercel ao verificar)`,
   };
 }
 

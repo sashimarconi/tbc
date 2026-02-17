@@ -20,7 +20,7 @@ const {
   normalizeCustomDomain,
   isValidCustomDomain,
 } = require("../lib/ensure-custom-domains");
-const { addProjectDomain, verifyProjectDomain, removeProjectDomain } = require("../lib/vercel-domains");
+const { addProjectDomain, verifyProjectDomain, getProjectDomain, removeProjectDomain } = require("../lib/vercel-domains");
 const DEFAULT_SEALPAY_API_URL =
   process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix";
 const DASHBOARD_TZ = process.env.DASHBOARD_TZ || "America/Sao_Paulo";
@@ -1529,25 +1529,46 @@ async function handleCustomDomains(req, res, user) {
       return { status: 200, payload: { ok: true } };
     };
     const runDomainVerification = async (domainValue) => {
+      let verifyPayload = null;
+      let verifyErrorMessage = "";
+      let verifyErrorPayload = null;
       try {
-        const payload = await verifyProjectDomain(domainValue);
-        const verifiedByVercel = payload?.verified === true;
+        verifyPayload = await verifyProjectDomain(domainValue);
+      } catch (error) {
+        verifyErrorMessage = String(error?.message || "Falha na verificacao").slice(0, 400);
+        verifyErrorPayload = error?.payload && typeof error.payload === "object" ? error.payload : null;
+      }
+
+      let detailsPayload = null;
+      try {
+        detailsPayload = await getProjectDomain(domainValue);
+      } catch (_error) {
+        detailsPayload = null;
+      }
+
+      const verifiedByVercel = detailsPayload?.verified === true || verifyPayload?.verified === true;
+      const verificationData =
+        extractVerificationData(detailsPayload) ||
+        extractVerificationData(verifyPayload) ||
+        extractVerificationData(verifyErrorPayload) ||
+        null;
+      const payload = detailsPayload || verifyPayload || verifyErrorPayload || {};
+      try {
         const dnsOk = await hasPublicDnsRecord(domainValue);
         return {
           verified: verifiedByVercel && dnsOk,
-          verificationData: extractVerificationData(payload),
+          verificationData,
           lastError:
             verifiedByVercel && !dnsOk
               ? "DNS ainda nao propagou publicamente. Configure/aguarde e clique em Verificar."
-              : "",
+              : verifyErrorMessage,
           payload,
         };
-      } catch (error) {
-        const payload = error?.payload && typeof error.payload === "object" ? error.payload : {};
+      } catch (_error) {
         return {
           verified: false,
-          verificationData: extractVerificationData(payload),
-          lastError: String(error?.message || "Falha na verificacao").slice(0, 400),
+          verificationData,
+          lastError: verifyErrorMessage || "Falha na verificacao",
           payload,
         };
       }
