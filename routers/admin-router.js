@@ -1464,7 +1464,7 @@ async function handleCustomDomains(req, res, user) {
 
       try {
         const payload = await verifyProjectDomain(domainParam);
-        const verified = payload?.verified === true || payload?.configuredBy === "CNAME";
+        const verified = payload?.verified === true;
         const verificationData = extractVerificationData(payload);
         const updated = await query(
           `update custom_domains
@@ -1521,7 +1521,7 @@ async function handleCustomDomains(req, res, user) {
         return;
       }
 
-      const verified = payload?.verified === true || payload?.configuredBy === "CNAME";
+      const verified = payload?.verified === true;
       const verificationData = extractVerificationData(payload);
       const upsert = await query(
         `insert into custom_domains (owner_user_id, domain, is_verified, verification_data, last_verified_at, last_error, updated_at)
