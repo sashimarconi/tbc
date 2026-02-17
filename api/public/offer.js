@@ -1,5 +1,6 @@
 ﻿const { query } = require("../../lib/db");
 const { ensureProductSchema, ensureBaseSlugs } = require("../../lib/ensure-products");
+const { ensureShippingMethodsTable } = require("../../lib/ensure-shipping-methods");
 
 module.exports = async (req, res) => {
   if (req.method !== "GET") {
@@ -9,6 +10,7 @@ module.exports = async (req, res) => {
 
   try {
     await ensureProductSchema();
+    await ensureShippingMethodsTable();
 
     const slug = (req.query?.slug || "").toString().trim();
     if (!slug) {
@@ -60,8 +62,12 @@ module.exports = async (req, res) => {
       [ownerUserId, "upsell"]
     );
     const shippingRes = await query(
-      "select * from products where owner_user_id = $1 and type = $2 and active = true order by created_at desc",
-      [ownerUserId, "shipping"]
+      `select id, owner_user_id, name, price_cents, min_order_cents, min_days, max_days, description, is_default, is_active
+         from shipping_methods
+        where owner_user_id = $1
+          and is_active = true
+        order by is_default desc, price_cents asc, created_at asc`,
+      [ownerUserId]
     );
 
     const bumps = bumpRows.filter((bump) => {
@@ -82,7 +88,18 @@ module.exports = async (req, res) => {
         bump_rule: bumpRuleMap.get(bump.id) || null,
       })),
       upsells: upsellRes.rows || [],
-      shipping: shippingRes.rows || [],
+      shipping: (shippingRes.rows || []).map((row) => ({
+        id: row.id,
+        owner_user_id: row.owner_user_id,
+        name: row.name || "",
+        description: row.description || "",
+        price_cents: Number(row.price_cents) || 0,
+        min_order_cents: Number(row.min_order_cents) || 0,
+        min_days: Number(row.min_days) || 0,
+        max_days: Number(row.max_days) || 0,
+        is_default: row.is_default === true,
+        is_active: row.is_active !== false,
+      })),
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

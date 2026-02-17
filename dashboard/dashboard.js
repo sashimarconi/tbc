@@ -223,6 +223,18 @@ const IS_DEV =
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1" ||
   window.location.hostname.endsWith(".local");
+const DASHBOARD_ROUTE_TO_VIEW = {
+  "": "dashboard-view",
+  orders: "orders-view",
+  carts: "carts-view",
+  integrations: "integrations-view",
+  products: "products-view",
+  shipping: "shipping-view",
+  "order-bumps": "order-bumps-view",
+};
+const DASHBOARD_VIEW_TO_ROUTE = Object.fromEntries(
+  Object.entries(DASHBOARD_ROUTE_TO_VIEW).map(([route, view]) => [view, route])
+);
 
 let token = localStorage.getItem("admin_token") || "";
 let summaryInterval = null;
@@ -339,7 +351,7 @@ async function login() {
 function showPanel() {
   setAuthStatus("authenticated");
   startSummaryPolling();
-  activateView("dashboard-view");
+  activateView(getViewFromPathname(), { replacePath: true });
   loadItems();
   loadDashboardOrdersPreview();
 }
@@ -948,7 +960,51 @@ async function loadCarts() {
   }
 }
 
-function activateView(targetId) {
+function getRouteKeyFromPathname(pathname = window.location.pathname) {
+  if (!pathname.startsWith("/dashboard")) {
+    return "";
+  }
+  const normalizedPath = pathname.replace(/\/+$/, "");
+  const parts = normalizedPath.split("/");
+  return parts.length >= 3 ? (parts[2] || "").toLowerCase() : "";
+}
+
+function getViewFromPathname(pathname = window.location.pathname) {
+  const routeKey = getRouteKeyFromPathname(pathname);
+  return DASHBOARD_ROUTE_TO_VIEW[routeKey] || "dashboard-view";
+}
+
+function getPathnameForView(viewId) {
+  if (!viewId || !(viewId in DASHBOARD_VIEW_TO_ROUTE)) {
+    return "/dashboard";
+  }
+  const route = DASHBOARD_VIEW_TO_ROUTE[viewId];
+  return route ? `/dashboard/${route}` : "/dashboard";
+}
+
+function syncDashboardRoute(targetId, { replace = false } = {}) {
+  const nextPath = getPathnameForView(targetId);
+  const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
+  if (nextPath === currentPath) {
+    return;
+  }
+  const nextUrl = `${nextPath}${window.location.search}${window.location.hash}`;
+  if (replace) {
+    window.history.replaceState(null, "", nextUrl);
+    return;
+  }
+  window.history.pushState(null, "", nextUrl);
+}
+
+function setActiveSidebarButton(targetId) {
+  const navButtons = document.querySelectorAll(".sidebar__nav-btn");
+  navButtons.forEach((btn) => {
+    btn.classList.toggle("active", btn.getAttribute("data-target") === targetId);
+  });
+}
+
+function activateView(targetId, options = {}) {
+  const { skipRouteSync = false, replacePath = false } = options;
   if (!targetId) {
     return;
   }
@@ -972,6 +1028,8 @@ function activateView(targetId) {
     stopCartsPolling();
   }
 
+  setActiveSidebarButton(targetId);
+
   if (targetId === "products-view") {
     loadItems();
   } else if (targetId === "order-bumps-view") {
@@ -981,6 +1039,10 @@ function activateView(targetId) {
     loadIntegrations();
   } else if (targetId === "shipping-view") {
     loadShippingMethods();
+  }
+
+  if (!skipRouteSync) {
+    syncDashboardRoute(targetId, { replace: replacePath });
   }
 }
 
@@ -1830,12 +1892,7 @@ dashboardPeriodSelect?.addEventListener("change", () => {
   loadDashboardOrdersPreview();
 });
 dashboardSeeAllOrdersBtn?.addEventListener("click", () => {
-  const ordersNavBtn = document.querySelector('.sidebar__nav-btn[data-target="orders-view"]');
-  if (ordersNavBtn) {
-    ordersNavBtn.click();
-  } else {
-    activateView("orders-view");
-  }
+  activateView("orders-view");
 });
 integrationProviderButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -2558,6 +2615,9 @@ document.addEventListener("keydown", (event) => {
 
 window.addEventListener("hashchange", closeSidebar);
 window.addEventListener("popstate", closeSidebar);
+window.addEventListener("popstate", () => {
+  activateView(getViewFromPathname(), { skipRouteSync: true });
+});
 window.addEventListener("beforeunload", closeSidebar);
 mobileSidebarMediaQuery.addEventListener("change", syncSidebarForViewport);
 syncSidebarForViewport();
@@ -2584,11 +2644,9 @@ navBtns.forEach((btn) => {
     closeSidebar();
     const target = btn.getAttribute("data-target");
     if (target === "appearance-view") {
-      window.location.href = "/dashboard/builder.html";
+      window.location.href = "/dashboard/builder";
       return;
     }
-    navBtns.forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
     activateView(target);
   });
 });
