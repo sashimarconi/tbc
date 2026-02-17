@@ -1434,6 +1434,31 @@ async function handleCustomDomains(req, res, user) {
     await ensureCustomDomainsTable();
     const domainParam = normalizeCustomDomain(req.query?.id || "");
     const action = String(req.query?.action || "").trim().toLowerCase();
+    const deleteDomainForUser = async (domainValue) => {
+      if (!domainValue || !isValidCustomDomain(domainValue)) {
+        return { status: 400, payload: { error: "Dominio invalido." } };
+      }
+
+      const existing = await query(
+        "select * from custom_domains where owner_user_id = $1 and lower(domain) = lower($2) limit 1",
+        [user.id, domainValue]
+      );
+      if (!existing.rows?.length) {
+        return { status: 404, payload: { error: "Dominio nao encontrado." } };
+      }
+
+      try {
+        await removeProjectDomain(domainValue);
+      } catch (_error) {
+        // Keep local removal resilient if domain no longer exists in project.
+      }
+
+      await query("delete from custom_domains where owner_user_id = $1 and lower(domain) = lower($2)", [
+        user.id,
+        domainValue,
+      ]);
+      return { status: 200, payload: { ok: true } };
+    };
 
     if (req.method === "GET") {
       const rows = await query(
@@ -1847,28 +1872,3 @@ module.exports = async (req, res) => {
     }
   }
 };
-    const deleteDomainForUser = async (domainValue) => {
-      if (!domainValue || !isValidCustomDomain(domainValue)) {
-        return { status: 400, payload: { error: "Dominio invalido." } };
-      }
-
-      const existing = await query(
-        "select * from custom_domains where owner_user_id = $1 and lower(domain) = lower($2) limit 1",
-        [user.id, domainValue]
-      );
-      if (!existing.rows?.length) {
-        return { status: 404, payload: { error: "Dominio nao encontrado." } };
-      }
-
-      try {
-        await removeProjectDomain(domainValue);
-      } catch (_error) {
-        // Keep local removal resilient if domain no longer exists in project.
-      }
-
-      await query("delete from custom_domains where owner_user_id = $1 and lower(domain) = lower($2)", [
-        user.id,
-        domainValue,
-      ]);
-      return { status: 200, payload: { ok: true } };
-    };
