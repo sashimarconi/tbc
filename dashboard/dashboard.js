@@ -2785,7 +2785,7 @@ function renderDomains() {
 async function loadDomains() {
   if (!domainsList) return;
   try {
-    const res = await fetch("/api/dashboard/custom-domains?refresh=1", {
+    const res = await fetch("/api/dashboard/custom-domains", {
       headers: { ...setAuthHeader() },
     });
     if (!res.ok) {

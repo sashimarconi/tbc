@@ -1695,16 +1695,16 @@ async function handleCustomDomains(req, res, user) {
       }
 
       const check = await runDomainVerification(domain);
-      const verified = check.verified;
+      const verified = false;
       const verificationData = check.verificationData || extractVerificationData(payload);
       const upsert = await query(
         `insert into custom_domains (owner_user_id, domain, is_verified, verification_data, last_verified_at, last_error, updated_at)
-         values ($1, $2, $3, $4::jsonb, case when $3 then now() else null end, $5, now())
+         values ($1, $2, $3, $4::jsonb, null, $5, now())
          on conflict (domain)
          do update set owner_user_id = excluded.owner_user_id,
                        is_verified = excluded.is_verified,
                        verification_data = excluded.verification_data,
-                       last_verified_at = case when excluded.is_verified then now() else custom_domains.last_verified_at end,
+                       last_verified_at = null,
                        last_error = excluded.last_error,
                        updated_at = now()
          returning *`,
@@ -1719,7 +1719,7 @@ async function handleCustomDomains(req, res, user) {
 
       res.status(201).json({
         domain: sanitizeDomainRow(upsert.rows?.[0] || {}),
-        verified,
+        verified: false,
         payload: check.payload || payload,
         last_error: check.lastError,
       });
