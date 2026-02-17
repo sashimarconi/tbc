@@ -1546,7 +1546,7 @@ async function handleCustomDomains(req, res, user) {
       return;
     }
 
-    if (req.method === "DELETE") {
+    if (req.method === "DELETE" || (req.method === "POST" && action === "delete")) {
       if (!domainParam || !isValidCustomDomain(domainParam)) {
         res.status(400).json({ error: "Dominio invalido." });
         return;

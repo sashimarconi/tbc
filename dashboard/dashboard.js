@@ -2783,17 +2783,41 @@ async function verifyDomain(domain) {
 }
 
 async function removeDomain(domain) {
-  const res = await fetch(`/api/dashboard/custom-domains/${encodeURIComponent(domain)}`, {
+  const endpoint = `/api/dashboard/custom-domains/${encodeURIComponent(domain)}`;
+  const parseResponsePayload = async (res) => {
+    const text = await res.text().catch(() => "");
+    if (!text) return {};
+    try {
+      return JSON.parse(text);
+    } catch (_error) {
+      return { error: text };
+    }
+  };
+
+  const resDelete = await fetch(endpoint, {
     method: "DELETE",
     headers: {
       ...setAuthHeader(),
     },
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(data.error || "Falha ao remover domínio.");
+  const dataDelete = await parseResponsePayload(resDelete);
+  if (resDelete.ok) {
+    return dataDelete;
   }
-  return data;
+
+  const resFallback = await fetch(`${endpoint}/delete`, {
+    method: "POST",
+    headers: {
+      ...setAuthHeader(),
+    },
+  });
+  const dataFallback = await parseResponsePayload(resFallback);
+  if (!resFallback.ok) {
+    throw new Error(
+      dataFallback.error || dataDelete.error || `Falha ao remover domínio (HTTP ${resFallback.status}).`
+    );
+  }
+  return dataFallback;
 }
 
 bootstrapAuth();
