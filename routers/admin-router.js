@@ -1454,7 +1454,7 @@ async function handleCustomDomains(req, res, user) {
       }
 
       const existing = await query(
-        "select * from custom_domains where owner_user_id = $1 and domain = $2 limit 1",
+        "select * from custom_domains where owner_user_id = $1 and lower(domain) = lower($2) limit 1",
         [user.id, domainParam]
       );
       if (!existing.rows?.length) {
@@ -1504,9 +1504,10 @@ async function handleCustomDomains(req, res, user) {
         return;
       }
 
-      const ownerCollision = await query("select owner_user_id from custom_domains where domain = $1 limit 1", [
-        domain,
-      ]);
+      const ownerCollision = await query(
+        "select owner_user_id from custom_domains where lower(domain) = lower($1) limit 1",
+        [domain]
+      );
       const collisionOwnerId = ownerCollision.rows?.[0]?.owner_user_id || null;
       if (collisionOwnerId && String(collisionOwnerId) !== String(user.id)) {
         res.status(409).json({ error: "Este dominio ja esta conectado a outro usuario." });
@@ -1552,7 +1553,7 @@ async function handleCustomDomains(req, res, user) {
       }
 
       const existing = await query(
-        "select * from custom_domains where owner_user_id = $1 and domain = $2 limit 1",
+        "select * from custom_domains where owner_user_id = $1 and lower(domain) = lower($2) limit 1",
         [user.id, domainParam]
       );
       if (!existing.rows?.length) {
@@ -1566,7 +1567,10 @@ async function handleCustomDomains(req, res, user) {
         // Keep local removal resilient if domain no longer exists in project.
       }
 
-      await query("delete from custom_domains where owner_user_id = $1 and domain = $2", [user.id, domainParam]);
+      await query("delete from custom_domains where owner_user_id = $1 and lower(domain) = lower($2)", [
+        user.id,
+        domainParam,
+      ]);
       res.json({ ok: true });
       return;
     }

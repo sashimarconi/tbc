@@ -2080,9 +2080,10 @@ domainsList?.addEventListener("click", async (event) => {
           ? `Domínio ${domain} verificado com sucesso.`
           : `Domínio ${domain} ainda pendente de DNS.`
       );
-      await loadDomains();
     } catch (error) {
       setDomainsFeedback(error?.message || "Falha ao verificar domínio.", true);
+    } finally {
+      await loadDomains();
     }
     return;
   }
@@ -2093,9 +2094,10 @@ domainsList?.addEventListener("click", async (event) => {
     try {
       await removeDomain(domain);
       setDomainsFeedback(`Domínio ${domain} removido.`);
-      await loadDomains();
     } catch (error) {
       setDomainsFeedback(error?.message || "Falha ao remover domínio.", true);
+    } finally {
+      await loadDomains();
     }
   }
 });
@@ -2695,7 +2697,8 @@ function renderDomains() {
 
   domainsList.innerHTML = domainsCache
     .map((item) => {
-      const domain = escapeHtml(item.domain || "");
+      const domainRaw = String(item.domain || "");
+      const domain = escapeHtml(domainRaw);
       const statusLabel = item.is_verified === true ? "Verificado" : "Pendente";
       const statusToneClass = item.is_verified === true ? "is-ok" : "is-pending";
       return `
@@ -2713,8 +2716,8 @@ function renderDomains() {
             }
           </div>
           <div class="shipping-method-row__actions domain-card__actions">
-            <button type="button" class="ghost" data-domain-action="verify" data-domain="${domain}">Verificar</button>
-            <button type="button" class="ghost" data-domain-action="delete" data-domain="${domain}">Remover</button>
+            <button type="button" class="ghost" data-domain-action="verify" data-domain="${domainRaw}">Verificar</button>
+            <button type="button" class="ghost" data-domain-action="delete" data-domain="${domainRaw}">Remover</button>
           </div>
         </article>
       `;
