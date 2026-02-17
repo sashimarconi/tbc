@@ -68,6 +68,7 @@ const DEFAULT_BLOCK_VISIBILITY = {
   offer: true,
   form: true,
   bumps: true,
+  bumpsBox: true,
   shipping: true,
   payment: true,
   footer: true,
@@ -266,6 +267,7 @@ function buildBlocksConfigFromEffective(cfg = {}) {
   const visibility = { ...DEFAULT_BLOCK_VISIBILITY, ...(blocks.visibility || {}) };
   if (elements.showCountrySelector !== undefined) visibility.country = elements.showCountrySelector !== false;
   if (elements.showOrderBumps !== undefined) visibility.bumps = elements.showOrderBumps !== false;
+  if (elements.showOrderBumpsBox !== undefined) visibility.bumpsBox = elements.showOrderBumpsBox !== false;
   if (elements.showShipping !== undefined) visibility.shipping = elements.showShipping !== false;
   if (elements.showFooterSecurityText !== undefined) visibility.footer = elements.showFooterSecurityText !== false;
   if (elements.showProductImage === false) visibility.offer = false;
@@ -499,6 +501,7 @@ function bindAppearanceFields() {
     ["el-show-country", ["elements", "showCountrySelector"], ["blocks", "visibility", "country"]],
     ["el-show-product-image", ["elements", "showProductImage"], ["blocks", "visibility", "offer"]],
     ["el-show-bumps", ["elements", "showOrderBumps"], ["blocks", "visibility", "bumps"]],
+    ["el-show-bumps-box", ["elements", "showOrderBumpsBox"], ["blocks", "visibility", "bumpsBox"]],
     ["el-show-shipping", ["elements", "showShipping"], ["blocks", "visibility", "shipping"]],
     ["el-show-footer-security", ["elements", "showFooterSecurityText"], ["blocks", "visibility", "footer"]],
   ];
@@ -617,6 +620,7 @@ function populateFieldsFromEffective() {
   setFieldValue("el-show-country", blockVisibility.country ?? cfg.elements?.showCountrySelector, true);
   setFieldValue("el-show-product-image", blockVisibility.offer ?? cfg.elements?.showProductImage, true);
   setFieldValue("el-show-bumps", blockVisibility.bumps ?? cfg.elements?.showOrderBumps, true);
+  setFieldValue("el-show-bumps-box", blockVisibility.bumpsBox ?? cfg.elements?.showOrderBumpsBox, true);
   setFieldValue("el-show-shipping", blockVisibility.shipping ?? cfg.elements?.showShipping, true);
   setFieldValue("el-show-footer-security", blockVisibility.footer ?? cfg.elements?.showFooterSecurityText, true);
 

@@ -141,6 +141,7 @@ let elementsConfig = {
   showCountrySelector: true,
   showProductImage: true,
   showOrderBumps: true,
+  showOrderBumpsBox: true,
   showShipping: true,
   showFooterSecurityText: true,
   order: DEFAULT_BLOCK_ORDER.slice(),
@@ -282,6 +283,7 @@ function normalizeElementsConfig(next = {}) {
     showCountrySelector: next.showCountrySelector !== false,
     showProductImage: next.showProductImage !== false,
     showOrderBumps: next.showOrderBumps !== false,
+    showOrderBumpsBox: next.showOrderBumpsBox !== false,
     showShipping: next.showShipping !== false,
     showFooterSecurityText: next.showFooterSecurityText !== false,
     order,
@@ -318,6 +320,7 @@ function normalizeBlocksConfig(config = {}) {
       offer: sourceVisibility.offer ?? true,
       form: sourceVisibility.form !== false,
       bumps: sourceVisibility.bumps ?? sourceElements.showOrderBumps !== false,
+      bumpsBox: sourceVisibility.bumpsBox ?? sourceElements.showOrderBumpsBox !== false,
       shipping: sourceVisibility.shipping ?? sourceElements.showShipping !== false,
       payment: sourceVisibility.payment !== false,
       footer: sourceVisibility.footer ?? sourceElements.showFooterSecurityText !== false,
@@ -483,7 +486,12 @@ function applyBlocksVisibility() {
   if (countrySwitcher) countrySwitcher.classList.toggle("hidden", visibility.country === false);
   if (productCard) productCard.classList.toggle("hidden", visibility.offer === false);
   if (formFieldsBlock) formFieldsBlock.classList.toggle("hidden", visibility.form === false);
-  if (addonsSection) addonsSection.classList.toggle("hidden", visibility.bumps === false || !elementsConfig.showOrderBumps);
+  if (addonsSection) {
+    addonsSection.classList.toggle(
+      "hidden",
+      visibility.bumps === false || visibility.bumpsBox === false || !elementsConfig.showOrderBumps || !elementsConfig.showOrderBumpsBox
+    );
+  }
   if (shippingSection) {
     shippingSection.classList.toggle("hidden", shouldHideShippingSection());
   }
@@ -804,7 +812,8 @@ function applyElementsConfig(nextElements) {
   }
   if (addonsSection) {
     const hasRenderedAddonCard = addonsList?.querySelector?.(".addon-card") !== null;
-    const shouldHideBumps = !elementsConfig.showOrderBumps || !(bumpMap?.size > 0) || !hasRenderedAddonCard;
+    const shouldHideBumps =
+      !elementsConfig.showOrderBumpsBox || !elementsConfig.showOrderBumps || !(bumpMap?.size > 0) || !hasRenderedAddonCard;
     addonsSection.classList.toggle("hidden", shouldHideBumps);
   }
   if (shippingSection) {
@@ -954,6 +963,7 @@ function applyAppearance(config) {
     ...(config?.elements || {}),
     showCountrySelector: blocksConfig.visibility.country,
     showOrderBumps: blocksConfig.visibility.bumps,
+    showOrderBumpsBox: blocksConfig.visibility.bumpsBox,
     showShipping: blocksConfig.visibility.shipping,
     showFooterSecurityText: blocksConfig.visibility.footer,
     order: blocksConfig.order,
@@ -1605,7 +1615,7 @@ function renderBumps(bumps = []) {
     return;
   }
 
-  if (!elementsConfig.showOrderBumps) {
+  if (!elementsConfig.showOrderBumps || !elementsConfig.showOrderBumpsBox) {
     addonsSection?.classList.add("hidden");
   } else {
     addonsSection?.classList.remove("hidden");
