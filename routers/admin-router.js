@@ -1539,6 +1539,12 @@ async function handleCustomDomains(req, res, user) {
       return;
     }
 
+    if (req.method === "POST" && action === "delete") {
+      const result = await deleteDomainForUser(domainParam);
+      res.status(result.status).json(result.payload);
+      return;
+    }
+
     if (req.method === "POST") {
       const body = await parseJson(req);
       const domain = normalizeCustomDomain(body?.domain || "");
@@ -1589,32 +1595,9 @@ async function handleCustomDomains(req, res, user) {
       return;
     }
 
-    if (req.method === "DELETE" || (req.method === "POST" && action === "delete")) {
-      if (!domainParam || !isValidCustomDomain(domainParam)) {
-        res.status(400).json({ error: "Dominio invalido." });
-        return;
-      }
-
-      const existing = await query(
-        "select * from custom_domains where owner_user_id = $1 and lower(domain) = lower($2) limit 1",
-        [user.id, domainParam]
-      );
-      if (!existing.rows?.length) {
-        res.status(404).json({ error: "Dominio nao encontrado." });
-        return;
-      }
-
-      try {
-        await removeProjectDomain(domainParam);
-      } catch (_error) {
-        // Keep local removal resilient if domain no longer exists in project.
-      }
-
-      await query("delete from custom_domains where owner_user_id = $1 and lower(domain) = lower($2)", [
-        user.id,
-        domainParam,
-      ]);
-      res.json({ ok: true });
+    if (req.method === "DELETE") {
+      const result = await deleteDomainForUser(domainParam);
+      res.status(result.status).json(result.payload);
       return;
     }
 
@@ -1864,3 +1847,28 @@ module.exports = async (req, res) => {
     }
   }
 };
+    const deleteDomainForUser = async (domainValue) => {
+      if (!domainValue || !isValidCustomDomain(domainValue)) {
+        return { status: 400, payload: { error: "Dominio invalido." } };
+      }
+
+      const existing = await query(
+        "select * from custom_domains where owner_user_id = $1 and lower(domain) = lower($2) limit 1",
+        [user.id, domainValue]
+      );
+      if (!existing.rows?.length) {
+        return { status: 404, payload: { error: "Dominio nao encontrado." } };
+      }
+
+      try {
+        await removeProjectDomain(domainValue);
+      } catch (_error) {
+        // Keep local removal resilient if domain no longer exists in project.
+      }
+
+      await query("delete from custom_domains where owner_user_id = $1 and lower(domain) = lower($2)", [
+        user.id,
+        domainValue,
+      ]);
+      return { status: 200, payload: { ok: true } };
+    };
