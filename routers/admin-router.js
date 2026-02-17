@@ -1443,7 +1443,50 @@ async function handleCustomDomains(req, res, user) {
           order by updated_at desc, created_at desc`,
         [user.id]
       );
-      res.json({ domains: (rows.rows || []).map((row) => sanitizeDomainRow(row)) });
+      const shouldRefresh = String(req.query?.refresh || "") === "1";
+      if (!shouldRefresh) {
+        res.json({ domains: (rows.rows || []).map((row) => sanitizeDomainRow(row)) });
+        return;
+      }
+
+      const refreshedRows = await Promise.all(
+        (rows.rows || []).map(async (row) => {
+          const domain = String(row?.domain || "").trim();
+          if (!domain) {
+            return row;
+          }
+          try {
+            const payload = await verifyProjectDomain(domain);
+            const verified = payload?.verified === true;
+            const verificationData = extractVerificationData(payload);
+            const updated = await query(
+              `update custom_domains
+                  set is_verified = $3,
+                      verification_data = $4::jsonb,
+                      last_verified_at = now(),
+                      last_error = '',
+                      updated_at = now()
+                where owner_user_id = $1 and domain = $2
+                returning *`,
+              [user.id, domain, verified, verificationData ? JSON.stringify(verificationData) : null]
+            );
+            return updated.rows?.[0] || row;
+          } catch (error) {
+            const updated = await query(
+              `update custom_domains
+                  set is_verified = false,
+                      last_error = $3,
+                      updated_at = now()
+                where owner_user_id = $1 and domain = $2
+                returning *`,
+              [user.id, domain, String(error?.message || "Falha na verificacao").slice(0, 400)]
+            );
+            return updated.rows?.[0] || row;
+          }
+        })
+      );
+
+      res.json({ domains: refreshedRows.map((row) => sanitizeDomainRow(row)) });
       return;
     }
 

@@ -2728,7 +2728,7 @@ function renderDomains() {
 async function loadDomains() {
   if (!domainsList) return;
   try {
-    const res = await fetch("/api/dashboard/custom-domains", {
+    const res = await fetch("/api/dashboard/custom-domains?refresh=1", {
       headers: { ...setAuthHeader() },
     });
     if (!res.ok) {
@@ -2769,7 +2769,7 @@ async function connectDomain(domain) {
 }
 
 async function verifyDomain(domain) {
-  const res = await fetch(`/api/dashboard/custom-domains/${encodeURIComponent(domain)}/verify`, {
+  const res = await fetch(`/api/dashboard/custom-domains?action=verify&id=${encodeURIComponent(domain)}`, {
     method: "POST",
     headers: {
       ...setAuthHeader(),
@@ -2783,7 +2783,7 @@ async function verifyDomain(domain) {
 }
 
 async function removeDomain(domain) {
-  const endpoint = `/api/dashboard/custom-domains/${encodeURIComponent(domain)}`;
+  const endpoint = `/api/dashboard/custom-domains?action=delete&id=${encodeURIComponent(domain)}`;
   const parseResponsePayload = async (res) => {
     const text = await res.text().catch(() => "");
     if (!text) return {};
@@ -2795,7 +2795,7 @@ async function removeDomain(domain) {
   };
 
   const resDelete = await fetch(endpoint, {
-    method: "DELETE",
+    method: "POST",
     headers: {
       ...setAuthHeader(),
     },
@@ -2805,8 +2805,8 @@ async function removeDomain(domain) {
     return dataDelete;
   }
 
-  const resFallback = await fetch(`${endpoint}/delete`, {
-    method: "POST",
+  const resFallback = await fetch(`/api/dashboard/custom-domains/${encodeURIComponent(domain)}`, {
+    method: "DELETE",
     headers: {
       ...setAuthHeader(),
     },
