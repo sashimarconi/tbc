@@ -14,6 +14,12 @@ const { ensureIntegrationsSchema } = require("../lib/ensure-integrations");
 const { dispatchUtmifyEvent } = require("../lib/utmify");
 const { ensureAnalyticsTables } = require("../lib/ensure-analytics");
 const { ensureShippingMethodsTable } = require("../lib/ensure-shipping-methods");
+const {
+  ensureCustomDomainsTable,
+  normalizeCustomDomain,
+  isValidCustomDomain,
+} = require("../lib/ensure-custom-domains");
+const { addProjectDomain, verifyProjectDomain, removeProjectDomain } = require("../lib/vercel-domains");
 const DEFAULT_SEALPAY_API_URL =
   process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix";
 const DASHBOARD_TZ = process.env.DASHBOARD_TZ || "America/Sao_Paulo";
@@ -1381,6 +1387,179 @@ async function handleShippingMethods(req, res, user) {
   }
 }
 
+function sanitizeDomainRow(row = {}) {
+  return {
+    id: row.id,
+    owner_user_id: row.owner_user_id,
+    domain: row.domain || "",
+    is_verified: row.is_verified === true,
+    verification_data: row.verification_data || null,
+    last_verified_at: row.last_verified_at || null,
+    last_error: row.last_error || "",
+    created_at: row.created_at || null,
+    updated_at: row.updated_at || null,
+  };
+}
+
+function extractVerificationData(payload = {}) {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+  const verification = payload.verification || payload.config || payload;
+  if (!verification || typeof verification !== "object") {
+    return null;
+  }
+  return verification;
+}
+
+async function handleCustomDomains(req, res, user) {
+  try {
+    await ensureCustomDomainsTable();
+    const domainParam = normalizeCustomDomain(req.query?.id || "");
+    const action = String(req.query?.action || "").trim().toLowerCase();
+
+    if (req.method === "GET") {
+      const rows = await query(
+        `select id, owner_user_id, domain, is_verified, verification_data, last_verified_at, last_error, created_at, updated_at
+           from custom_domains
+          where owner_user_id = $1
+          order by updated_at desc, created_at desc`,
+        [user.id]
+      );
+      res.json({ domains: (rows.rows || []).map((row) => sanitizeDomainRow(row)) });
+      return;
+    }
+
+    if (req.method === "POST" && action === "verify") {
+      if (!domainParam || !isValidCustomDomain(domainParam)) {
+        res.status(400).json({ error: "Dominio invalido." });
+        return;
+      }
+
+      const existing = await query(
+        "select * from custom_domains where owner_user_id = $1 and domain = $2 limit 1",
+        [user.id, domainParam]
+      );
+      if (!existing.rows?.length) {
+        res.status(404).json({ error: "Dominio nao encontrado." });
+        return;
+      }
+
+      try {
+        const payload = await verifyProjectDomain(domainParam);
+        const verified = payload?.verified === true || payload?.configuredBy === "CNAME";
+        const verificationData = extractVerificationData(payload);
+        const updated = await query(
+          `update custom_domains
+              set is_verified = $3,
+                  verification_data = $4::jsonb,
+                  last_verified_at = now(),
+                  last_error = '',
+                  updated_at = now()
+            where owner_user_id = $1 and domain = $2
+            returning *`,
+          [user.id, domainParam, verified, JSON.stringify(verificationData || {})]
+        );
+        res.json({
+          domain: sanitizeDomainRow(updated.rows?.[0] || {}),
+          verified,
+          payload,
+        });
+      } catch (error) {
+        await query(
+          `update custom_domains
+              set is_verified = false,
+                  last_error = $3,
+                  updated_at = now()
+            where owner_user_id = $1 and domain = $2`,
+          [user.id, domainParam, String(error?.message || "Falha na verificacao").slice(0, 400)]
+        );
+        res.status(400).json({ error: error.message || "Falha ao verificar dominio." });
+      }
+      return;
+    }
+
+    if (req.method === "POST") {
+      const body = await parseJson(req);
+      const domain = normalizeCustomDomain(body?.domain || "");
+      if (!domain || !isValidCustomDomain(domain)) {
+        res.status(400).json({ error: "Dominio invalido. Use algo como pay.seudominio.com" });
+        return;
+      }
+
+      const ownerCollision = await query("select owner_user_id from custom_domains where domain = $1 limit 1", [
+        domain,
+      ]);
+      const collisionOwnerId = ownerCollision.rows?.[0]?.owner_user_id || null;
+      if (collisionOwnerId && String(collisionOwnerId) !== String(user.id)) {
+        res.status(409).json({ error: "Este dominio ja esta conectado a outro usuario." });
+        return;
+      }
+
+      let payload = null;
+      try {
+        payload = await addProjectDomain(domain);
+      } catch (error) {
+        res.status(error?.statusCode || 400).json({ error: error.message || "Falha ao conectar dominio." });
+        return;
+      }
+
+      const verified = payload?.verified === true || payload?.configuredBy === "CNAME";
+      const verificationData = extractVerificationData(payload);
+      const upsert = await query(
+        `insert into custom_domains (owner_user_id, domain, is_verified, verification_data, last_verified_at, last_error, updated_at)
+         values ($1, $2, $3, $4::jsonb, case when $3 then now() else null end, '', now())
+         on conflict (domain)
+         do update set owner_user_id = excluded.owner_user_id,
+                       is_verified = excluded.is_verified,
+                       verification_data = excluded.verification_data,
+                       last_verified_at = case when excluded.is_verified then now() else custom_domains.last_verified_at end,
+                       last_error = '',
+                       updated_at = now()
+         returning *`,
+        [user.id, domain, verified, JSON.stringify(verificationData || {})]
+      );
+
+      res.status(201).json({
+        domain: sanitizeDomainRow(upsert.rows?.[0] || {}),
+        verified,
+        payload,
+      });
+      return;
+    }
+
+    if (req.method === "DELETE") {
+      if (!domainParam || !isValidCustomDomain(domainParam)) {
+        res.status(400).json({ error: "Dominio invalido." });
+        return;
+      }
+
+      const existing = await query(
+        "select * from custom_domains where owner_user_id = $1 and domain = $2 limit 1",
+        [user.id, domainParam]
+      );
+      if (!existing.rows?.length) {
+        res.status(404).json({ error: "Dominio nao encontrado." });
+        return;
+      }
+
+      try {
+        await removeProjectDomain(domainParam);
+      } catch (_error) {
+        // Keep local removal resilient if domain no longer exists in project.
+      }
+
+      await query("delete from custom_domains where owner_user_id = $1 and domain = $2", [user.id, domainParam]);
+      res.json({ ok: true });
+      return;
+    }
+
+    res.status(405).json({ error: "Method not allowed" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
 async function handleIntegrations(req, res, user) {
   try {
     await ensureIntegrationsSchema();
@@ -1535,13 +1714,16 @@ module.exports = async (req, res) => {
 
     req.query = req.query || {};
     if (
-      ["items", "orders", "carts", "upload", "integrations", "shipping-methods"].includes(path) &&
+      ["items", "orders", "carts", "upload", "integrations", "shipping-methods", "custom-domains"].includes(path) &&
       segments.length > 1 &&
       !req.query.id
     ) {
       req.query.id = segments[1];
     }
     if (path === "orders" && segments.length > 2 && !req.query.action) {
+      req.query.action = segments[2];
+    }
+    if (path === "custom-domains" && segments.length > 2 && !req.query.action) {
       req.query.action = segments[2];
     }
 
@@ -1597,6 +1779,9 @@ module.exports = async (req, res) => {
         return;
       case "shipping-methods":
         await handleShippingMethods(req, res, user);
+        return;
+      case "custom-domains":
+        await handleCustomDomains(req, res, user);
         return;
       case "analytics":
         req.query.path = segments.slice(1);

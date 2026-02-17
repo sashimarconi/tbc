@@ -1,4 +1,5 @@
 ﻿const { query } = require("../../lib/db");
+const { resolvePublicOwnerContext } = require("../../lib/public-owner-context");
 
 function deepMerge(base, override) {
   if (Array.isArray(base)) {
@@ -360,11 +361,8 @@ module.exports = async (req, res) => {
   try {
     await ensureThemesAndAppearanceSchema();
 
-    const ownerResult = await query(
-      "select owner_user_id from products where slug = $1 and type = 'base' limit 1",
-      [slug]
-    );
-    const ownerUserId = ownerResult.rows?.[0]?.owner_user_id;
+    const ownerContext = await resolvePublicOwnerContext(req, slug, { activeOnlyBase: true });
+    const ownerUserId = ownerContext?.ownerUserId;
 
     if (!ownerUserId) {
       res.status(404).json({ error: "Checkout nao encontrado" });
@@ -405,3 +403,5 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+

@@ -45,6 +45,7 @@
         <button class="sidebar__nav-btn" data-target="integrations-view"><i data-lucide="plug"></i>Integrações</button>
         <button class="sidebar__nav-btn" data-target="products-view"><i data-lucide="package"></i>Produtos</button>
         <button class="sidebar__nav-btn" data-target="shipping-view"><i data-lucide="truck"></i>Fretes</button>
+        <button class="sidebar__nav-btn" data-target="domains-view"><i data-lucide="globe"></i>Domínios</button>
         <button class="sidebar__nav-btn" data-target="order-bumps-view"><i data-lucide="sparkles"></i>Order Bumps</button>
       </nav>
 
@@ -584,6 +585,51 @@
             <div id="shipping-methods-list" class="shipping-methods-list">
               <article class="shipping-method-row shipping-method-row--empty">
                 <p>Carregando fretes...</p>
+              </article>
+            </div>
+          </section>
+        </section>
+
+        <section id="domains-view" class="panel-view hidden" hidden>
+          <header class="view-header">
+            <div>
+              <h2 class="section-title">Domínios</h2>
+              <p class="section-subtitle">Conecte um domínio próprio e use apenas nos seus checkouts.</p>
+            </div>
+            <div class="view-header__actions">
+              <button id="domains-refresh" type="button" class="ghost">Atualizar</button>
+            </div>
+          </header>
+
+          <section class="table-card card table-card--section">
+            <header class="table-card-header">
+              <div>
+                <h3 class="table-title">Conectar novo domínio</h3>
+                <p class="table-subtitle">Exemplo: pay.seudominio.com</p>
+              </div>
+            </header>
+            <form id="domains-form" class="integration-form-grid">
+              <label class="shipping-form-grid__full">
+                Domínio
+                <input id="domains-input" type="text" placeholder="pay.seudominio.com" required />
+              </label>
+              <div class="integration-actions-row">
+                <button id="domains-connect-btn" type="submit" class="ghost">Conectar</button>
+              </div>
+            </form>
+            <p id="domains-feedback" class="section-subtitle"></p>
+          </section>
+
+          <section class="table-card card table-card--section">
+            <header class="table-card-header">
+              <div>
+                <h3 class="table-title">Domínios conectados</h3>
+                <p class="table-subtitle">Cada domínio fica vinculado somente ao seu usuário e seus produtos.</p>
+              </div>
+            </header>
+            <div id="domains-list" class="shipping-methods-list">
+              <article class="shipping-method-row shipping-method-row--empty">
+                <p>Carregando domínios...</p>
               </article>
             </div>
           </section>

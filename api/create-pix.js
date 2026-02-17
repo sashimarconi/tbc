@@ -1,20 +1,18 @@
-const { parseJson } = require("../lib/parse-json");
+﻿const { parseJson } = require("../lib/parse-json");
 const { query } = require("../lib/db");
 const { ensurePaymentGatewayTable } = require("../lib/ensure-payment-gateway");
 const { decryptText } = require("../lib/credentials-crypto");
+const { resolvePublicOwnerContext } = require("../lib/public-owner-context");
 const DEFAULT_SEALPAY_API_URL =
   process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix";
 
-async function resolveGatewayBySlug(slug) {
+async function resolveGatewayBySlug(req, slug) {
   if (!slug) {
     return null;
   }
 
-  const ownerRes = await query(
-    "select owner_user_id from products where slug = $1 and type = 'base' limit 1",
-    [slug]
-  );
-  const ownerUserId = ownerRes.rows?.[0]?.owner_user_id;
+  const ownerContext = await resolvePublicOwnerContext(req, slug, { activeOnlyBase: true });
+  const ownerUserId = ownerContext?.ownerUserId;
   if (!ownerUserId) {
     return null;
   }
@@ -58,7 +56,7 @@ module.exports = async (req, res) => {
   let apiUrl = "";
   let apiKey = "";
   try {
-    const gateway = await resolveGatewayBySlug(slug);
+    const gateway = await resolveGatewayBySlug(req, slug);
     if (gateway) {
       apiUrl = gateway.apiUrl;
       apiKey = gateway.apiKey;
@@ -127,3 +125,5 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: "Pix connection error" });
   }
 };
+
+

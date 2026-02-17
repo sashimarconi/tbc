@@ -18,6 +18,7 @@ const summarySubtotal = document.getElementById("summary-subtotal");
 const summaryShipping = document.getElementById("summary-shipping");
 const summaryTotal = document.getElementById("summary-total");
 const summaryCount = document.getElementById("summary-count");
+const summaryToggle = document.getElementById("summary-toggle");
 const headerWrap = document.getElementById("checkout-header");
 const headerBrandBlock = document.getElementById("header-brand-block");
 const headerLogo = document.getElementById("header-logo");
@@ -36,6 +37,7 @@ const paymentBlock = document.getElementById("payment-block");
 const footerBlock = document.getElementById("footer-block");
 const footerSecurityText = document.getElementById("footer-security-text");
 const summaryCard = document.getElementById("summary-card");
+const summaryHeader = summaryCard?.querySelector(".summary__header");
 const fieldWraps = {
   fullName: document.getElementById("field-wrap-name"),
   email: document.getElementById("field-wrap-email"),
@@ -101,6 +103,7 @@ let firedInitiateCheckout = false;
 let firedAddPaymentInfo = false;
 let firedCheckoutView = false;
 let firedCheckoutStartEvent = false;
+let summaryCollapsed = true;
 
 let offerData = null;
 let selectedBumps = new Set();
@@ -165,6 +168,33 @@ if (checkoutRoot) {
 if (headerWrap) {
   headerWrap.classList.add("hidden");
 }
+
+function setSummaryCollapsed(nextCollapsed) {
+  summaryCollapsed = nextCollapsed !== false;
+  if (summaryCard) {
+    summaryCard.classList.toggle("is-collapsed", summaryCollapsed);
+  }
+  if (summaryToggle) {
+    summaryToggle.textContent = summaryCollapsed ? "Expandir" : "Recolher";
+    summaryToggle.setAttribute("aria-expanded", summaryCollapsed ? "false" : "true");
+  }
+}
+
+if (summaryToggle) {
+  summaryToggle.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setSummaryCollapsed(!summaryCollapsed);
+  });
+}
+
+if (summaryHeader) {
+  summaryHeader.addEventListener("click", () => {
+    setSummaryCollapsed(!summaryCollapsed);
+  });
+}
+
+setSummaryCollapsed(true);
 
 function resolveOfferSlug() {
   try {

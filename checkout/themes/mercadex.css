@@ -34,14 +34,7 @@ body.ui-mercadex .trust-bar {
 }
 
 body.ui-mercadex .trust-bar::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -10px;
-  height: 10px;
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(17, 19, 24, 0.08);
+  content: none;
 }
 
 body.ui-mercadex .trust-bar__content {

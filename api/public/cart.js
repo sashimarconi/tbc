@@ -2,6 +2,7 @@
 const { query } = require("../../lib/db");
 const { ensureSalesTables } = require("../../lib/ensure-sales");
 const { ensureAnalyticsTables } = require("../../lib/ensure-analytics");
+const { resolvePublicOwnerContext } = require("../../lib/public-owner-context");
 
 const STAGE_PRIORITY = {
   contact: 1,
@@ -94,11 +95,6 @@ async function registerCartAnalytics({ ownerUserId, cartKey, stage, source, utm 
   }
 }
 
-async function resolveOwnerBySlug(slug) {
-  const result = await query("select owner_user_id from products where slug = $1 and type = 'base' limit 1", [slug]);
-  return result.rows?.[0]?.owner_user_id || null;
-}
-
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
@@ -124,7 +120,8 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const ownerUserId = await resolveOwnerBySlug(slug);
+  const ownerContext = await resolvePublicOwnerContext(req, slug, { activeOnlyBase: true });
+  const ownerUserId = ownerContext?.ownerUserId;
   if (!ownerUserId) {
     res.status(404).json({ error: "Checkout nao encontrado" });
     return;
@@ -237,3 +234,5 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+

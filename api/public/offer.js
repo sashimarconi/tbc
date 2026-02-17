@@ -1,6 +1,7 @@
 ﻿const { query } = require("../../lib/db");
 const { ensureProductSchema, ensureBaseSlugs } = require("../../lib/ensure-products");
 const { ensureShippingMethodsTable } = require("../../lib/ensure-shipping-methods");
+const { resolvePublicOwnerContext } = require("../../lib/public-owner-context");
 
 module.exports = async (req, res) => {
   if (req.method !== "GET") {
@@ -18,17 +19,13 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const baseRes = await query(
-      "select * from products where type = 'base' and active = true and slug = $1 limit 1",
-      [slug]
-    );
-
-    if (!baseRes.rows?.length) {
+    const ownerContext = await resolvePublicOwnerContext(req, slug, { activeOnlyBase: true });
+    if (!ownerContext?.baseProduct) {
       res.status(404).json({ error: "Checkout nao encontrado" });
       return;
     }
 
-    const baseProduct = baseRes.rows[0];
+    const baseProduct = ownerContext.baseProduct;
     await ensureBaseSlugs(baseProduct.owner_user_id);
 
     const ownerUserId = baseProduct.owner_user_id;

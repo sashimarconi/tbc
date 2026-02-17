@@ -1,16 +1,12 @@
-const { query } = require("../../lib/db");
+﻿const { query } = require("../../lib/db");
 const { ensureIntegrationsSchema } = require("../../lib/ensure-integrations");
+const { resolvePublicOwnerContext } = require("../../lib/public-owner-context");
 
 function sanitizeProvider(value) {
   const provider = String(value || "")
     .trim()
     .toLowerCase();
   return ["meta", "tiktok", "utmify"].includes(provider) ? provider : "";
-}
-
-async function resolveOwnerBySlug(slug) {
-  const result = await query("select owner_user_id from products where slug = $1 and type = 'base' limit 1", [slug]);
-  return result.rows?.[0]?.owner_user_id || null;
 }
 
 function sanitizePublicConfig(provider, configValue) {
@@ -44,7 +40,8 @@ module.exports = async (req, res) => {
       res.status(400).json({ error: "Missing slug" });
       return;
     }
-    const ownerUserId = await resolveOwnerBySlug(slug);
+    const ownerContext = await resolvePublicOwnerContext(req, slug, { activeOnlyBase: true });
+    const ownerUserId = ownerContext?.ownerUserId;
     if (!ownerUserId) {
       res.status(404).json({ error: "Checkout nao encontrado" });
       return;
@@ -73,3 +70,5 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+

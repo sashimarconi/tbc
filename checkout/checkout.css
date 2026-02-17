@@ -771,11 +771,37 @@ input[type="checkbox"]:focus-visible {
   align-items: center;
 }
 
+.summary__header {
+  gap: 10px;
+}
+
+.summary__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .summary__count {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-steps);
   padding: 3px 10px;
   font-size: 12px;
+}
+
+.summary__toggle {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-steps);
+  background: var(--color-button-secondary-bg);
+  color: var(--color-button-secondary-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.summary.is-collapsed > :not(.summary__header) {
+  display: none;
 }
 
 .summary__total {

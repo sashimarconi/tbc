@@ -1,8 +1,9 @@
-const { parseJson } = require("../../lib/parse-json");
+﻿const { parseJson } = require("../../lib/parse-json");
 const { query } = require("../../lib/db");
 const { ensureSalesTables } = require("../../lib/ensure-sales");
 const { dispatchUtmifyEvent, normalizeTrackingParameters } = require("../../lib/utmify");
 const { ensureAnalyticsTables } = require("../../lib/ensure-analytics");
+const { resolvePublicOwnerContext } = require("../../lib/public-owner-context");
 
 function asObject(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -65,14 +66,6 @@ async function registerOrderAnalytics({ ownerUserId, cartKey, status, totalCents
   }
 }
 
-async function resolveOwnerBySlug(slug) {
-  const result = await query(
-    "select owner_user_id from products where slug = $1 and owner_user_id is not null order by case when type = 'base' then 0 else 1 end, created_at desc limit 1",
-    [slug]
-  );
-  return result.rows?.[0]?.owner_user_id || null;
-}
-
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
@@ -98,7 +91,8 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const ownerUserId = await resolveOwnerBySlug(slug);
+  const ownerContext = await resolvePublicOwnerContext(req, slug, { activeOnlyBase: true });
+  const ownerUserId = ownerContext?.ownerUserId;
   if (!ownerUserId) {
     res.status(404).json({ error: "Checkout nao encontrado" });
     return;
@@ -237,3 +231,5 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+

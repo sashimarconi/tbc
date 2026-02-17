@@ -209,6 +209,12 @@ const shippingMaxDaysInput = document.getElementById("shipping-max-days");
 const shippingDescriptionInput = document.getElementById("shipping-description");
 const shippingDefaultInput = document.getElementById("shipping-default");
 const shippingActiveInput = document.getElementById("shipping-active");
+const domainsRefreshBtn = document.getElementById("domains-refresh");
+const domainsForm = document.getElementById("domains-form");
+const domainsInput = document.getElementById("domains-input");
+const domainsConnectBtn = document.getElementById("domains-connect-btn");
+const domainsList = document.getElementById("domains-list");
+const domainsFeedback = document.getElementById("domains-feedback");
 const numberFormatter = new Intl.NumberFormat("pt-BR");
 const percentFormatter = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
 const currencyFormatter = new Intl.NumberFormat("pt-BR", {
@@ -230,6 +236,7 @@ const DASHBOARD_ROUTE_TO_VIEW = {
   integrations: "integrations-view",
   products: "products-view",
   shipping: "shipping-view",
+  domains: "domains-view",
   "order-bumps": "order-bumps-view",
 };
 const DASHBOARD_VIEW_TO_ROUTE = Object.fromEntries(
@@ -256,6 +263,7 @@ let integrationsCache = [];
 let shippingMethodsCache = [];
 let shippingModalMode = "create";
 let editingShippingId = null;
+let domainsCache = [];
 let authStatus = "loading";
 
 function setDashboardChromeVisible(visible) {
@@ -1039,6 +1047,8 @@ function activateView(targetId, options = {}) {
     loadIntegrations();
   } else if (targetId === "shipping-view") {
     loadShippingMethods();
+  } else if (targetId === "domains-view") {
+    loadDomains();
   }
 
   if (!skipRouteSync) {
@@ -1885,6 +1895,8 @@ dashboardRefreshBtn?.addEventListener("click", () => {
     loadIntegrations();
   } else if (activeView.id === "shipping-view") {
     loadShippingMethods();
+  } else if (activeView.id === "domains-view") {
+    loadDomains();
   }
 });
 dashboardPeriodSelect?.addEventListener("change", () => {
@@ -2008,6 +2020,66 @@ shippingMethodsList?.addEventListener("change", async (event) => {
   } catch (error) {
     input.checked = !input.checked;
     alert(error?.message || "Erro ao atualizar status do frete.");
+  }
+});
+domainsRefreshBtn?.addEventListener("click", () => loadDomains());
+domainsForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const domain = (domainsInput?.value || "").trim();
+  if (!domain) {
+    setDomainsFeedback("Informe um domínio.", true);
+    return;
+  }
+  setDomainsFeedback("Conectando domínio...");
+  if (domainsConnectBtn) {
+    domainsConnectBtn.disabled = true;
+  }
+  try {
+    await connectDomain(domain);
+    setDomainsFeedback("Domínio conectado. Configure o DNS e clique em verificar.");
+    if (domainsInput) domainsInput.value = "";
+    await loadDomains();
+  } catch (error) {
+    setDomainsFeedback(error?.message || "Falha ao conectar domínio.", true);
+  } finally {
+    if (domainsConnectBtn) {
+      domainsConnectBtn.disabled = false;
+    }
+  }
+});
+domainsList?.addEventListener("click", async (event) => {
+  const actionNode = event.target.closest("[data-domain-action]");
+  if (!actionNode) return;
+  const action = actionNode.dataset.domainAction;
+  const domain = String(actionNode.dataset.domain || "");
+  if (!domain) return;
+
+  if (action === "verify") {
+    setDomainsFeedback(`Verificando ${domain}...`);
+    try {
+      const result = await verifyDomain(domain);
+      setDomainsFeedback(
+        result?.verified === true
+          ? `Domínio ${domain} verificado com sucesso.`
+          : `Domínio ${domain} ainda pendente de DNS.`
+      );
+      await loadDomains();
+    } catch (error) {
+      setDomainsFeedback(error?.message || "Falha ao verificar domínio.", true);
+    }
+    return;
+  }
+
+  if (action === "delete") {
+    if (!confirm(`Remover o domínio ${domain}?`)) return;
+    setDomainsFeedback(`Removendo ${domain}...`);
+    try {
+      await removeDomain(domain);
+      setDomainsFeedback(`Domínio ${domain} removido.`);
+      await loadDomains();
+    } catch (error) {
+      setDomainsFeedback(error?.message || "Falha ao remover domínio.", true);
+    }
   }
 });
 
@@ -2506,6 +2578,144 @@ async function updateShippingMethod(id, patch = {}) {
     throw new Error(data.error || "Falha ao atualizar frete.");
   }
   await loadShippingMethods();
+}
+
+function setDomainsFeedback(message = "", isError = false) {
+  if (!domainsFeedback) return;
+  domainsFeedback.textContent = message;
+  domainsFeedback.style.color = isError ? "#ff6b6b" : "";
+}
+
+function renderDomainVerificationRows(domainItem) {
+  const verification = domainItem?.verification_data;
+  if (!verification || typeof verification !== "object") {
+    return "<small>Sem instruções DNS adicionais no momento.</small>";
+  }
+  const rows = [];
+  if (Array.isArray(verification)) {
+    verification.forEach((entry) => rows.push(entry));
+  } else if (Array.isArray(verification?.verification)) {
+    verification.verification.forEach((entry) => rows.push(entry));
+  } else {
+    rows.push(verification);
+  }
+  if (!rows.length) {
+    return "<small>Sem instruções DNS adicionais no momento.</small>";
+  }
+  return rows
+    .map((entry) => {
+      const type = escapeHtml(String(entry?.type || entry?.recordType || "-"));
+      const domain = escapeHtml(String(entry?.domain || entry?.name || "-"));
+      const value = escapeHtml(String(entry?.value || entry?.target || "-"));
+      return `<small><strong>${type}</strong> ${domain} -> ${value}</small>`;
+    })
+    .join("<br/>");
+}
+
+function renderDomains() {
+  if (!domainsList) return;
+  if (!domainsCache.length) {
+    domainsList.innerHTML = `
+      <article class="shipping-method-row shipping-method-row--empty">
+        <p>Nenhum domínio conectado ainda.</p>
+      </article>
+    `;
+    return;
+  }
+
+  domainsList.innerHTML = domainsCache
+    .map((item) => {
+      const domain = escapeHtml(item.domain || "");
+      const statusLabel = item.is_verified === true ? "Verificado" : "Pendente";
+      const statusTone = item.is_verified === true ? "Ativo" : "Inativo";
+      return `
+        <article class="shipping-method-row" data-domain="${domain}">
+          <div class="shipping-method-row__main">
+            <h4>${domain}</h4>
+            <p class="shipping-method-row__meta">Status: ${escapeHtml(statusLabel)}</p>
+            ${renderDomainVerificationRows(item)}
+            ${item.last_error ? `<small style="color:#ff6b6b;">${escapeHtml(item.last_error)}</small>` : ""}
+          </div>
+          <div class="shipping-method-row__actions">
+            <label class="switch small"><input type="checkbox" checked disabled /><span>${escapeHtml(statusTone)}</span></label>
+            <button type="button" class="ghost" data-domain-action="verify" data-domain="${domain}">Verificar</button>
+            <button type="button" class="ghost" data-domain-action="delete" data-domain="${domain}">Remover</button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+async function loadDomains() {
+  if (!domainsList) return;
+  try {
+    const res = await fetch("/api/dashboard/custom-domains", {
+      headers: { ...setAuthHeader() },
+    });
+    if (!res.ok) {
+      if (res.status === 401) showLogin();
+      domainsList.innerHTML = `
+        <article class="shipping-method-row shipping-method-row--empty">
+          <p>Não foi possível carregar domínios.</p>
+        </article>
+      `;
+      return;
+    }
+    const data = await res.json();
+    domainsCache = Array.isArray(data.domains) ? data.domains : [];
+    renderDomains();
+  } catch (_error) {
+    domainsList.innerHTML = `
+      <article class="shipping-method-row shipping-method-row--empty">
+        <p>Erro ao carregar domínios.</p>
+      </article>
+    `;
+  }
+}
+
+async function connectDomain(domain) {
+  const res = await fetch("/api/dashboard/custom-domains", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...setAuthHeader(),
+    },
+    body: JSON.stringify({ domain }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || "Falha ao conectar domínio.");
+  }
+  return data;
+}
+
+async function verifyDomain(domain) {
+  const res = await fetch(`/api/dashboard/custom-domains/${encodeURIComponent(domain)}/verify`, {
+    method: "POST",
+    headers: {
+      ...setAuthHeader(),
+    },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || "Falha ao verificar domínio.");
+  }
+  return data;
+}
+
+async function removeDomain(domain) {
+  const res = await fetch(`/api/dashboard/custom-domains/${encodeURIComponent(domain)}`, {
+    method: "DELETE",
+    headers: {
+      ...setAuthHeader(),
+    },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || "Falha ao remover domínio.");
+  }
+  return data;
 }
 
 bootstrapAuth();
