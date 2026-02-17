@@ -803,7 +803,8 @@ function applyElementsConfig(nextElements) {
     footerSecurityText.classList.toggle("hidden", !elementsConfig.showFooterSecurityText);
   }
   if (addonsSection) {
-    const shouldHideBumps = !elementsConfig.showOrderBumps || !(bumpMap?.size > 0);
+    const hasRenderedAddonCard = addonsList?.querySelector?.(".addon-card") !== null;
+    const shouldHideBumps = !elementsConfig.showOrderBumps || !(bumpMap?.size > 0) || !hasRenderedAddonCard;
     addonsSection.classList.toggle("hidden", shouldHideBumps);
   }
   if (shippingSection) {
@@ -824,14 +825,14 @@ function applyAppearance(config) {
   const typography = config?.typography || {};
 
   root.style.setProperty("--color-primary", safeString(palette.primary, "#f5a623"));
-  root.style.setProperty("--color-buttons", safeString(palette.button || palette.buttons, "#f39c12"));
+  root.style.setProperty("--color-buttons", safeString(palette.buttons || palette.button, "#f39c12"));
   root.style.setProperty("--color-background", safeString(palette.background, "#f4f6fb"));
   root.style.setProperty("--color-text", safeString(palette.text, "#1c2431"));
   root.style.setProperty("--color-card", safeString(palette.card, "#ffffff"));
   root.style.setProperty("--color-border", safeString(palette.border, "#dde3ee"));
   root.style.setProperty("--color-muted", safeString(palette.mutedText || palette.muted, "#6b7280"));
   root.style.setProperty("--color-primary-text", safeString(palette.primaryText, "#111111"));
-  root.style.setProperty("--color-primary-hover", safeString(palette.primaryHover || palette.button, "#e58e0a"));
+  root.style.setProperty("--color-primary-hover", safeString(palette.primaryHover || palette.buttons || palette.button, "#e58e0a"));
   root.style.setProperty("--color-link", safeString(palette.link, "#2b67f6"));
   root.style.setProperty("--color-link-hover", safeString(palette.linkHover, "#1f56ad"));
   root.style.setProperty("--color-button-secondary-bg", safeString(palette.buttonSecondaryBg, "#f6f8fb"));
@@ -853,14 +854,14 @@ function applyAppearance(config) {
   root.style.setProperty("--font-base-size", `${safeNumber(typography.baseSize, 16)}px`);
 
   if (document.body) {
-    document.body.style.setProperty("--color-buttons", safeString(palette.button || palette.buttons, "#f39c12"));
+    document.body.style.setProperty("--color-buttons", safeString(palette.buttons || palette.button, "#f39c12"));
     document.body.style.setProperty("--color-primary-text", safeString(palette.primaryText, "#111111"));
     document.body.style.setProperty("--color-primary-hover", safeString(palette.primaryHover || palette.button, "#e58e0a"));
     document.body.style.setProperty("--color-button-secondary-bg", safeString(palette.buttonSecondaryBg, "#f6f8fb"));
     document.body.style.setProperty("--color-button-secondary-text", safeString(palette.buttonSecondaryText, "#1c2431"));
   }
   if (payBtn) {
-    payBtn.style.background = safeString(palette.button || palette.buttons, "#f39c12");
+    payBtn.style.background = safeString(palette.buttons || palette.button, "#f39c12");
     payBtn.style.color = safeString(palette.primaryText, "#111111");
   }
 
@@ -1633,6 +1634,19 @@ function renderBumps(bumps = []) {
       `;
     })
     .join("");
+
+  const hasRenderableCards = addonsList.querySelector(".addon-card") !== null;
+  if (!hasRenderableCards) {
+    addonsSection?.classList.add("hidden");
+    addonsList.innerHTML = "";
+    bumpMap = new Map();
+    selectedBumps.clear();
+    if (selectAllWrap) {
+      selectAllWrap.classList.add("hidden");
+    }
+    updateSummary();
+    return;
+  }
 
   addonsList.querySelectorAll("input[data-bump-id]").forEach((input) => {
     input.addEventListener("change", () => {
