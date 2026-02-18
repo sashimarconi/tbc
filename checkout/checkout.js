@@ -20,6 +20,9 @@ const summaryShipping = document.getElementById("summary-shipping");
 const summaryTotal = document.getElementById("summary-total");
 const summaryCount = document.getElementById("summary-count");
 const summaryToggle = document.getElementById("summary-toggle");
+const summaryHeaderTotal = document.getElementById("summary-header-total");
+const summaryTitle = document.getElementById("summary-title");
+const summarySubtitle = document.getElementById("summary-subtitle");
 const headerWrap = document.getElementById("checkout-header");
 const headerBrandBlock = document.getElementById("header-brand-block");
 const headerLogo = document.getElementById("header-logo");
@@ -177,7 +180,8 @@ function setSummaryCollapsed(nextCollapsed) {
     summaryCard.classList.toggle("is-collapsed", summaryCollapsed);
   }
   if (summaryToggle) {
-    summaryToggle.textContent = summaryCollapsed ? "Expandir" : "Recolher";
+    summaryToggle.textContent = "";
+    summaryToggle.setAttribute("aria-label", summaryCollapsed ? "Expandir resumo" : "Recolher resumo");
     summaryToggle.setAttribute("aria-expanded", summaryCollapsed ? "false" : "true");
   }
 }
@@ -900,6 +904,9 @@ function applyAppearance(config) {
   const header = config?.header || {};
   root.style.setProperty("--header-bg", safeString(header.bgColor, "#ffffff"));
   root.style.setProperty("--header-text", safeString(header.textColor, "#0f5132"));
+  const headerHeight = Math.min(140, Math.max(44, safeNumber(header.heightPx, 56)));
+  root.style.setProperty("--header-height", `${headerHeight}px`);
+  root.style.setProperty("--header-offset", `${headerHeight + 28}px`);
   if (headerWrap) {
     headerWrap.style.background = safeString(header.bgColor, "#ffffff");
   }
@@ -1531,7 +1538,8 @@ function updateSummary() {
     summarySubtotal.textContent = "R$ 0,00";
     if (summaryShipping) summaryShipping.textContent = "R$ 0,00";
     summaryTotal.textContent = "R$ 0,00";
-    if (summaryCount) summaryCount.textContent = "0 itens";
+    if (summaryHeaderTotal) summaryHeaderTotal.textContent = "R$ 0,00";
+    if (summaryCount) summaryCount.textContent = "0";
     return;
   }
 
@@ -1549,16 +1557,35 @@ function updateSummary() {
     }
   });
 
-  summaryLines.innerHTML = lines
-    .map(
-      (line) => `
-        <div class="summary__line">
-          <span>${line.label}</span>
-          <strong>R$ ${formatPrice(line.value)}</strong>
+  if (mercadexEnabled) {
+    const base = offerData.base || {};
+    const cover = base.image_url || productCover?.src || "";
+    const baseName = normalizeDisplayText(base.name || "Produto");
+    const baseDescription = normalizeDisplayText(base.description || "");
+    summaryLines.innerHTML = `
+      <article class="summary-item">
+        <img class="summary-item__image" src="${cover}" alt="${baseName}" />
+        <div class="summary-item__body">
+          <strong class="summary-item__title">${baseName}</strong>
+          <p class="summary-item__subtitle">${baseDescription}</p>
         </div>
-      `
-    )
-    .join("");
+        <div class="summary-item__qty" aria-hidden="true">
+          <span>-</span><span>1</span><span>+</span>
+        </div>
+      </article>
+    `;
+  } else {
+    summaryLines.innerHTML = lines
+      .map(
+        (line) => `
+          <div class="summary__line">
+            <span>${line.label}</span>
+            <strong>R$ ${formatPrice(line.value)}</strong>
+          </div>
+        `
+      )
+      .join("");
+  }
 
   const subtotal = calcSubtotal();
   const shipping = calcShipping();
@@ -1568,9 +1595,17 @@ function updateSummary() {
     summaryShipping.textContent = shipping === 0 ? "Frete Gratis" : `R$ ${formatPrice(shipping)}`;
   }
   summaryTotal.textContent = `R$ ${formatPrice(total)}`;
+  if (summaryHeaderTotal) {
+    summaryHeaderTotal.textContent = `R$ ${formatPrice(total)}`;
+  }
   if (summaryCount) {
-    const countText = `${lines.length} ${lines.length === 1 ? "item" : "itens"}`;
-    summaryCount.textContent = countText;
+    summaryCount.textContent = String(lines.length);
+  }
+  if (summaryTitle) {
+    summaryTitle.textContent = mercadexEnabled ? "Seu carrinho" : "Resumo";
+  }
+  if (summarySubtitle) {
+    summarySubtitle.classList.toggle("hidden", !mercadexEnabled);
   }
 }
 

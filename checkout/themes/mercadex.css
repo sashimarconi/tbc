@@ -26,7 +26,7 @@ body.ui-mercadex .trust-bar {
   top: 0;
   left: 0;
   right: 0;
-  height: 56px;
+  height: var(--header-height, 56px);
   background: #ffe600;
   border-bottom: 0;
   z-index: 40;
@@ -39,7 +39,7 @@ body.ui-mercadex .trust-bar::after {
 
 body.ui-mercadex .trust-bar__content {
   max-width: 1040px;
-  height: 56px;
+  height: var(--header-height, 56px);
   margin: 0 auto;
   padding: 0 16px;
 }
@@ -66,7 +66,7 @@ body.ui-mercadex .trust-bar__icon {
 }
 
 body.ui-mercadex .page {
-  padding-top: 84px;
+  padding-top: var(--header-offset, 84px);
 }
 
 body.ui-mercadex .checkout {
@@ -98,16 +98,95 @@ body.ui-mercadex .address {
 
 body.ui-mercadex .summary {
   font-size: 12px;
+  background: #f8f9fb;
+  border-radius: 14px;
+  border: 1px solid rgba(17, 19, 24, 0.1);
+  padding: 14px 16px;
+}
+
+body.ui-mercadex .summary__header {
+  align-items: center;
+}
+
+body.ui-mercadex .summary__intro {
+  display: grid;
+  gap: 2px;
 }
 
 body.ui-mercadex .summary__header h3 {
-  font-size: 16px;
+  font-size: 32px;
+  margin: 0;
+  line-height: 1.2;
+  color: #18314f;
+}
+
+body.ui-mercadex .summary__intro p {
+  margin: 0;
+  color: #334c6b;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+body.ui-mercadex .summary__header-actions {
+  gap: 10px;
+}
+
+body.ui-mercadex .summary__header-total {
+  font-size: 34px;
+  font-weight: 700;
+  color: #132e4d;
+}
+
+body.ui-mercadex .summary__count {
+  border: 0;
+  width: 26px;
+  min-width: 26px;
+  height: 26px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #1296e8;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+body.ui-mercadex .summary__toggle {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  font-size: 0;
+  position: relative;
+}
+
+body.ui-mercadex .summary__toggle::before {
+  content: "";
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #111318;
+  border-bottom: 2px solid #111318;
+  transform: rotate(45deg);
+  transition: transform 180ms ease;
+}
+
+body.ui-mercadex .summary:not(.is-collapsed) .summary__toggle::before {
+  transform: rotate(-135deg);
+}
+
+body.ui-mercadex .summary:not(.is-collapsed) .summary__header-total {
+  display: none;
 }
 
 body.ui-mercadex .summary__lines {
   border-top: 1px solid rgba(17, 19, 24, 0.08);
   border-bottom: 1px solid rgba(17, 19, 24, 0.08);
-  padding: 8px 0;
+  padding: 10px 0;
 }
 
 body.ui-mercadex .summary__line,
@@ -126,21 +205,67 @@ body.ui-mercadex .summary__line:last-of-type {
 
 body.ui-mercadex .summary__total {
   margin-top: 6px;
-  font-size: 16px;
+  font-size: 30px;
   padding-top: 8px;
   border-top: 1px solid rgba(17, 19, 24, 0.1);
+  color: #132e4d;
+}
+
+body.ui-mercadex .summary-item {
+  display: grid;
+  grid-template-columns: 68px 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+
+body.ui-mercadex .summary-item__image {
+  width: 68px;
+  height: 68px;
+  border-radius: 10px;
+  border: 1px solid rgba(17, 19, 24, 0.12);
+  object-fit: cover;
+}
+
+body.ui-mercadex .summary-item__body {
+  display: grid;
+  gap: 3px;
+}
+
+body.ui-mercadex .summary-item__title {
+  font-size: 16px;
+  color: #18314f;
+  line-height: 1.2;
+}
+
+body.ui-mercadex .summary-item__subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #51647f;
+  line-height: 1.2;
+}
+
+body.ui-mercadex .summary-item__qty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(17, 19, 24, 0.12);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-weight: 700;
+  color: #12304f;
 }
 
 body.ui-mercadex .field {
-  gap: 4px;
-  font-size: 12px;
+  gap: 6px;
+  font-size: 14px;
 }
 
 body.ui-mercadex .field > label,
 body.ui-mercadex label.field {
-  font-size: 11px;
+  font-size: 16px;
+  font-weight: 600;
   letter-spacing: 0.01em;
-  color: #5b616e;
+  color: #163356;
 }
 
 body.ui-mercadex .field input,
@@ -148,6 +273,16 @@ body.ui-mercadex .field textarea,
 body.ui-mercadex select,
 body.ui-mercadex .phone-field {
   background: #ffffff;
+  min-height: 52px;
+  border-radius: 12px;
+  border-color: #ccd3df;
+  color: #173458;
+  font-size: 15px;
+}
+
+body.ui-mercadex .field input::placeholder,
+body.ui-mercadex .field textarea::placeholder {
+  color: #b9c1ce;
 }
 
 body.ui-mercadex .field input:focus,

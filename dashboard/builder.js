@@ -436,6 +436,7 @@ function bindAppearanceFields() {
     ["header-logo-url", ["header", "logoUrl"]],
     ["header-logo-width", ["header", "logoWidthPx"], "number"],
     ["header-logo-height", ["header", "logoHeightPx"], "number"],
+    ["header-height", ["header", "heightPx"], "number"],
     ["seal-style", ["securitySeal", "style"]],
     ["seal-size", ["securitySeal", "size"]],
     ["seal-radius", ["securitySeal", "radius"]],
@@ -592,6 +593,7 @@ function populateFieldsFromEffective() {
   setFieldValue("header-logo-url", cfg.header?.logoUrl, "");
   setFieldValue("header-logo-width", cfg.header?.logoWidthPx, 120);
   setFieldValue("header-logo-height", cfg.header?.logoHeightPx, 40);
+  setFieldValue("header-height", cfg.header?.heightPx, 56);
   setFieldValue("header-bg-color", cfg.header?.bgColor, "#ffffff");
   setFieldValue("header-text-color", cfg.header?.textColor, "#0f5132");
 

@@ -180,12 +180,14 @@
 
             <section class="summary" id="summary-card">
               <header class="summary__header">
-                <h3>Resumo</h3>
+                <div class="summary__intro">
+                  <h3 id="summary-title">Seu carrinho</h3>
+                  <p id="summary-subtitle">Informações da sua compra</p>
+                </div>
                 <div class="summary__header-actions">
-                  <span id="summary-count" class="summary__count">0 itens</span>
-                  <button id="summary-toggle" type="button" class="summary__toggle" aria-expanded="false">
-                    Expandir
-                  </button>
+                  <strong id="summary-header-total" class="summary__header-total">R$ 0,00</strong>
+                  <span id="summary-count" class="summary__count">0</span>
+                  <button id="summary-toggle" type="button" class="summary__toggle" aria-expanded="false" aria-label="Expandir resumo"></button>
                 </div>
               </header>
               <div id="summary-lines" class="summary__lines"></div>
