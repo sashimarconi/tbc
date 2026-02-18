@@ -105,18 +105,23 @@ body.ui-mercadex .summary {
 }
 
 body.ui-mercadex .summary__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
+  column-gap: 10px;
 }
 
 body.ui-mercadex .summary__intro {
   display: grid;
   gap: 2px;
+  min-width: 0;
 }
 
 body.ui-mercadex .summary__header h3 {
-  font-size: 32px;
+  font-size: clamp(28px, 7.8vw, 36px);
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.05;
+  white-space: nowrap;
   color: #18314f;
 }
 
@@ -128,12 +133,18 @@ body.ui-mercadex .summary__intro p {
 }
 
 body.ui-mercadex .summary__header-actions {
+  display: flex;
+  align-items: center;
   gap: 10px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 body.ui-mercadex .summary__header-total {
-  font-size: 34px;
+  font-size: clamp(32px, 8.4vw, 42px);
   font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
   color: #132e4d;
 }
 
@@ -242,6 +253,9 @@ body.ui-mercadex .summary-item__subtitle {
   font-size: 13px;
   color: #51647f;
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 body.ui-mercadex .summary-item__qty {
@@ -253,6 +267,14 @@ body.ui-mercadex .summary-item__qty {
   padding: 6px 10px;
   font-weight: 700;
   color: #12304f;
+}
+
+body.ui-mercadex .summary-item__qty span:first-child {
+  color: #e53935;
+}
+
+body.ui-mercadex .summary-item__qty span:last-child {
+  color: #00a650;
 }
 
 body.ui-mercadex .field {
