@@ -113,6 +113,12 @@ body.ui-mercadex .summary__header {
   flex-wrap: nowrap;
 }
 
+body.ui-mercadex #summary-card .cart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 body.ui-mercadex .summary__intro {
   display: grid;
   gap: 4px;
@@ -120,32 +126,43 @@ body.ui-mercadex .summary__intro {
   min-width: 0;
 }
 
-body.ui-mercadex .summary__header h3 {
+body.ui-mercadex #summary-card .cart-header__left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+body.ui-mercadex #summary-card .cart-title {
   font-size: clamp(18px, 4.3vw, 20px);
   margin: 0;
   line-height: 1.1;
   color: #18314f;
   font-weight: 700;
+  white-space: nowrap;
 }
 
-body.ui-mercadex .summary__intro p {
+body.ui-mercadex #summary-card .cart-subtitle {
   margin: 0;
   color: #6a7486;
   font-size: 12px;
   line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-body.ui-mercadex .summary__header-actions {
+body.ui-mercadex #summary-card .cart-header__right {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
-  min-width: 0;
+  min-width: fit-content;
   flex-shrink: 0;
   white-space: nowrap;
 }
 
-body.ui-mercadex .summary__header-total {
+body.ui-mercadex #summary-card .cart-price {
   font-size: clamp(16px, 4vw, 18px);
   font-weight: 700;
   line-height: 1.1;
@@ -154,11 +171,11 @@ body.ui-mercadex .summary__header-total {
   display: inline-block;
 }
 
-body.ui-mercadex .summary__count {
+body.ui-mercadex #summary-card .cart-badge {
   border: 0;
-  width: 24px;
-  min-width: 24px;
-  height: 24px;
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
   padding: 0;
   display: grid;
   place-items: center;
@@ -169,7 +186,7 @@ body.ui-mercadex .summary__count {
   font-weight: 700;
 }
 
-body.ui-mercadex .summary__toggle {
+body.ui-mercadex #summary-card .cart-toggle {
   background: transparent;
   border: 0;
   padding: 0;
@@ -178,6 +195,11 @@ body.ui-mercadex .summary__toggle {
   color: #4c5566;
   display: grid;
   place-items: center;
+  border-radius: 999px;
+}
+
+body.ui-mercadex #summary-card .cart-toggle:hover {
+  background: rgba(17, 19, 24, 0.06);
 }
 
 body.ui-mercadex .summary__chevron {
@@ -196,15 +218,15 @@ body.ui-mercadex .summary:not(.is-collapsed) .summary__chevron {
     padding: 12px 12px;
   }
 
-  body.ui-mercadex .summary__header h3 {
+  body.ui-mercadex #summary-card .cart-title {
     font-size: 18px;
   }
 
-  body.ui-mercadex .summary__header-total {
+  body.ui-mercadex #summary-card .cart-price {
     font-size: 16px;
   }
 
-  body.ui-mercadex .summary__header-actions {
+  body.ui-mercadex #summary-card .cart-header__right {
     gap: 8px;
   }
 }
