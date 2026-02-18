@@ -840,111 +840,128 @@ a:hover {
 
 .pix {
   background: #ffffff;
-  border: 1px solid rgba(17, 19, 24, 0.1);
-  border-radius: 16px;
+  border: 1px solid rgba(17, 19, 24, 0.08);
+  border-radius: 18px;
   padding: 0;
   overflow: hidden;
+  box-shadow: 0 12px 30px rgba(17, 19, 24, 0.08);
 }
 
 .pix-screen__hero {
-  padding: 22px 18px 14px;
+  padding: 26px 22px 18px;
   border-bottom: 1px solid rgba(17, 19, 24, 0.08);
   text-align: center;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
 }
 
 .pix-screen__hero h2 {
   margin: 0;
-  font-size: 42px;
-  line-height: 1;
+  font-size: clamp(34px, 6.5vw, 50px);
+  line-height: 1.02;
   font-weight: 800;
   color: #132e4d;
+  letter-spacing: -0.02em;
 }
 
 .pix-screen__hero p {
-  margin: 10px 0 0;
+  margin: 12px 0 0;
   color: #334c6b;
-  font-size: 16px;
+  font-size: 18px;
+  line-height: 1.45;
 }
 
 #pix-countdown {
   color: #1273da;
+  font-weight: 700;
 }
 
 .pix-screen__summary {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 18px;
+  padding: 16px 22px;
   border-bottom: 1px solid rgba(17, 19, 24, 0.08);
-  font-size: 16px;
+  font-size: 15px;
+  color: #5b616e;
 }
 
 .pix-screen__summary strong {
   color: #1273da;
-  font-size: 34px;
+  font-size: clamp(26px, 5vw, 34px);
   font-weight: 800;
   white-space: nowrap;
 }
 
 .pix-screen__beneficiary {
-  margin: 16px 18px;
-  padding: 14px;
+  margin: 20px 22px;
+  padding: 16px 18px;
   border: 1px solid rgba(17, 19, 24, 0.12);
   border-radius: 12px;
   color: #2c425f;
-  font-size: 16px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.6;
+  background: #ffffff;
 }
 
 .pix-screen__qr {
-  margin: 8px 18px 0;
+  margin: 4px 22px 0;
+  padding: 16px 14px 14px;
+  border: 1px solid rgba(17, 19, 24, 0.08);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(17, 19, 24, 0.05);
   display: grid;
   justify-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .pix-screen__qr img {
-  width: min(72vw, 280px);
-  height: min(72vw, 280px);
+  width: min(76vw, 272px);
+  height: min(76vw, 272px);
   border: 1px solid rgba(17, 19, 24, 0.12);
   border-radius: 12px;
-  background: #fff;
-  padding: 10px;
+  background: #ffffff;
+  padding: 12px;
 }
 
 .pix-screen__qr p {
   margin: 0;
-  color: #5b616e;
+  color: #617089;
+  font-size: 15px;
 }
 
 .pix-screen__code,
 .pix-screen__steps,
 .pix-screen__alert,
 .pix-screen__banks {
-  margin: 18px;
+  margin: 22px;
 }
 
 .pix-screen__code h3,
 .pix-screen__steps h3,
 .pix-screen__banks h3 {
-  margin: 0 0 10px;
-  font-size: 22px;
+  margin: 0 0 12px;
+  font-size: 21px;
   color: #132e4d;
+  letter-spacing: -0.01em;
 }
 
 .pix-code-row {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 10px;
+  gap: 12px;
 }
 
 #pix-code {
-  min-height: 56px;
-  max-height: 56px;
-  padding: 14px;
-  border: 1px solid rgba(17, 19, 24, 0.14);
-  border-radius: 10px;
-  font-size: 14px;
+  min-height: 58px;
+  max-height: 58px;
+  padding: 16px;
+  border: 1px solid rgba(17, 19, 24, 0.15);
+  border-radius: 12px;
+  font-size: 15px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  background: #f8fafd;
+  color: #243f63;
   resize: none;
   overflow: hidden;
   white-space: nowrap;
@@ -952,22 +969,61 @@ a:hover {
 
 .pix-copy-btn {
   border: 0;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #1273da;
   color: #fff;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  padding: 0 22px;
-  min-height: 56px;
+  padding: 0 24px;
+  min-height: 58px;
   cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+  box-shadow: 0 8px 18px rgba(18, 115, 218, 0.28);
+}
+
+.pix-copy-btn:hover {
+  background: #0f67c4;
+  transform: translateY(-1px);
+}
+
+.pix-copy-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 10px rgba(18, 115, 218, 0.22);
 }
 
 .pix-screen__steps ol {
+  counter-reset: pix-step;
   margin: 0;
-  padding-left: 22px;
+  padding: 0;
+  list-style: none;
   display: grid;
-  gap: 8px;
+  gap: 10px;
+}
+
+.pix-screen__steps li {
+  counter-increment: pix-step;
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid rgba(17, 19, 24, 0.1);
+  border-radius: 12px;
+  background: #ffffff;
   color: #2c425f;
+}
+
+.pix-screen__steps li::before {
+  content: counter(pix-step);
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #edf4ff;
+  color: #1264bf;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
 }
 
 .pix-screen__alert {
@@ -992,10 +1048,27 @@ a:hover {
 
 .pix-screen__banks li {
   border: 1px solid rgba(17, 19, 24, 0.1);
-  border-radius: 12px;
-  padding: 10px 12px;
+  border-radius: 14px;
+  padding: 12px 14px;
   display: grid;
+  grid-template-columns: 1fr auto;
   gap: 2px;
+  cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  background: #fff;
+}
+
+.pix-screen__banks li::after {
+  content: ">";
+  color: #9aa7bc;
+  font-weight: 700;
+  align-self: center;
+}
+
+.pix-screen__banks li:hover {
+  border-color: rgba(18, 115, 218, 0.35);
+  box-shadow: 0 8px 18px rgba(18, 115, 218, 0.12);
+  transform: translateY(-1px);
 }
 
 .pix-screen__banks li span {
@@ -1008,9 +1081,9 @@ a:hover {
 }
 
 .pix-screen__status {
-  margin-top: 10px;
+  margin-top: 6px;
   border-top: 1px solid rgba(17, 19, 24, 0.08);
-  padding: 14px 18px;
+  padding: 14px 18px 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1074,22 +1147,27 @@ a:hover {
 
 @media (max-width: 640px) {
   .pix-screen__hero h2 {
-    font-size: 36px;
+    font-size: clamp(30px, 9vw, 38px);
+  }
+
+  .pix-screen__hero p {
+    font-size: 16px;
   }
 
   .pix-screen__summary strong {
-    font-size: 28px;
+    font-size: clamp(22px, 7vw, 28px);
   }
 
   .pix-screen__code h3,
   .pix-screen__steps h3,
   .pix-screen__banks h3 {
-    font-size: 20px;
+    font-size: 19px;
   }
 
   .pix-copy-btn {
     font-size: 16px;
-    padding: 0 16px;
+    padding: 0 14px;
+    min-height: 54px;
   }
 
   .pix-loading__sheet h3 {
@@ -1098,6 +1176,42 @@ a:hover {
 
   .pix-loading__sheet p {
     font-size: 18px;
+  }
+}
+
+@media (max-width: 520px) {
+  .pix-screen__hero,
+  .pix-screen__summary,
+  .pix-screen__beneficiary,
+  .pix-screen__qr,
+  .pix-screen__code,
+  .pix-screen__steps,
+  .pix-screen__alert,
+  .pix-screen__banks {
+    margin-left: 14px;
+    margin-right: 14px;
+  }
+
+  .pix-screen__hero {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .pix-screen__summary {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .pix-code-row {
+    grid-template-columns: 1fr;
+  }
+
+  .pix-copy-btn {
+    width: 100%;
+  }
+
+  #pix-code {
+    font-size: 14px;
   }
 }
 
