@@ -671,7 +671,8 @@ input[type="checkbox"]:focus-visible {
 
 .shipping-card {
   padding: 12px;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 10px;
 }
@@ -679,6 +680,7 @@ input[type="checkbox"]:focus-visible {
 .shipping-card__info {
   display: grid;
   gap: 2px;
+  min-width: 0;
 }
 
 .shipping-card__info strong {
@@ -686,8 +688,9 @@ input[type="checkbox"]:focus-visible {
 }
 
 .shipping-card__price {
-  margin-left: auto;
   font-weight: 700;
+  white-space: nowrap;
+  text-align: right;
 }
 
 .shipping-card--selected {
