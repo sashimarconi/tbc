@@ -4,6 +4,9 @@ const pixResult = document.getElementById("pix-result");
 const pixQr = document.getElementById("pix-qr");
 const pixCode = document.getElementById("pix-code");
 const copyBtn = document.getElementById("copy-btn");
+const pixOrderTotal = document.getElementById("pix-order-total");
+const pixCountdown = document.getElementById("pix-countdown");
+const pixLoadingModal = document.getElementById("pix-loading-modal");
 const productCover = document.getElementById("product-cover");
 const productTitle = document.getElementById("product-title");
 const productDescription = document.getElementById("product-description");
@@ -112,6 +115,7 @@ let firedAddPaymentInfo = false;
 let firedCheckoutView = false;
 let firedCheckoutStartEvent = false;
 let summaryCollapsed = true;
+let pixCountdownTimer = null;
 
 let offerData = null;
 let selectedBumps = new Set();
@@ -1298,7 +1302,7 @@ async function initTikTokPixel() {
 }
 
 function trackMetaEvent(name, payload) {
-  if (!metaPixelReady || !window.fbq) return;
+  if (!window.fbq) return;
   window.fbq("track", name, payload || {});
 }
 
@@ -1310,6 +1314,46 @@ function trackTikTokEvent(name, payload) {
 function trackPixelEvent(name, payload) {
   trackMetaEvent(name, payload);
   trackTikTokEvent(name, payload);
+}
+
+function openPixLoadingModal() {
+  if (!pixLoadingModal) return;
+  pixLoadingModal.classList.remove("hidden");
+  pixLoadingModal.setAttribute("aria-hidden", "false");
+}
+
+function closePixLoadingModal() {
+  if (!pixLoadingModal) return;
+  pixLoadingModal.classList.add("hidden");
+  pixLoadingModal.setAttribute("aria-hidden", "true");
+}
+
+function stopPixCountdown() {
+  if (pixCountdownTimer) {
+    clearInterval(pixCountdownTimer);
+    pixCountdownTimer = null;
+  }
+}
+
+function startPixCountdown(expiresAt) {
+  if (!pixCountdown) return;
+  stopPixCountdown();
+  const fallback = Date.now() + 15 * 60 * 1000;
+  const targetMs = Number.isFinite(Date.parse(expiresAt || "")) ? Date.parse(expiresAt) : fallback;
+
+  const tick = () => {
+    const diff = Math.max(0, targetMs - Date.now());
+    const totalSec = Math.floor(diff / 1000);
+    const minutes = String(Math.floor(totalSec / 60)).padStart(2, "0");
+    const seconds = String(totalSec % 60).padStart(2, "0");
+    pixCountdown.textContent = `${minutes}:${seconds}`;
+    if (diff <= 0) {
+      stopPixCountdown();
+    }
+  };
+
+  tick();
+  pixCountdownTimer = setInterval(tick, 1000);
 }
 
 function calcSubtotal() {
@@ -2376,11 +2420,23 @@ form.addEventListener("submit", async (event) => {
     bumps: Array.from(selectedBumps),
   });
 
+  trackMetaEvent("Purchase", {
+    value: Number(calcTotal() / 100),
+    currency: "BRL",
+    ...getOfferEventPayload(),
+  });
+
+  openPixLoadingModal();
+
   try {
     await syncCartSnapshot("payment");
     const data = await createPixCharge(payload);
     pixQr.src = data.pix_qr_code;
     pixCode.value = data.pix_code;
+    if (pixOrderTotal) {
+      pixOrderTotal.textContent = formatCurrencyBRL(calcTotal());
+    }
+    startPixCountdown(data.expires_at);
     pixResult.classList.remove("hidden");
     pixResult.scrollIntoView({ behavior: "smooth", block: "center" });
 
@@ -2395,6 +2451,7 @@ form.addEventListener("submit", async (event) => {
     trackCheckout("checkout_error", { message: error.message });
     alert(error.message || "Erro na conexao com Pix");
   } finally {
+    closePixLoadingModal();
     payBtn.disabled = false;
     payBtn.textContent = originalText;
   }
@@ -2405,7 +2462,7 @@ copyBtn.addEventListener("click", async () => {
   await navigator.clipboard.writeText(pixCode.value);
   copyBtn.textContent = "Copiado";
   setTimeout(() => {
-    copyBtn.textContent = "Copiar codigo";
+    copyBtn.textContent = "Copiar";
   }, 1500);
 });
 

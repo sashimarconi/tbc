@@ -23,8 +23,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Checkout Pix</title>
-    <link rel="stylesheet" href="/checkout/checkout.css?v=20260218-3" />
-    <link rel="stylesheet" href="/checkout/themes/mercadex.css?v=20260218-3" />
+    <link rel="stylesheet" href="/checkout/checkout.css?v=20260218-4" />
+    <link rel="stylesheet" href="/checkout/themes/mercadex.css?v=20260218-4" />
   </head>
   <body data-analytics-page="checkout">
     <div id="boot-loader" class="boot-loader" aria-live="polite">
@@ -203,19 +203,77 @@
         </div>
 
         <section id="pix-result" class="pix hidden">
-          <div class="pix__content">
-            <div>
-              <h2>Pix gerado</h2>
-              <p>Escaneie o QR Code ou copie o codigo abaixo para pagar.</p>
-            </div>
-            <img id="pix-qr" alt="QR Code Pix" />
+          <header class="pix-screen__hero">
+            <h2>Ja e quase seu...</h2>
+            <p>Pague seu pix dentro de <strong id="pix-countdown">14:59</strong> para garantir sua compra.</p>
+          </header>
+
+          <div class="pix-screen__summary">
+            <span>Total do pedido:</span>
+            <strong id="pix-order-total">R$ 0,00</strong>
           </div>
-          <label class="field">Codigo Pix<textarea id="pix-code" readonly></textarea></label>
-          <button id="copy-btn" type="button" class="ghost">Copiar codigo</button>
+
+          <div class="pix-screen__beneficiary">
+            O beneficiario do PIX e <strong>MARKETPLACE PAGO</strong>, a empresa que gerencia nossos pagamentos de forma segura.
+          </div>
+
+          <div class="pix-screen__qr">
+            <img id="pix-qr" alt="QR Code Pix" />
+            <p>Aponte a camera do seu celular</p>
+          </div>
+
+          <section class="pix-screen__code">
+            <h3>Codigo PIX</h3>
+            <div class="pix-code-row">
+              <textarea id="pix-code" readonly></textarea>
+              <button id="copy-btn" type="button" class="pix-copy-btn">Copiar</button>
+            </div>
+          </section>
+
+          <section class="pix-screen__steps">
+            <h3>Como pagar o pix:</h3>
+            <ol>
+              <li>Clique em copiar o codigo PIX logo acima</li>
+              <li>Acesse o app do seu banco</li>
+              <li>Va ate a opcao PIX</li>
+              <li>Escolha a opcao "COPIA E COLA"</li>
+              <li>Insira o codigo copiado e finalize seu pagamento</li>
+            </ol>
+          </section>
+
+          <section class="pix-screen__alert">
+            <strong>Os bancos reforcaram a seguranca do Pix.</strong>
+            <p>Fique tranquilo. Sua transacao e segura e esta totalmente protegida.</p>
+          </section>
+
+          <section class="pix-screen__banks">
+            <h3>Pague com seu banco:</h3>
+            <ul>
+              <li><span>Nubank</span><small>Pode precisar colar manualmente</small></li>
+              <li><span>Banco Inter</span><small>Pode precisar colar manualmente</small></li>
+              <li><span>Itau</span><small>Pode precisar colar manualmente</small></li>
+              <li><span>Bradesco</span><small>Pode precisar colar manualmente</small></li>
+              <li><span>Banco do Brasil</span><small>Pode precisar colar manualmente</small></li>
+            </ul>
+          </section>
+
+          <footer class="pix-screen__status">
+            <span class="dot"></span>
+            <span>Aguardando pagamento...</span>
+          </footer>
         </section>
+
+        <div id="pix-loading-modal" class="pix-loading hidden" aria-live="polite" aria-hidden="true">
+          <div class="pix-loading__sheet">
+            <span class="pix-loading__grab" aria-hidden="true"></span>
+            <div class="pix-loading__spinner" aria-hidden="true"></div>
+            <h3>Gerando QR Code...</h3>
+            <p>Nao feche ou atualize a pagina</p>
+          </div>
+        </div>
       </section>
     </main>
 
-    <script src="/checkout/checkout.js?v=20260218-3"></script>
+    <script src="/checkout/checkout.js?v=20260218-4"></script>
   </body>
 </html>
