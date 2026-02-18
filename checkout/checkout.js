@@ -1146,6 +1146,10 @@ function formatPrice(cents) {
   return (cents / 100).toFixed(2).replace(".", ",");
 }
 
+function formatCurrencyBRL(cents) {
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format((Number(cents) || 0) / 100);
+}
+
 function normalizeDisplayText(value) {
   if (typeof value !== "string") return "";
   const text = value.trim();
@@ -1651,7 +1655,7 @@ function updateSummary() {
     summarySubtotal.textContent = "R$ 0,00";
     if (summaryShipping) summaryShipping.textContent = "R$ 0,00";
     summaryTotal.textContent = "R$ 0,00";
-    if (summaryHeaderTotal) summaryHeaderTotal.textContent = "R$ 0,00";
+    if (summaryHeaderTotal) summaryHeaderTotal.textContent = formatCurrencyBRL(0);
     if (summaryCount) summaryCount.textContent = "0";
     return;
   }
@@ -1709,7 +1713,7 @@ function updateSummary() {
   }
   summaryTotal.textContent = `R$ ${formatPrice(total)}`;
   if (summaryHeaderTotal) {
-    summaryHeaderTotal.textContent = `R$ ${formatPrice(total)}`;
+    summaryHeaderTotal.textContent = formatCurrencyBRL(total);
   }
   if (summaryCount) {
     summaryCount.textContent = String(lines.length);
