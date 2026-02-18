@@ -699,12 +699,13 @@ async function loadPreviewSlug() {
   const data = await apiFetch("/api/admin/items");
   const base = (data.items || []).find((item) => item.type === "base" && item.slug);
   state.previewSlug = base?.slug || "";
+  const previewRev = Date.now();
 
   const iframe = document.getElementById("preview-iframe");
   if (state.previewSlug) {
-    iframe.src = `/checkout/${state.previewSlug}?preview=1&embed=1`;
+    iframe.src = `/checkout/${state.previewSlug}?preview=1&embed=1&rev=${previewRev}`;
   } else {
-    iframe.src = "/checkout/index.html?preview=1&embed=1";
+    iframe.src = `/checkout/index.html?preview=1&embed=1&rev=${previewRev}`;
   }
 }
 
