@@ -2231,17 +2231,11 @@ async function bootstrapCheckout() {
   }
 
   try {
-    const [offer, appearance] = await Promise.all([
-      fetchOfferBySlug(activeOfferSlug),
-      fetchAppearanceBySlug(activeOfferSlug),
-    ]);
+    const offerPromise = fetchOfferBySlug(activeOfferSlug);
+    const appearancePromise = fetchAppearanceBySlug(activeOfferSlug).catch(() => null);
+    const offer = await offerPromise;
 
     renderCheckoutFromOffer(offer);
-    if (appearance) {
-      applyAppearance(appearance?.effectiveConfig || appearance);
-      applyBootTheme(appearance?.effectiveConfig || appearance);
-      writeAppearanceCache(activeOfferSlug, appearance?.effectiveConfig || appearance);
-    }
     applyBlocksVisibility();
     applyBlocksLayout();
     await nextFrame();
@@ -2264,6 +2258,15 @@ async function bootstrapCheckout() {
       }, 200);
     } else {
       document.body.classList.remove("checkout-booting");
+    }
+
+    const appearance = await appearancePromise;
+    if (appearance) {
+      applyAppearance(appearance?.effectiveConfig || appearance);
+      applyBootTheme(appearance?.effectiveConfig || appearance);
+      writeAppearanceCache(activeOfferSlug, appearance?.effectiveConfig || appearance);
+      applyBlocksVisibility();
+      applyBlocksLayout();
     }
 
     void fetchIntegrationsBySlug(activeOfferSlug)
