@@ -635,6 +635,7 @@ input[type="checkbox"]:focus-visible {
 }
 
 .shipping-card {
+  border-color: #f3de66;
   padding: 12px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
@@ -649,13 +650,29 @@ input[type="checkbox"]:focus-visible {
 }
 
 .shipping-card__info strong {
-  font-weight: 400;
+  font-weight: 800;
+  color: var(--color-text);
+  font-size: 21px;
+  line-height: 1.15;
 }
 
 .shipping-card__price {
   font-weight: 700;
   white-space: nowrap;
   text-align: right;
+  color: #00a650;
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+@media (max-width: 640px) {
+  .shipping-card__info strong {
+    font-size: 18px;
+  }
+
+  .shipping-card__price {
+    font-size: 22px;
+  }
 }
 
 .shipping-card--selected {
