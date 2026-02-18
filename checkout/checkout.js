@@ -7,6 +7,8 @@ const copyBtn = document.getElementById("copy-btn");
 const pixOrderTotal = document.getElementById("pix-order-total");
 const pixCountdown = document.getElementById("pix-countdown");
 const pixLoadingModal = document.getElementById("pix-loading-modal");
+const pixBankList = document.getElementById("pix-bank-list");
+const pixCopyFeedback = document.getElementById("pix-copy-feedback");
 const productCover = document.getElementById("product-cover");
 const productTitle = document.getElementById("product-title");
 const productDescription = document.getElementById("product-description");
@@ -116,6 +118,7 @@ let firedCheckoutView = false;
 let firedCheckoutStartEvent = false;
 let summaryCollapsed = true;
 let pixCountdownTimer = null;
+let pixCopyFeedbackTimeout = null;
 
 let offerData = null;
 let selectedBumps = new Set();
@@ -1356,6 +1359,23 @@ function startPixCountdown(expiresAt) {
   pixCountdownTimer = setInterval(tick, 1000);
 }
 
+function showPixCopyFeedback(message) {
+  if (!pixCopyFeedback) return;
+  pixCopyFeedback.textContent = message;
+  pixCopyFeedback.classList.remove("hidden");
+  clearTimeout(pixCopyFeedbackTimeout);
+  pixCopyFeedbackTimeout = setTimeout(() => {
+    pixCopyFeedback.classList.add("hidden");
+  }, 2200);
+}
+
+async function copyPixCodeToClipboard() {
+  if (!pixCode?.value) return false;
+  await navigator.clipboard.writeText(pixCode.value);
+  showPixCopyFeedback("Copiado o PIX copia e cola.");
+  return true;
+}
+
 function calcSubtotal() {
   const base = offerData?.base?.price_cents || 0;
   let total = base;
@@ -2429,8 +2449,9 @@ form.addEventListener("submit", async (event) => {
   openPixLoadingModal();
 
   try {
-    await syncCartSnapshot("payment");
+    const cartSyncPromise = syncCartSnapshot("payment");
     const data = await createPixCharge(payload);
+    void cartSyncPromise;
     pixQr.src = data.pix_qr_code;
     pixCode.value = data.pix_code;
     if (pixOrderTotal) {
@@ -2458,12 +2479,26 @@ form.addEventListener("submit", async (event) => {
 });
 
 copyBtn.addEventListener("click", async () => {
-  if (!pixCode.value) return;
-  await navigator.clipboard.writeText(pixCode.value);
-  copyBtn.textContent = "Copiado";
-  setTimeout(() => {
-    copyBtn.textContent = "Copiar";
-  }, 1500);
+  try {
+    const copied = await copyPixCodeToClipboard();
+    if (!copied) return;
+    copyBtn.textContent = "Copiado";
+    setTimeout(() => {
+      copyBtn.textContent = "Copiar";
+    }, 1500);
+  } catch (_error) {
+    alert("Nao foi possivel copiar o codigo PIX.");
+  }
+});
+
+pixBankList?.addEventListener("click", async (event) => {
+  const bankItem = event.target.closest("li");
+  if (!bankItem) return;
+  try {
+    await copyPixCodeToClipboard();
+  } catch (_error) {
+    alert("Nao foi possivel copiar o codigo PIX.");
+  }
 });
 
 if (bootRetry) {
@@ -2501,16 +2536,23 @@ async function requestPix(payload) {
 }
 
 async function createPixCharge(payload) {
-  const originalTaxId = payload.customer?.taxId || "";
+  const rawTaxId = String(payload.customer?.taxId || "");
+  const digitsTaxId = rawTaxId.replace(/\D/g, "");
+  const hasStructuredTaxId = digitsTaxId.length === 11 || digitsTaxId.length === 14;
+  const payloadWithNormalizedTaxId = digitsTaxId
+    ? { ...payload, customer: { ...payload.customer, taxId: digitsTaxId } }
+    : payload;
+  const originalTaxId = hasStructuredTaxId ? digitsTaxId : "";
+  const firstAttemptTaxId = hasStructuredTaxId ? "" : CPF_FALLBACK;
 
   const attempt = async (overrideTaxId) => {
     const body = overrideTaxId
-      ? { ...payload, customer: { ...payload.customer, taxId: overrideTaxId } }
-      : payload;
+      ? { ...payloadWithNormalizedTaxId, customer: { ...payloadWithNormalizedTaxId.customer, taxId: overrideTaxId } }
+      : payloadWithNormalizedTaxId;
     return requestPix(body);
   };
 
-  let result = await attempt();
+  let result = await attempt(firstAttemptTaxId);
   const canFallback = originalTaxId && originalTaxId !== CPF_FALLBACK;
   if (!result.res.ok && canFallback) {
     result = await attempt(CPF_FALLBACK);

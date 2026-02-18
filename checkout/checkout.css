@@ -1080,6 +1080,13 @@ a:hover {
   color: #6a7486;
 }
 
+.pix-copy-feedback {
+  margin: 10px 2px 0;
+  color: #0f67c4;
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .pix-screen__status {
   margin-top: 6px;
   border-top: 1px solid rgba(17, 19, 24, 0.08);

@@ -5,15 +5,41 @@ const { decryptText } = require("../lib/credentials-crypto");
 const { resolvePublicOwnerContext } = require("../lib/public-owner-context");
 const DEFAULT_SEALPAY_API_URL =
   process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix";
+const GATEWAY_CACHE_TTL_MS = 60 * 1000;
+const gatewayCache = new Map();
+
+function readGatewayCache(slug) {
+  const cached = gatewayCache.get(slug);
+  if (!cached) return undefined;
+  if (cached.expiresAt <= Date.now()) {
+    gatewayCache.delete(slug);
+    return undefined;
+  }
+  return cached.value;
+}
+
+function writeGatewayCache(slug, value) {
+  if (!slug) return;
+  gatewayCache.set(slug, {
+    value,
+    expiresAt: Date.now() + GATEWAY_CACHE_TTL_MS,
+  });
+}
 
 async function resolveGatewayBySlug(req, slug) {
   if (!slug) {
     return null;
   }
 
+  const cached = readGatewayCache(slug);
+  if (cached !== undefined) {
+    return cached;
+  }
+
   const ownerContext = await resolvePublicOwnerContext(req, slug, { activeOnlyBase: true });
   const ownerUserId = ownerContext?.ownerUserId;
   if (!ownerUserId) {
+    writeGatewayCache(slug, null);
     return null;
   }
 
@@ -28,13 +54,16 @@ async function resolveGatewayBySlug(req, slug) {
 
   const gateway = gatewayRes.rows?.[0];
   if (!gateway || gateway.is_active === false) {
+    writeGatewayCache(slug, null);
     return null;
   }
 
-  return {
+  const resolved = {
     apiUrl: gateway.api_url,
     apiKey: decryptText(gateway.api_key_encrypted || ""),
   };
+  writeGatewayCache(slug, resolved);
+  return resolved;
 }
 
 module.exports = async (req, res) => {
