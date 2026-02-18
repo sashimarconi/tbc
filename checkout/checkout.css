@@ -313,6 +313,7 @@ body.embed {
   min-height: 100%;
   margin: 0;
   overflow: auto;
+  scrollbar-gutter: stable both-edges;
 }
 
 body.embed .page {
