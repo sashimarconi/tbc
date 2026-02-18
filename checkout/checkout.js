@@ -105,6 +105,8 @@ if (bootLoader) {
 
 const activeOfferSlug = resolveOfferSlug();
 const APPEARANCE_CACHE_PREFIX = "checkout:appearance:";
+const OFFER_CACHE_PREFIX = "checkout:offer:";
+const OFFER_CACHE_TTL_MS = 5 * 60 * 1000;
 const IS_DEV =
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1" ||
@@ -116,6 +118,7 @@ let firedInitiateCheckout = false;
 let firedAddPaymentInfo = false;
 let firedCheckoutView = false;
 let firedCheckoutStartEvent = false;
+let firedViewContentEvent = false;
 let summaryCollapsed = true;
 let pixCountdownTimer = null;
 let pixCopyFeedbackTimeout = null;
@@ -368,6 +371,10 @@ function getAppearanceCacheKey(slug) {
   return `${APPEARANCE_CACHE_PREFIX}${slug || ""}`;
 }
 
+function getOfferCacheKey(slug) {
+  return `${OFFER_CACHE_PREFIX}${slug || ""}`;
+}
+
 function readAppearanceCache(slug) {
   try {
     const raw = localStorage.getItem(getAppearanceCacheKey(slug));
@@ -383,6 +390,35 @@ function writeAppearanceCache(slug, config) {
   if (!slug || !config || typeof config !== "object") return;
   try {
     localStorage.setItem(getAppearanceCacheKey(slug), JSON.stringify(config));
+  } catch (_error) {
+    // Ignore cache write issues.
+  }
+}
+
+function readOfferCache(slug) {
+  if (!slug) return null;
+  try {
+    const raw = localStorage.getItem(getOfferCacheKey(slug));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || !parsed.offer) return null;
+    if (!parsed.cachedAt || Date.now() - Number(parsed.cachedAt) > OFFER_CACHE_TTL_MS) return null;
+    return parsed.offer;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function writeOfferCache(slug, offer) {
+  if (!slug || !offer || typeof offer !== "object") return;
+  try {
+    localStorage.setItem(
+      getOfferCacheKey(slug),
+      JSON.stringify({
+        cachedAt: Date.now(),
+        offer,
+      })
+    );
   } catch (_error) {
     // Ignore cache write issues.
   }
@@ -2279,7 +2315,25 @@ function renderCheckoutFromOffer(offer) {
   renderShipping(requiresAddressFlag ? offerData.shipping || [] : []);
   updateSummary();
   scheduleCartSync();
-  trackPixelEvent("ViewContent", getOfferEventPayload());
+  if (!firedViewContentEvent) {
+    firedViewContentEvent = true;
+    trackPixelEvent("ViewContent", getOfferEventPayload());
+  }
+}
+
+function revealCheckoutUI() {
+  if (checkoutRoot) {
+    checkoutRoot.classList.remove("is-hidden");
+  }
+  if (bootLoader) {
+    bootLoader.classList.add("fade-out");
+    setTimeout(() => {
+      bootLoader.remove();
+      document.body.classList.remove("checkout-booting");
+    }, 180);
+  } else {
+    document.body.classList.remove("checkout-booting");
+  }
 }
 
 async function bootstrapCheckout() {
@@ -2290,8 +2344,15 @@ async function bootstrapCheckout() {
 
   hideBootError();
   const cachedAppearance = readAppearanceCache(activeOfferSlug);
+  const cachedOffer = readOfferCache(activeOfferSlug);
   if (cachedAppearance) {
     applyBootTheme(cachedAppearance);
+  }
+  if (cachedOffer?.base) {
+    renderCheckoutFromOffer(cachedOffer);
+    applyBlocksVisibility();
+    applyBlocksLayout();
+    revealCheckoutUI();
   }
 
   try {
@@ -2300,6 +2361,7 @@ async function bootstrapCheckout() {
     const offer = await offerPromise;
 
     renderCheckoutFromOffer(offer);
+    writeOfferCache(activeOfferSlug, offer);
     applyBlocksVisibility();
     applyBlocksLayout();
     await nextFrame();
@@ -2311,18 +2373,7 @@ async function bootstrapCheckout() {
       });
     }
 
-    if (checkoutRoot) {
-      checkoutRoot.classList.remove("is-hidden");
-    }
-    if (bootLoader) {
-      bootLoader.classList.add("fade-out");
-      setTimeout(() => {
-        bootLoader.remove();
-        document.body.classList.remove("checkout-booting");
-      }, 200);
-    } else {
-      document.body.classList.remove("checkout-booting");
-    }
+    revealCheckoutUI();
 
     const appearance = await appearancePromise;
     if (appearance) {
