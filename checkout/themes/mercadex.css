@@ -253,20 +253,21 @@ body.ui-mercadex .summary__line:last-of-type {
 
 body.ui-mercadex .summary__total {
   margin-top: 8px;
-  padding-top: 12px;
+  padding-top: 10px;
   border-top: 1px solid rgba(17, 19, 24, 0.1);
-  color: #18314f;
-  align-items: baseline;
+  color: #132e4d;
+  align-items: center;
 }
 
 body.ui-mercadex .summary__total span {
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.1;
+  font-size: clamp(32px, 7vw, 42px);
+  font-weight: 700;
+  line-height: 1;
+  color: #132e4d;
 }
 
 body.ui-mercadex .summary__total strong {
-  font-size: clamp(40px, 7.8vw, 48px);
+  font-size: clamp(32px, 7vw, 42px);
   font-weight: 700;
   line-height: 1;
   color: #132e4d;
@@ -275,11 +276,11 @@ body.ui-mercadex .summary__total strong {
 
 @media (max-width: 420px) {
   body.ui-mercadex .summary__total span {
-    font-size: 13px;
+    font-size: clamp(28px, 8.2vw, 34px);
   }
 
   body.ui-mercadex .summary__total strong {
-    font-size: clamp(34px, 9vw, 42px);
+    font-size: clamp(28px, 8.2vw, 34px);
   }
 }
 
