@@ -100,6 +100,10 @@ if (bootLoader) {
 
 const activeOfferSlug = resolveOfferSlug();
 const APPEARANCE_CACHE_PREFIX = "checkout:appearance:";
+const IS_DEV =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1" ||
+  window.location.hostname.endsWith(".local");
 let integrationsConfig = [];
 let metaPixelReady = false;
 let tiktokPixelReady = false;
@@ -123,6 +127,9 @@ let cartId = initCartId();
 let cartStageLevel = 0;
 let cartSyncTimeout = null;
 let lastCartPayloadSignature = "";
+let cartSyncInFlight = false;
+let cartSyncDegradedUntil = 0;
+let cartSyncFailureCount = 0;
 let baseRequiresAddress = true;
 let appearanceConfig = null;
 let layoutType = "singleColumn";
@@ -383,6 +390,48 @@ function applyBootTheme(config) {
   document.documentElement.style.setProperty("--seal-icon", safeString(seal.iconColor, "#2d68c4"));
 }
 
+const perfTracker = (() => {
+  const marks = {};
+  const now = () =>
+    typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
+  return {
+    mark(name) {
+      marks[name] = now();
+    },
+    async timedFetch(label, input, init) {
+      const start = now();
+      const response = await fetch(input, init);
+      if (IS_DEV) {
+        const took = Math.round(now() - start);
+        console.debug(`[checkout:fetch] ${label}`, { status: response.status, ms: took });
+      }
+      return response;
+    },
+    flush() {
+      if (!IS_DEV) return;
+      const nav = performance.getEntriesByType?.("navigation")?.[0];
+      const paints = performance.getEntriesByType?.("paint") || [];
+      const fcp = paints.find((p) => p.name === "first-contentful-paint")?.startTime;
+      console.debug("[checkout:perf]", {
+        domContentLoadedMs: nav ? Math.round(nav.domContentLoadedEventEnd) : undefined,
+        loadMs: nav ? Math.round(nav.loadEventEnd) : undefined,
+        firstContentfulPaintMs: fcp ? Math.round(fcp) : undefined,
+        marks,
+      });
+    },
+  };
+})();
+
+if (IS_DEV) {
+  document.addEventListener("DOMContentLoaded", () => {
+    perfTracker.mark("domcontentloaded");
+  });
+  window.addEventListener("load", () => {
+    perfTracker.mark("window-load");
+    perfTracker.flush();
+  });
+}
+
 function showBootError(message) {
   if (bootTitle) {
     bootTitle.textContent = "Nao foi possivel carregar seu checkout";
@@ -410,6 +459,10 @@ function hideBootError() {
 
 function nextFrame() {
   return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function applyLayoutType(nextLayoutType) {
@@ -982,7 +1035,10 @@ function applyAppearance(config) {
 
 async function fetchAppearanceBySlug(slug) {
   if (!slug) return;
-  const response = await fetch(`/api/public/appearance?slug=${encodeURIComponent(slug)}`);
+  const response = await perfTracker.timedFetch(
+    "public-appearance",
+    `/api/public/appearance?slug=${encodeURIComponent(slug)}`
+  );
   if (!response.ok) {
     let message = "Nao foi possivel carregar a aparencia.";
     try {
@@ -1001,7 +1057,10 @@ async function fetchAppearanceBySlug(slug) {
 
 async function fetchIntegrationsBySlug(slug) {
   if (!slug) return [];
-  const response = await fetch(`/api/public/integrations?slug=${encodeURIComponent(slug)}`);
+  const response = await perfTracker.timedFetch(
+    "public-integrations",
+    `/api/public/integrations?slug=${encodeURIComponent(slug)}`
+  );
   if (!response.ok) {
     return [];
   }
@@ -1447,6 +1506,12 @@ function detectCartStage() {
 }
 
 function scheduleCartSync(stage) {
+  if (cartSyncDegradedUntil > Date.now()) {
+    if (IS_DEV) {
+      console.debug("[checkout:cart-sync] skipped (degraded mode)");
+    }
+    return;
+  }
   let targetStage = stage || detectCartStage();
   if (!baseRequiresAddress) {
     targetStage = "contact";
@@ -1461,6 +1526,12 @@ function scheduleCartSync(stage) {
 }
 
 async function syncCartSnapshot(stage, overrides = {}) {
+  if (cartSyncInFlight) {
+    return;
+  }
+  if (cartSyncDegradedUntil > Date.now()) {
+    return;
+  }
   const targetStage = stage || detectCartStage();
   const stageLevel = CART_STAGE_PRIORITY[targetStage] || CART_STAGE_PRIORITY.contact;
   const payload = { ...buildCartPayload(targetStage), ...overrides };
@@ -1469,25 +1540,68 @@ async function syncCartSnapshot(stage, overrides = {}) {
     return;
   }
 
+  cartSyncInFlight = true;
   try {
-    const response = await fetch("/api/public/cart", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!response.ok) {
-      const raw = await response.text().catch(() => "");
-      throw new Error(raw || `HTTP ${response.status}`);
+    const executeSync = async (delayMs) => {
+      if (delayMs > 0) {
+        await sleep(delayMs);
+      }
+      const response = await perfTracker.timedFetch("public-cart", "/api/public/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      let data = null;
+      if (!response.ok) {
+        const raw = await response.text().catch(() => "");
+        throw new Error(raw || `HTTP ${response.status}`);
+      }
+      try {
+        data = await response.json();
+      } catch (_error) {
+        data = null;
+      }
+      return data || {};
+    };
+
+    let syncResponse;
+    try {
+      syncResponse = await executeSync(0);
+    } catch (firstError) {
+      const retryDelayMs = cartSyncFailureCount > 0 ? 1200 : 300;
+      if (IS_DEV) {
+        console.debug("[checkout:cart-sync] retrying once", {
+          ms: retryDelayMs,
+          error: firstError?.message || firstError,
+        });
+      }
+      syncResponse = await executeSync(retryDelayMs);
     }
+
+    if (syncResponse?.degraded) {
+      cartSyncFailureCount += 1;
+      cartSyncDegradedUntil = Date.now() + Math.min(60000, cartSyncFailureCount > 1 ? 30000 : 12000);
+      if (IS_DEV) {
+        console.warn("[checkout:cart-sync] degraded mode enabled by API response");
+      }
+      return;
+    }
+
     lastCartPayloadSignature = signature;
     cartStageLevel = Math.max(cartStageLevel, stageLevel);
+    cartSyncFailureCount = 0;
+    cartSyncDegradedUntil = 0;
   } catch (error) {
+    cartSyncFailureCount += 1;
+    cartSyncDegradedUntil = Date.now() + Math.min(60000, cartSyncFailureCount > 1 ? 30000 : 12000);
     console.warn("Falha ao sincronizar carrinho", {
       stage: targetStage,
       cart_id: cartId,
       slug: activeOfferSlug,
       error: error?.message || error,
     });
+  } finally {
+    cartSyncInFlight = false;
   }
 }
 
@@ -1518,7 +1632,7 @@ async function recordOrder(pixData, checkoutPayload) {
   };
 
   try {
-    const response = await fetch("/api/public/order", {
+    const response = await perfTracker.timedFetch("public-order", "/api/public/order", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(orderPayload),
@@ -2040,7 +2154,7 @@ if (cepInput) {
 }
 
 async function fetchOfferBySlug(slug) {
-  const response = await fetch(`/api/public/offer?slug=${encodeURIComponent(slug)}`);
+  const response = await perfTracker.timedFetch("public-offer", `/api/public/offer?slug=${encodeURIComponent(slug)}`);
   if (!response.ok) {
     let errorMessage = "Oferta indisponivel";
     try {
@@ -2114,14 +2228,10 @@ async function bootstrapCheckout() {
   }
 
   try {
-    const [offer, appearance, integrations] = await Promise.all([
+    const [offer, appearance] = await Promise.all([
       fetchOfferBySlug(activeOfferSlug),
       fetchAppearanceBySlug(activeOfferSlug),
-      fetchIntegrationsBySlug(activeOfferSlug),
     ]);
-
-    integrationsConfig = integrations;
-    await Promise.allSettled([initMetaPixel(), initTikTokPixel()]);
 
     renderCheckoutFromOffer(offer);
     if (appearance) {
@@ -2152,6 +2262,17 @@ async function bootstrapCheckout() {
     } else {
       document.body.classList.remove("checkout-booting");
     }
+
+    void fetchIntegrationsBySlug(activeOfferSlug)
+      .then((integrations) => {
+        integrationsConfig = integrations;
+        return Promise.allSettled([initMetaPixel(), initTikTokPixel()]);
+      })
+      .catch((error) => {
+        if (IS_DEV) {
+          console.warn("[checkout:integrations] failed", error?.message || error);
+        }
+      });
   } catch (error) {
     showBootError(error?.message || "Nao foi possivel carregar. Tente novamente.");
   }
@@ -2302,7 +2423,7 @@ payBtn?.addEventListener("click", () => {
 bootstrapCheckout();
 
 async function requestPix(payload) {
-  const res = await fetch("/api/create-pix", {
+  const res = await perfTracker.timedFetch("create-pix", "/api/create-pix", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

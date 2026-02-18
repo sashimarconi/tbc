@@ -27,6 +27,18 @@ function sanitizePublicConfig(provider, configValue) {
   return {};
 }
 
+const PUBLIC_INTEGRATIONS_CACHE_TTL_MS = 45 * 1000;
+const publicIntegrationsCache = new Map();
+
+function getIntegrationsCacheKey(req, slug, providerFilter) {
+  const host = String(req.headers?.host || "").toLowerCase();
+  return `${host}::${slug}::${providerFilter || "all"}`;
+}
+
+function setIntegrationsCacheHeaders(res) {
+  res.setHeader("Cache-Control", "public, max-age=30, s-maxage=60, stale-while-revalidate=120");
+}
+
 module.exports = async (req, res) => {
   if (req.method !== "GET") {
     res.status(405).json({ error: "Method not allowed" });
@@ -40,6 +52,15 @@ module.exports = async (req, res) => {
       res.status(400).json({ error: "Missing slug" });
       return;
     }
+    setIntegrationsCacheHeaders(res);
+    const providerFilter = sanitizeProvider(req.query?.provider);
+    const cacheKey = getIntegrationsCacheKey(req, slug, providerFilter);
+    const cached = publicIntegrationsCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      res.json(cached.payload);
+      return;
+    }
+
     const ownerContext = await resolvePublicOwnerContext(req, slug, { activeOnlyBase: true });
     const ownerUserId = ownerContext?.ownerUserId;
     if (!ownerUserId) {
@@ -47,7 +68,6 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const providerFilter = sanitizeProvider(req.query?.provider);
     const params = [ownerUserId];
     let sql = `select id, provider, name, is_active, config
                from user_integrations
@@ -65,7 +85,12 @@ module.exports = async (req, res) => {
       is_active: row.is_active !== false,
       config: sanitizePublicConfig(row.provider, row.config),
     }));
-    res.json({ integrations });
+    const payload = { integrations };
+    publicIntegrationsCache.set(cacheKey, {
+      payload,
+      expiresAt: Date.now() + PUBLIC_INTEGRATIONS_CACHE_TTL_MS,
+    });
+    res.json(payload);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

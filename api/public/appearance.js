@@ -346,6 +346,18 @@ async function ensureThemesAndAppearanceSchema() {
   }
 }
 
+const PUBLIC_APPEARANCE_CACHE_TTL_MS = 45 * 1000;
+const publicAppearanceCache = new Map();
+
+function getAppearanceCacheKey(req, slug) {
+  const host = String(req.headers?.host || "").toLowerCase();
+  return `${host}::${slug}`;
+}
+
+function setAppearanceCacheHeaders(res) {
+  res.setHeader("Cache-Control", "public, max-age=30, s-maxage=60, stale-while-revalidate=120");
+}
+
 module.exports = async (req, res) => {
   if (req.method !== "GET") {
     res.status(405).json({ error: "Method not allowed" });
@@ -355,6 +367,14 @@ module.exports = async (req, res) => {
   const slug = (req.query?.slug || "").toString().trim();
   if (!slug) {
     res.status(400).json({ error: "Missing slug" });
+    return;
+  }
+  setAppearanceCacheHeaders(res);
+
+  const cacheKey = getAppearanceCacheKey(req, slug);
+  const cached = publicAppearanceCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    res.json(cached.payload);
     return;
   }
 
@@ -394,11 +414,18 @@ module.exports = async (req, res) => {
     const theme = themeResult.rows?.[0];
     const effectiveConfig = deepMerge(theme?.defaults || {}, appearance?.overrides || {});
 
-    res.json({
+    const payload = {
       theme_key: appearance.theme_key,
       overrides: appearance.overrides || {},
       effectiveConfig,
+    };
+
+    publicAppearanceCache.set(cacheKey, {
+      payload,
+      expiresAt: Date.now() + PUBLIC_APPEARANCE_CACHE_TTL_MS,
     });
+
+    res.json(payload);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
