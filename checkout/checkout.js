@@ -187,7 +187,6 @@ function setSummaryCollapsed(nextCollapsed) {
     summaryCard.classList.toggle("is-collapsed", summaryCollapsed);
   }
   if (summaryToggle) {
-    summaryToggle.textContent = "";
     summaryToggle.setAttribute("aria-label", summaryCollapsed ? "Expandir resumo" : "Recolher resumo");
     summaryToggle.setAttribute("aria-expanded", summaryCollapsed ? "false" : "true");
   }
