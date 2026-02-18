@@ -267,7 +267,7 @@ body.ui-mercadex .summary__total span {
 }
 
 body.ui-mercadex .summary__total strong {
-  font-size: clamp(30px, 6.6vw, 38px);
+  font-size: clamp(24px, 5.4vw, 30px);
   font-weight: 700;
   line-height: 1;
   color: #132e4d;
@@ -280,7 +280,7 @@ body.ui-mercadex .summary__total strong {
   }
 
   body.ui-mercadex .summary__total strong {
-    font-size: clamp(28px, 7vw, 34px);
+    font-size: clamp(22px, 5.8vw, 28px);
   }
 }
 
