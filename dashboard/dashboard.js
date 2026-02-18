@@ -2571,7 +2571,7 @@ async function saveShippingMethod() {
   }
 
   const endpoint = editingShippingId
-    ? `/api/dashboard/shipping-methods/${encodeURIComponent(editingShippingId)}`
+    ? `/api/dashboard/shipping-methods?id=${encodeURIComponent(editingShippingId)}`
     : "/api/dashboard/shipping-methods";
   const method = editingShippingId ? "PUT" : "POST";
 
@@ -2592,7 +2592,7 @@ async function saveShippingMethod() {
 }
 
 async function deleteShippingMethod(id) {
-  const res = await fetch(`/api/dashboard/shipping-methods/${encodeURIComponent(id)}`, {
+  const res = await fetch(`/api/dashboard/shipping-methods?id=${encodeURIComponent(id)}`, {
     method: "DELETE",
     headers: { ...setAuthHeader() },
   });
@@ -2619,7 +2619,7 @@ async function updateShippingMethod(id, patch = {}) {
     ...patch,
   };
 
-  const res = await fetch(`/api/dashboard/shipping-methods/${encodeURIComponent(id)}`, {
+  const res = await fetch(`/api/dashboard/shipping-methods?id=${encodeURIComponent(id)}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
