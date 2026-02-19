@@ -120,6 +120,7 @@ let firedAddPaymentInfo = false;
 let firedCheckoutView = false;
 let firedCheckoutStartEvent = false;
 let firedViewContentEvent = false;
+let firedPurchasePixelEvent = false;
 let summaryCollapsed = true;
 let pixCountdownTimer = null;
 let pixCopyFeedbackTimeout = null;
@@ -1508,6 +1509,28 @@ function trackCheckoutStartOnce(metadata = {}) {
   trackCheckout("checkout_started", metadata);
 }
 
+function getPurchasePixelStorageKey() {
+  return `checkout:purchase_pixel:${activeOfferSlug || "default"}:${cartId || "no-cart"}`;
+}
+
+function hasPurchasePixelFired() {
+  if (firedPurchasePixelEvent) return true;
+  try {
+    return sessionStorage.getItem(getPurchasePixelStorageKey()) === "1";
+  } catch (_error) {
+    return false;
+  }
+}
+
+function markPurchasePixelFired() {
+  firedPurchasePixelEvent = true;
+  try {
+    sessionStorage.setItem(getPurchasePixelStorageKey(), "1");
+  } catch (_error) {
+    // ignore storage issues
+  }
+}
+
 function getFieldValue(name) {
   if (!form || !name) return "";
   const field = form.elements?.namedItem(name);
@@ -2595,18 +2618,22 @@ form.addEventListener("submit", async (event) => {
     bumps: Array.from(selectedBumps),
   });
 
-  trackMetaEvent("Purchase", {
-    value: Number(calcTotal() / 100),
-    currency: "BRL",
-    ...getOfferEventPayload(),
-  });
-
   openPixLoadingModal();
 
   try {
     const cartSyncPromise = syncCartSnapshot("payment");
     const data = await createPixCharge(payload);
     void cartSyncPromise;
+
+    if (!hasPurchasePixelFired()) {
+      trackMetaEvent("Purchase", {
+        value: Number(calcTotal() / 100),
+        currency: "BRL",
+        ...getOfferEventPayload(),
+      });
+      markPurchasePixelFired();
+    }
+
     pixQr.src = data.pix_qr_code;
     pixCode.value = data.pix_code;
     if (pixOrderTotal) {
