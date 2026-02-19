@@ -795,6 +795,22 @@ input[type="checkbox"]:focus-visible {
   font-weight: 700;
 }
 
+.summary__product {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.summary__product-image {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
 .cta {
   border: 0;
   border-radius: var(--radius-button);

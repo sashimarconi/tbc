@@ -1839,7 +1839,20 @@ function updateSummary() {
       </article>
     `;
   } else {
-    summaryLines.innerHTML = lines
+    const base = offerData.base || {};
+    const cover = base.image_url || productCover?.src || "https://dummyimage.com/60x60/f0f0f0/aaa&text=Produto";
+    const baseName = normalizeDisplayText(base.name || "Produto");
+    const firstLine = `
+      <div class="summary__line summary__line--product">
+        <span class="summary__product">
+          <img class="summary__product-image" src="${cover}" alt="${baseName}" />
+          <span>${baseName}</span>
+        </span>
+        <strong>R$ ${formatPrice(base.price_cents || 0)}</strong>
+      </div>
+    `;
+    const extraLines = lines
+      .slice(1)
       .map(
         (line) => `
           <div class="summary__line">
@@ -1849,6 +1862,7 @@ function updateSummary() {
         `
       )
       .join("");
+    summaryLines.innerHTML = `${firstLine}${extraLines}`;
   }
 
   const subtotal = calcSubtotal();
@@ -2403,20 +2417,51 @@ async function bootstrapCheckout() {
   if (cachedAppearance) {
     applyBootTheme(cachedAppearance);
   }
-  if (cachedOffer?.base) {
-    renderCheckoutFromOffer(cachedOffer);
+
+  const renderAndReveal = (offer, appearance) => {
+    if (offer?.base) {
+      renderCheckoutFromOffer(offer);
+    }
+    if (appearance) {
+      applyAppearance(appearance?.effectiveConfig || appearance);
+      applyBootTheme(appearance?.effectiveConfig || appearance);
+    }
     applyBlocksVisibility();
     applyBlocksLayout();
     revealCheckoutUI();
+  };
+
+  const hasWarmCache = Boolean(cachedOffer?.base && cachedAppearance);
+  if (hasWarmCache) {
+    renderAndReveal(cachedOffer, cachedAppearance);
+    if (!firedCheckoutView) {
+      firedCheckoutView = true;
+      trackCheckout("checkout_visited", {
+        slug: activeOfferSlug,
+      });
+    }
+  } else if (cachedOffer?.base) {
+    renderCheckoutFromOffer(cachedOffer);
+    applyBlocksVisibility();
+    applyBlocksLayout();
   }
 
   try {
-    const offerPromise = fetchOfferBySlug(activeOfferSlug);
-    const appearancePromise = fetchAppearanceBySlug(activeOfferSlug).catch(() => null);
-    const offer = await offerPromise;
+    const [offer, appearance] = await Promise.all([
+      fetchOfferBySlug(activeOfferSlug),
+      fetchAppearanceBySlug(activeOfferSlug).catch(() => null),
+    ]);
 
     renderCheckoutFromOffer(offer);
     writeOfferCache(activeOfferSlug, offer);
+    if (appearance) {
+      applyAppearance(appearance?.effectiveConfig || appearance);
+      applyBootTheme(appearance?.effectiveConfig || appearance);
+      writeAppearanceCache(activeOfferSlug, appearance?.effectiveConfig || appearance);
+    } else if (cachedAppearance) {
+      applyAppearance(cachedAppearance?.effectiveConfig || cachedAppearance);
+      applyBootTheme(cachedAppearance?.effectiveConfig || cachedAppearance);
+    }
     applyBlocksVisibility();
     applyBlocksLayout();
     await nextFrame();
@@ -2428,15 +2473,8 @@ async function bootstrapCheckout() {
       });
     }
 
-    revealCheckoutUI();
-
-    const appearance = await appearancePromise;
-    if (appearance) {
-      applyAppearance(appearance?.effectiveConfig || appearance);
-      applyBootTheme(appearance?.effectiveConfig || appearance);
-      writeAppearanceCache(activeOfferSlug, appearance?.effectiveConfig || appearance);
-      applyBlocksVisibility();
-      applyBlocksLayout();
+    if (!hasWarmCache) {
+      revealCheckoutUI();
     }
 
     void fetchIntegrationsBySlug(activeOfferSlug)
