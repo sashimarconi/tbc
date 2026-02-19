@@ -209,7 +209,7 @@ async function handleSummary(req, res) {
            count(distinct session_id) filter (
              where event_type in ('page_view','checkout_view','checkout_visited','checkout_start','checkout_started','pix_generated','purchase','paid')
            ) as visitors_today,
-           count(*) filter (
+           count(distinct session_id) filter (
              where event_type in ('checkout_view','checkout_visited')
                 or (event_type = 'page_view' and page = 'checkout')
            ) as checkout_visits_today,
@@ -227,7 +227,7 @@ async function handleSummary(req, res) {
            count(distinct session_id) filter (
              where event_type in ('page_view','checkout_view','checkout_visited','checkout_start','checkout_started','pix_generated','purchase','paid')
            ) as visits,
-           count(*) filter (
+           count(distinct session_id) filter (
              where event_type in ('checkout_view','checkout_visited')
                 or (event_type = 'page_view' and page = 'checkout')
            ) as "checkoutViews",

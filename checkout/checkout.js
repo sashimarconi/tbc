@@ -1493,6 +1493,7 @@ function getOfferEventPayload() {
 }
 
 function trackCheckout(event, metadata = {}) {
+  if (PREVIEW_MODE) return;
   const tracker = window.LiveAnalytics;
   if (!tracker) return;
   tracker.sendEvent(event, {
