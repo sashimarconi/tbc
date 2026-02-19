@@ -1932,7 +1932,9 @@ integrationForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const id = integrationIdInput?.value || "";
   const payload = getIntegrationPayloadFromForm();
-  const endpoint = id ? `/api/dashboard/integrations/${id}` : "/api/dashboard/integrations";
+  const endpoint = id
+    ? `/api/dashboard/integrations?id=${encodeURIComponent(id)}`
+    : "/api/dashboard/integrations";
   const method = id ? "PUT" : "POST";
   try {
     const res = await fetch(endpoint, {
@@ -1969,7 +1971,7 @@ integrationsTableBody?.addEventListener("click", async (event) => {
   if (action === "delete") {
     if (!confirm("Excluir esta integração?")) return;
     try {
-      const res = await fetch(`/api/dashboard/integrations/${id}`, {
+      const res = await fetch(`/api/dashboard/integrations?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
         headers: { ...setAuthHeader() },
       });
