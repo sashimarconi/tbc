@@ -652,7 +652,7 @@ input[type="checkbox"]:focus-visible {
 .shipping-card__info strong {
   font-weight: 800;
   color: var(--color-text);
-  font-size: 21px;
+  font-size: 16px;
   line-height: 1.15;
 }
 
@@ -661,17 +661,17 @@ input[type="checkbox"]:focus-visible {
   white-space: nowrap;
   text-align: right;
   color: #00a650;
-  font-size: 24px;
+  font-size: 14px;
   line-height: 1.1;
 }
 
 @media (max-width: 640px) {
   .shipping-card__info strong {
-    font-size: 18px;
+    font-size: 14px;
   }
 
   .shipping-card__price {
-    font-size: 22px;
+    font-size: 13px;
   }
 }
 
