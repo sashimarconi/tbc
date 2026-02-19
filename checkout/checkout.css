@@ -312,8 +312,9 @@ body.embed {
   height: 100%;
   min-height: 100%;
   margin: 0;
-  overflow: auto;
-  scrollbar-gutter: stable both-edges;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: auto;
 }
 
 body.embed .page {
