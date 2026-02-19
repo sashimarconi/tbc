@@ -316,8 +316,7 @@ function buildCheckoutLink(slug) {
       return "";
     }
     const verified = domainsCache.find((item) => item?.is_verified === true);
-    const fallback = verified || domainsCache[0];
-    const domain = String(fallback?.domain || "").trim().toLowerCase();
+    const domain = String(verified?.domain || "").trim().toLowerCase();
     if (!domain) {
       return "";
     }
@@ -375,6 +374,7 @@ function showPanel() {
   activateView(getViewFromPathname(), { replacePath: true });
   loadItems();
   loadDashboardOrdersPreview();
+  loadDomains();
 }
 
 function showLogin() {
