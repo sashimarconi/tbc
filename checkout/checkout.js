@@ -87,7 +87,8 @@ const shippingSection = document.getElementById("shipping-section");
 const shippingList = document.getElementById("shipping-list");
 const CPF_FALLBACK = "25335818875";
 const URL_PARAMS = new URLSearchParams(window.location.search);
-const EMBED_MODE = URL_PARAMS.get("embed") === "1" || URL_PARAMS.get("preview") === "1";
+const PREVIEW_MODE = URL_PARAMS.get("preview") === "1";
+const EMBED_MODE = URL_PARAMS.get("embed") === "1" || PREVIEW_MODE;
 const bootLoader = document.getElementById("boot-loader");
 const bootTitle = document.getElementById("boot-title");
 const bootError = document.getElementById("boot-error");
@@ -1159,6 +1160,48 @@ function showOfferUnavailable(message = "Oferta nao encontrada") {
   }
 }
 
+function buildPreviewOffer() {
+  return {
+    base: {
+      id: "preview-base",
+      owner_user_id: null,
+      type: "base",
+      slug: "__preview__",
+      form_factor: "physical",
+      requires_address: true,
+      name: "Produto de exemplo",
+      description: "Personalize o checkout no Builder e publique quando estiver pronto.",
+      price_cents: 5990,
+      compare_price_cents: null,
+      active: true,
+      image_url: "",
+    },
+    bumps: [],
+    shipping: [
+      {
+        id: "preview-shipping-pac",
+        name: "Correios (PAC)",
+        description: "de 5 ate 8 dias uteis",
+        price_cents: 0,
+      },
+      {
+        id: "preview-shipping-sedex",
+        name: "Correios (SEDEX)",
+        description: "de 1 ate 3 dias uteis",
+        price_cents: 2741,
+      },
+    ],
+  };
+}
+
+function renderPreviewCheckout() {
+  renderCheckoutFromOffer(buildPreviewOffer());
+  if (payBtn) {
+    payBtn.disabled = true;
+    payBtn.textContent = "Preview do checkout";
+  }
+}
+
 function initCartId() {
   const nextId = () => {
     if (window.crypto?.randomUUID) {
@@ -1609,6 +1652,9 @@ function detectCartStage() {
 }
 
 function scheduleCartSync(stage) {
+  if (!activeOfferSlug) {
+    return;
+  }
   if (cartSyncDegradedUntil > Date.now()) {
     if (IS_DEV) {
       console.debug("[checkout:cart-sync] skipped (degraded mode)");
@@ -2338,6 +2384,14 @@ function revealCheckoutUI() {
 
 async function bootstrapCheckout() {
   if (!activeOfferSlug) {
+    if (PREVIEW_MODE) {
+      hideBootError();
+      renderPreviewCheckout();
+      applyBlocksVisibility();
+      applyBlocksLayout();
+      revealCheckoutUI();
+      return;
+    }
     showBootError("Link invalido.");
     return;
   }
@@ -2395,6 +2449,17 @@ async function bootstrapCheckout() {
         }
       });
   } catch (error) {
+    if (PREVIEW_MODE) {
+      if (IS_DEV) {
+        console.warn("[checkout:preview] fallback enabled", error?.message || error);
+      }
+      hideBootError();
+      renderPreviewCheckout();
+      applyBlocksVisibility();
+      applyBlocksLayout();
+      revealCheckoutUI();
+      return;
+    }
     showBootError(error?.message || "Nao foi possivel carregar. Tente novamente.");
   }
 }
