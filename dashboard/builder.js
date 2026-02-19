@@ -1,4 +1,4 @@
-﻿const token = localStorage.getItem("admin_token") || "";
+const token = localStorage.getItem("dashboard_token") || "";
 
 if (!token) {
   window.location.href = "/dashboard/";
@@ -216,7 +216,7 @@ async function apiFetch(path, options = {}) {
   });
 
   if (res.status === 401) {
-    localStorage.removeItem("admin_token");
+    localStorage.removeItem("dashboard_token");
     window.location.href = "/dashboard/";
     throw new Error("Unauthorized");
   }
@@ -380,8 +380,8 @@ function renderElementsOrderList() {
         <li class="elements-order-item" data-order-item="${item}">
           <span class="elements-order-label">${ELEMENT_LABELS[item] || item}</span>
           <div class="elements-order-actions">
-            <button class="order-btn" type="button" data-order-move="up" data-order-index="${index}" aria-label="Mover para cima">↑</button>
-            <button class="order-btn" type="button" data-order-move="down" data-order-index="${index}" aria-label="Mover para baixo">↓</button>
+            <button class="order-btn" type="button" data-order-move="up" data-order-index="${index}" aria-label="Mover para cima">?</button>
+            <button class="order-btn" type="button" data-order-move="down" data-order-index="${index}" aria-label="Mover para baixo">?</button>
           </div>
         </li>
       `

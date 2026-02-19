@@ -11,7 +11,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Fetch liveView data
   async function updateLiveView() {
     try {
-      const token = localStorage.getItem("admin_token");
+      const token = localStorage.getItem("dashboard_token");
       if (!token) return;
       const res = await fetch('/api/dashboard/analytics/summary', {
         headers: { Authorization: `Bearer ${token}` },
@@ -243,7 +243,7 @@ const DASHBOARD_VIEW_TO_ROUTE = Object.fromEntries(
   Object.entries(DASHBOARD_ROUTE_TO_VIEW).map(([route, view]) => [view, route])
 );
 
-let token = localStorage.getItem("admin_token") || "";
+let token = localStorage.getItem("dashboard_token") || "";
 let summaryInterval = null;
 let ordersInterval = null;
 let cartsInterval = null;
@@ -360,7 +360,7 @@ async function login() {
   }
 
   token = data.token;
-  localStorage.setItem("admin_token", token);
+  localStorage.setItem("dashboard_token", token);
   if (data?.user?.is_admin === true) {
     window.location.href = "/admin";
     return;
@@ -1888,7 +1888,7 @@ loginForm.addEventListener("submit", (event) => {
 });
 logoutBtn.addEventListener("click", () => {
   token = "";
-  localStorage.removeItem("admin_token");
+  localStorage.removeItem("dashboard_token");
   showLogin();
 });
 
@@ -2307,7 +2307,7 @@ async function bootstrapAuth() {
     showPanel();
   } catch (_error) {
     token = "";
-    localStorage.removeItem("admin_token");
+    localStorage.removeItem("dashboard_token");
     showLogin();
   }
 }
