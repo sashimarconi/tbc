@@ -338,8 +338,13 @@
                       </svg>
                     </span>
                   </div>
-                  <p>Configure somente a API Key da sua própria conta. A URL padrão já é aplicada automaticamente.</p>
+                  <p>Configure a API Key e a URL de criação de PIX da sua própria conta.</p>
                 </header>
+                <div class="field-group">
+                  <label for="payment-api-url">URL create-pix</label>
+                  <input id="payment-api-url" type="url" placeholder="https://seu-dominio.com/create-pix4" />
+                  <small>Essa URL vale somente para o usuário logado.</small>
+                </div>
                 <div class="field-group">
                   <label for="payment-api-key">API Key</label>
                   <input id="payment-api-key" type="password" placeholder="Cole sua chave (não exibimos novamente)" />
