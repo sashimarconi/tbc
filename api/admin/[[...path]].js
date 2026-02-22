@@ -36,7 +36,8 @@ module.exports = async (req, res) => {
     req.query = req.query || {};
     req.query.path = segments;
 
-    const handler = isGlobalByUrl
+    const isGlobalRoute = isGlobalByUrl || (segments[0] || "") === "global";
+    const handler = isGlobalRoute
       ? require("../../routers/admin-global-router")
       : require("../../routers/admin-router");
     await handler(req, res);

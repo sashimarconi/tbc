@@ -120,9 +120,9 @@ function renderOrders(rows) {
 async function loadData() {
   setPanelError("");
   const [summaryRes, byUserRes, ordersRes] = await Promise.allSettled([
-    api("/api/admin/global/summary"),
-    api("/api/admin/global/by-user"),
-    api("/api/admin/global/orders"),
+    api("/api/admin?path=global/summary"),
+    api("/api/admin?path=global/by-user"),
+    api("/api/admin?path=global/orders"),
   ]);
 
   if (summaryRes.status === "fulfilled") {
@@ -147,7 +147,7 @@ async function loadData() {
   if (failures.length) {
     const first = failures[0].reason || {};
     const status = first.status ? `HTTP ${first.status}` : "erro";
-    const path = first.path || "/api/admin/global/*";
+    const path = first.path || "/api/admin?path=global/*";
     setPanelError(`Falha ao carregar dados (${status}) em ${path}.`);
   }
 }
@@ -242,7 +242,7 @@ usersBody?.addEventListener("click", async (event) => {
   const userId = btn.getAttribute("data-user-id");
   const nextAdmin = btn.getAttribute("data-next-admin") === "true";
   try {
-    await api(`/api/admin/global/users/${encodeURIComponent(userId)}/set-admin`, {
+    await api(`/api/admin?path=global/users/${encodeURIComponent(userId)}/set-admin`, {
       method: "POST",
       body: JSON.stringify({ is_admin: nextAdmin }),
     });
