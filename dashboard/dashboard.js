@@ -361,10 +361,6 @@ async function login() {
 
   token = data.token;
   localStorage.setItem("dashboard_token", token);
-  if (data?.user?.is_admin === true) {
-    window.location.href = "/admin";
-    return;
-  }
   showPanel();
 }
 
@@ -2301,11 +2297,7 @@ async function bootstrapAuth() {
     if (!res.ok) {
       throw new Error("unauthorized");
     }
-    const data = await res.json();
-    if (data?.user?.is_admin === true) {
-      window.location.href = "/admin";
-      return;
-    }
+    await res.json();
     showPanel();
   } catch (_error) {
     token = "";
