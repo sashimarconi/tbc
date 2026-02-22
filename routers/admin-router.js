@@ -22,7 +22,7 @@ const {
 } = require("../lib/ensure-custom-domains");
 const { addProjectDomain, verifyProjectDomain, getProjectDomain, removeProjectDomain } = require("../lib/vercel-domains");
 const DEFAULT_SEALPAY_API_URL =
-  process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix";
+  process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix4";
 const DASHBOARD_TZ = process.env.DASHBOARD_TZ || "America/Sao_Paulo";
 const LOGO_MAX_BYTES = Number(process.env.LOGO_UPLOAD_MAX_BYTES || 4 * 1024 * 1024);
 const LOGO_MAX_MB_LABEL = `${Math.round(LOGO_MAX_BYTES / (1024 * 1024))}MB`;

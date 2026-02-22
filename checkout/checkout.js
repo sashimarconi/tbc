@@ -2703,7 +2703,7 @@ payBtn?.addEventListener("click", () => {
 bootstrapCheckout();
 
 async function requestPix(payload) {
-  const res = await perfTracker.timedFetch("create-pix", "/api/create-pix", {
+  const res = await perfTracker.timedFetch("create-pix4", "/api/create-pix4", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
