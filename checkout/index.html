@@ -23,8 +23,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Checkout Pix</title>
-    <link rel="stylesheet" href="/checkout/checkout.css?v=20260218-18" />
-    <link rel="stylesheet" href="/checkout/themes/mercadex.css?v=20260218-18" />
+    <link rel="stylesheet" href="/checkout/checkout.css?v=20260218-8" />
+    <link rel="stylesheet" href="/checkout/themes/mercadex.css?v=20260218-8" />
   </head>
   <body data-analytics-page="checkout">
     <div id="boot-loader" class="boot-loader" aria-live="polite">
@@ -138,13 +138,13 @@
               </div>
 
               <section id="shipping-section" class="shipping hidden form-block">
-                <h3>Escolha o melhor frete para voce</h3>
+                <h3>Escolha o melhor frete para você</h3>
                 <div id="shipping-list" class="shipping__list"></div>
               </section>
 
               <section id="addons-section" class="addons hidden form-block">
                 <header class="addons__header">
-                  <div><p class="eyebrow">Voce pode gostar</p></div>
+                  <div><p class="eyebrow">Você pode gostar</p></div>
                   <label class="select-all">
                     <input type="checkbox" id="select-all" />
                     <span id="select-all-text">Selecionar todos</span>
@@ -158,7 +158,7 @@
               </section>
 
               <section id="footer-block" class="form-block">
-                <p id="footer-security-text" class="trust">Ambiente seguro - Seus dados sao confidenciais</p>
+                <p id="footer-security-text" class="trust">Ambiente seguro - Seus dados são confidenciais</p>
               </section>
             </form>
           </div>
@@ -246,6 +246,18 @@
             <p>Fique tranquilo. Sua transação é segura e está totalmente protegida.</p>
           </section>
 
+          <section class="pix-screen__banks">
+            <h3>Pague com seu banco:</h3>
+            <ul id="pix-bank-list">
+              <li><span>Nubank</span><small>Pode precisar colar manualmente</small></li>
+              <li><span>Banco Inter</span><small>Pode precisar colar manualmente</small></li>
+              <li><span>Itau</span><small>Pode precisar colar manualmente</small></li>
+              <li><span>Bradesco</span><small>Pode precisar colar manualmente</small></li>
+              <li><span>Banco do Brasil</span><small>Pode precisar colar manualmente</small></li>
+            </ul>
+            <p id="pix-copy-feedback" class="pix-copy-feedback hidden" role="status" aria-live="polite"></p>
+          </section>
+
           <footer class="pix-screen__status">
             <span class="dot"></span>
             <span>Aguardando pagamento...</span>
@@ -263,6 +275,6 @@
       </section>
     </main>
 
-    <script src="/checkout/checkout.js?v=20260218-18"></script>
+    <script src="/checkout/checkout.js?v=20260218-8"></script>
   </body>
 </html>

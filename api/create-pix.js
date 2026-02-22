@@ -4,7 +4,7 @@ const { ensurePaymentGatewayTable } = require("../lib/ensure-payment-gateway");
 const { decryptText } = require("../lib/credentials-crypto");
 const { resolvePublicOwnerContext } = require("../lib/public-owner-context");
 const DEFAULT_SEALPAY_API_URL =
-  process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix";
+  process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix4";
 const GATEWAY_CACHE_TTL_MS = 60 * 1000;
 const gatewayCache = new Map();
 
