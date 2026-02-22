@@ -12,6 +12,7 @@ const refreshBtn = document.getElementById("refresh-btn");
 const summaryCards = document.getElementById("summary-cards");
 const usersBody = document.getElementById("users-body");
 const ordersBody = document.getElementById("orders-body");
+const panelError = document.getElementById("panel-error");
 
 function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -40,13 +41,21 @@ async function api(path, options = {}) {
   }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data.error || "Erro na requisição");
+    const err = new Error(data.error || "Erro na requisicao");
+    err.status = res.status;
+    err.path = path;
+    throw err;
   }
   return data;
 }
 
 function isAuthError(error) {
   return String(error?.message || "").toLowerCase() === "forbidden";
+}
+
+function setPanelError(message = "") {
+  if (!panelError) return;
+  panelError.textContent = message;
 }
 
 function formatCurrency(cents = 0) {
@@ -109,14 +118,38 @@ function renderOrders(rows) {
 }
 
 async function loadData() {
-  const [summary, byUser, orders] = await Promise.all([
+  setPanelError("");
+  const [summaryRes, byUserRes, ordersRes] = await Promise.allSettled([
     api("/api/admin/global/summary"),
     api("/api/admin/global/by-user"),
     api("/api/admin/global/orders"),
   ]);
-  renderSummary(summary);
-  renderUsers(byUser.users || []);
-  renderOrders(orders.orders || []);
+
+  if (summaryRes.status === "fulfilled") {
+    renderSummary(summaryRes.value || {});
+  } else {
+    renderSummary({});
+  }
+
+  if (byUserRes.status === "fulfilled") {
+    renderUsers(byUserRes.value?.users || []);
+  } else {
+    renderUsers([]);
+  }
+
+  if (ordersRes.status === "fulfilled") {
+    renderOrders(ordersRes.value?.orders || []);
+  } else {
+    renderOrders([]);
+  }
+
+  const failures = [summaryRes, byUserRes, ordersRes].filter((result) => result.status === "rejected");
+  if (failures.length) {
+    const first = failures[0].reason || {};
+    const status = first.status ? `HTTP ${first.status}` : "erro";
+    const path = first.path || "/api/admin/global/*";
+    setPanelError(`Falha ao carregar dados (${status}) em ${path}.`);
+  }
 }
 
 async function login(event) {
