@@ -23,27 +23,22 @@ module.exports = async (req, res) => {
       return;
     }
 
+    const urlPath = (req.url || "").split("?")[0];
+    const isGlobalByUrl = /^\/api\/admin\/global(?:\/|$)/.test(urlPath);
+
     const raw = req.query?.path;
     let segments = normalizeSegments(raw);
     if (!segments.length) {
-      const cleaned = (req.url || "").split("?")[0].replace(/^\/api\/admin\/?/, "");
+      const cleaned = urlPath.replace(/^\/api\/admin\/?/, "");
       segments = normalizeSegments(cleaned);
     }
-    const urlPath = (req.url || "").split("?")[0];
-    const isGlobalByUrl = /^\/api\/admin\/global(?:\/|$)/.test(urlPath);
-    if (isGlobalByUrl && segments[0] !== "global") {
-      const cleaned = urlPath.replace(/^\/api\/admin\/?/, "");
-      const fromUrl = normalizeSegments(cleaned);
-      if (fromUrl.length) {
-        segments = fromUrl;
-      } else {
-        segments = ["global"];
-      }
-    }
+
     req.query = req.query || {};
     req.query.path = segments;
-    const isGlobalRoute = isGlobalByUrl || (segments[0] || "") === "global";
-    const handler = require(isGlobalRoute ? "../../routers/admin-global-router" : "../../routers/admin-router");
+
+    const handler = isGlobalByUrl
+      ? require("../../routers/admin-global-router")
+      : require("../../routers/admin-router");
     await handler(req, res);
   } catch (error) {
     if (!res.headersSent) {
