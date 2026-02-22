@@ -1,5 +1,21 @@
 const { requireAdmin } = require("../../lib/auth");
 
+function normalizeSegments(raw) {
+  if (Array.isArray(raw)) {
+    return raw
+      .flatMap((part) => String(part || "").split(/[\/,]+/))
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+  if (typeof raw === "string" && raw.length) {
+    return raw
+      .split(/[\/,]+/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
 module.exports = async (req, res) => {
   try {
     const admin = await requireAdmin(req, res);
@@ -8,14 +24,13 @@ module.exports = async (req, res) => {
     }
 
     const raw = req.query?.path;
-    const segments = Array.isArray(raw)
-      ? raw
-      : typeof raw === "string" && raw.length
-        ? raw.split("/").filter(Boolean)
-        : (() => {
-            const cleaned = (req.url || "").split("?")[0].replace(/^\/api\/admin\/?/, "");
-            return cleaned ? cleaned.split("/").filter(Boolean) : [];
-          })();
+    let segments = normalizeSegments(raw);
+    if (!segments.length) {
+      const cleaned = (req.url || "").split("?")[0].replace(/^\/api\/admin\/?/, "");
+      segments = normalizeSegments(cleaned);
+    }
+    req.query = req.query || {};
+    req.query.path = segments;
     const isGlobalRoute = (segments[0] || "") === "global";
     const handler = require(isGlobalRoute ? "../../routers/admin-global-router" : "../../routers/admin-router");
     await handler(req, res);

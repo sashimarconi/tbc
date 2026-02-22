@@ -6,8 +6,18 @@ const { ensureAnalyticsTables } = require("../lib/ensure-analytics");
 
 function getPathSegments(req) {
   const raw = req.query?.path;
-  if (Array.isArray(raw)) return raw;
-  if (typeof raw === "string" && raw.length) return raw.split("/").filter(Boolean);
+  if (Array.isArray(raw)) {
+    return raw
+      .flatMap((part) => String(part || "").split(/[\/,]+/))
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+  if (typeof raw === "string" && raw.length) {
+    return raw
+      .split(/[\/,]+/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
   const cleaned = (req.url || "").split("?")[0].replace(/^\/api\/admin\/?/, "");
   return cleaned ? cleaned.split("/").filter(Boolean) : [];
 }
