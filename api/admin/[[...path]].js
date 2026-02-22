@@ -29,9 +29,20 @@ module.exports = async (req, res) => {
       const cleaned = (req.url || "").split("?")[0].replace(/^\/api\/admin\/?/, "");
       segments = normalizeSegments(cleaned);
     }
+    const urlPath = (req.url || "").split("?")[0];
+    const isGlobalByUrl = /^\/api\/admin\/global(?:\/|$)/.test(urlPath);
+    if (isGlobalByUrl && segments[0] !== "global") {
+      const cleaned = urlPath.replace(/^\/api\/admin\/?/, "");
+      const fromUrl = normalizeSegments(cleaned);
+      if (fromUrl.length) {
+        segments = fromUrl;
+      } else {
+        segments = ["global"];
+      }
+    }
     req.query = req.query || {};
     req.query.path = segments;
-    const isGlobalRoute = (segments[0] || "") === "global";
+    const isGlobalRoute = isGlobalByUrl || (segments[0] || "") === "global";
     const handler = require(isGlobalRoute ? "../../routers/admin-global-router" : "../../routers/admin-router");
     await handler(req, res);
   } catch (error) {
