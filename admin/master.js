@@ -45,6 +45,10 @@ async function api(path, options = {}) {
   return data;
 }
 
+function isAuthError(error) {
+  return String(error?.message || "").toLowerCase() === "forbidden";
+}
+
 function formatCurrency(cents = 0) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format((Number(cents) || 0) / 100);
 }
@@ -136,7 +140,17 @@ async function login(event) {
       return;
     }
     showPanel();
-    await loadData();
+    try {
+      await loadData();
+    } catch (error) {
+      if (isAuthError(error)) {
+        token = "";
+        localStorage.removeItem(tokenKey);
+        showLogin();
+        return;
+      }
+      loginError.textContent = "Entrou como admin, mas houve falha ao carregar os dados.";
+    }
   } catch (error) {
     loginError.textContent = error.message || "Falha no login";
   }
@@ -157,11 +171,27 @@ async function bootstrap() {
       return;
     }
     showPanel();
-    await loadData();
-  } catch (_error) {
-    token = "";
-    localStorage.removeItem(tokenKey);
-    showLogin();
+    try {
+      await loadData();
+    } catch (error) {
+      if (isAuthError(error)) {
+        token = "";
+        localStorage.removeItem(tokenKey);
+        showLogin();
+        return;
+      }
+      // Keep the authenticated admin session even if dashboard data has transient errors.
+      loginError.textContent = "Sessao valida, mas nao foi possivel carregar os dados agora.";
+    }
+  } catch (error) {
+    if (isAuthError(error)) {
+      token = "";
+      localStorage.removeItem(tokenKey);
+      showLogin();
+      return;
+    }
+    showPanel();
+    loginError.textContent = "Falha temporaria ao validar sessao.";
   }
 }
 
