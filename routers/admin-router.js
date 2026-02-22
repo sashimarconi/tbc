@@ -24,8 +24,7 @@ const { addProjectDomain, verifyProjectDomain, getProjectDomain, removeProjectDo
 const DEFAULT_SEALPAY_API_URL =
   process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix4";
 function normalizeSealpayApiUrl(url = "") {
-  const normalized = String(url || "").trim();
-  return normalized.replace(/\/create-pix(?=$|[?#])/i, "/create-pix4");
+  return String(url || "").trim();
 }
 const DASHBOARD_TZ = process.env.DASHBOARD_TZ || "America/Sao_Paulo";
 const LOGO_MAX_BYTES = Number(process.env.LOGO_UPLOAD_MAX_BYTES || 4 * 1024 * 1024);

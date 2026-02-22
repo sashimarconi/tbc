@@ -29,7 +29,7 @@ function setGlobalError(scope, message = "") {
 }
 
 function getRedirectPath(user) {
-  return user?.is_admin === true ? "/admin/dashboard.html" : "/dashboard";
+  return user?.is_admin === true ? "/admin/dashboard.html" : "/admin/index.html";
 }
 
 async function authFetch(path, payload) {
@@ -59,7 +59,11 @@ async function bootstrapRedirectIfLoggedIn() {
       return;
     }
     const data = await res.json();
-    window.location.href = getRedirectPath(data.user);
+    if (data?.user?.is_admin === true) {
+      window.location.href = getRedirectPath(data.user);
+      return;
+    }
+    localStorage.removeItem(TOKEN_KEY);
   } catch (_error) {
     localStorage.removeItem(TOKEN_KEY);
   }
@@ -98,6 +102,11 @@ function bindLogin() {
     submitBtn.disabled = true;
     try {
       const data = await authFetch("/api/auth/login", { email, password });
+      if (data?.user?.is_admin !== true) {
+        localStorage.removeItem(TOKEN_KEY);
+        setGlobalError(form, "Acesso restrito a administradores.");
+        return;
+      }
       localStorage.setItem(TOKEN_KEY, data.token);
       window.location.href = getRedirectPath(data.user);
     } catch (error) {
@@ -167,6 +176,11 @@ function bindSignup() {
     submitBtn.disabled = true;
     try {
       const data = await authFetch("/api/auth/signup", { name, email, phone, password });
+      if (data?.user?.is_admin !== true) {
+        localStorage.removeItem(TOKEN_KEY);
+        setGlobalError(form, "Cadastro concluído. Faça login pelo /dashboard.");
+        return;
+      }
       localStorage.setItem(TOKEN_KEY, data.token);
       window.location.href = getRedirectPath(data.user);
     } catch (error) {

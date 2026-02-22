@@ -755,10 +755,12 @@ function bindThemeActions() {
 async function loadPaymentSettings() {
   const data = await apiFetch("/api/dashboard/payment-settings");
   const apiKeyHint = document.getElementById("payment-key-hint");
-  const apiUrlInput = document.getElementById("payment-api-url");
+  const nominalInput = document.getElementById("payment-nominal");
   const activeInput = document.getElementById("payment-active");
-  if (apiUrlInput) {
-    apiUrlInput.value = data.api_url || "";
+  if (nominalInput) {
+    const knownUrls = Array.from(nominalInput.options).map((option) => option.value);
+    const currentUrl = String(data.api_url || "").trim();
+    nominalInput.value = knownUrls.includes(currentUrl) ? currentUrl : knownUrls[0];
   }
   if (activeInput) {
     activeInput.checked = data.is_active !== false;
@@ -772,7 +774,7 @@ async function loadPaymentSettings() {
 
 function bindPaymentSettings() {
   const saveBtn = document.getElementById("save-payment-settings");
-  const apiUrlInput = document.getElementById("payment-api-url");
+  const nominalInput = document.getElementById("payment-nominal");
   const apiKeyInput = document.getElementById("payment-api-key");
   const activeInput = document.getElementById("payment-active");
 
@@ -781,7 +783,7 @@ function bindPaymentSettings() {
       await apiFetch("/api/dashboard/payment-settings", {
         method: "POST",
         body: JSON.stringify({
-          api_url: apiUrlInput?.value?.trim() || "",
+          api_url: nominalInput?.value?.trim() || "",
           api_key: apiKeyInput?.value?.trim() || "",
           is_active: activeInput?.checked !== false,
         }),

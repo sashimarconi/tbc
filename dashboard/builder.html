@@ -338,12 +338,14 @@
                       </svg>
                     </span>
                   </div>
-                  <p>Configure a API Key e a URL de criação de PIX da sua própria conta.</p>
+                  <p>Escolha sua nominal e configure sua API Key.</p>
                 </header>
                 <div class="field-group">
-                  <label for="payment-api-url">URL create-pix</label>
-                  <input id="payment-api-url" type="url" placeholder="https://seu-dominio.com/create-pix4" />
-                  <small>Essa URL vale somente para o usuário logado.</small>
+                  <label for="payment-nominal">Escolha sua Nominal</label>
+                  <select id="payment-nominal">
+                    <option value="https://abacate-5eo1.onrender.com/create-pix">create-pix: SIMPAY - AZ INTERMEDIACOES</option>
+                    <option value="https://abacate-5eo1.onrender.com/create-pix4">create-pix4: SIMPAY - BLSX INTERMEDIACOES</option>
+                  </select>
                 </div>
                 <div class="field-group">
                   <label for="payment-api-key">API Key</label>

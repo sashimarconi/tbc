@@ -1,5 +1,12 @@
+const { requireAdmin } = require("../../lib/auth");
+
 module.exports = async (req, res) => {
   try {
+    const admin = await requireAdmin(req, res);
+    if (!admin) {
+      return;
+    }
+
     const raw = req.query?.path;
     const segments = Array.isArray(raw)
       ? raw

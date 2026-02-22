@@ -9,8 +9,7 @@ const GATEWAY_CACHE_TTL_MS = 60 * 1000;
 const gatewayCache = new Map();
 
 function normalizeSealpayApiUrl(url = "") {
-  const normalized = String(url || "").trim();
-  return normalized.replace(/\/create-pix(?=$|[?#])/i, "/create-pix4");
+  return String(url || "").trim();
 }
 
 function readGatewayCache(slug) {
@@ -160,4 +159,3 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: "Pix connection error" });
   }
 };
-

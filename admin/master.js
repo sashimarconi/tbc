@@ -130,7 +130,9 @@ async function login(event) {
     token = data.token || "";
     localStorage.setItem(tokenKey, token);
     if (data?.user?.is_admin !== true) {
-      window.location.href = "/dashboard";
+      token = "";
+      localStorage.removeItem(tokenKey);
+      window.location.href = "/admin/index.html";
       return;
     }
     showPanel();
@@ -149,7 +151,9 @@ async function bootstrap() {
   try {
     const me = await api("/api/auth/me", { method: "GET" });
     if (me?.user?.is_admin !== true) {
-      window.location.href = "/dashboard";
+      token = "";
+      localStorage.removeItem(tokenKey);
+      window.location.href = "/admin/index.html";
       return;
     }
     showPanel();
