@@ -1,4 +1,5 @@
-﻿const TOKEN_KEY = "admin_token";
+const TOKEN_KEY = "admin_token";
+const DASHBOARD_TOKEN_KEY = "dashboard_token";
 
 function isValidEmail(value = "") {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
@@ -29,7 +30,7 @@ function setGlobalError(scope, message = "") {
 }
 
 function getRedirectPath(user) {
-  return user?.is_admin === true ? "/admin/dashboard.html" : "/admin/index.html";
+  return user?.is_admin === true ? "/admin/dashboard.html" : "/dashboard";
 }
 
 async function authFetch(path, payload) {
@@ -40,13 +41,13 @@ async function authFetch(path, payload) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data.error || "Falha na autenticação");
+    throw new Error(data.error || "Falha na autenticacao");
   }
   return data;
 }
 
 async function bootstrapRedirectIfLoggedIn() {
-  const token = localStorage.getItem(TOKEN_KEY);
+  const token = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(DASHBOARD_TOKEN_KEY);
   if (!token) {
     return;
   }
@@ -56,16 +57,14 @@ async function bootstrapRedirectIfLoggedIn() {
     });
     if (!res.ok) {
       localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(DASHBOARD_TOKEN_KEY);
       return;
     }
     const data = await res.json();
-    if (data?.user?.is_admin === true) {
-      window.location.href = getRedirectPath(data.user);
-      return;
-    }
-    localStorage.removeItem(TOKEN_KEY);
+    window.location.href = getRedirectPath(data.user);
   } catch (_error) {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(DASHBOARD_TOKEN_KEY);
   }
 }
 
@@ -88,7 +87,7 @@ function bindLogin() {
 
     let invalid = false;
     if (!isValidEmail(email)) {
-      setFieldError("login-email", "Informe um e-mail válido.");
+      setFieldError("login-email", "Informe um e-mail valido.");
       invalid = true;
     }
     if (!password) {
@@ -102,15 +101,11 @@ function bindLogin() {
     submitBtn.disabled = true;
     try {
       const data = await authFetch("/api/auth/login", { email, password });
-      if (data?.user?.is_admin !== true) {
-        localStorage.removeItem(TOKEN_KEY);
-        setGlobalError(form, "Acesso restrito a administradores.");
-        return;
-      }
       localStorage.setItem(TOKEN_KEY, data.token);
+      localStorage.setItem(DASHBOARD_TOKEN_KEY, data.token);
       window.location.href = getRedirectPath(data.user);
     } catch (error) {
-      setGlobalError(form, error.message || "Não foi possível entrar.");
+      setGlobalError(form, error.message || "Nao foi possivel entrar.");
     } finally {
       submitBtn.disabled = false;
     }
@@ -149,11 +144,11 @@ function bindSignup() {
       invalid = true;
     }
     if (!isValidEmail(email)) {
-      setFieldError("signup-email", "Informe um e-mail válido.");
+      setFieldError("signup-email", "Informe um e-mail valido.");
       invalid = true;
     }
     if (!phone) {
-      setFieldError("signup-phone", "Telefone é obrigatório.");
+      setFieldError("signup-phone", "Telefone e obrigatorio.");
       invalid = true;
     }
     if (password.length < 6) {
@@ -161,11 +156,11 @@ function bindSignup() {
       invalid = true;
     }
     if (password !== confirm) {
-      setFieldError("signup-password-confirm", "As senhas não conferem.");
+      setFieldError("signup-password-confirm", "As senhas nao conferem.");
       invalid = true;
     }
     if (!agreed) {
-      setFieldError("signup-terms", "Você precisa aceitar os termos para continuar.");
+      setFieldError("signup-terms", "Voce precisa aceitar os termos para continuar.");
       invalid = true;
     }
 
@@ -176,15 +171,11 @@ function bindSignup() {
     submitBtn.disabled = true;
     try {
       const data = await authFetch("/api/auth/signup", { name, email, phone, password });
-      if (data?.user?.is_admin !== true) {
-        localStorage.removeItem(TOKEN_KEY);
-        setGlobalError(form, "Cadastro concluído. Faça login pelo /dashboard.");
-        return;
-      }
       localStorage.setItem(TOKEN_KEY, data.token);
+      localStorage.setItem(DASHBOARD_TOKEN_KEY, data.token);
       window.location.href = getRedirectPath(data.user);
     } catch (error) {
-      setGlobalError(form, error.message || "Não foi possível criar a conta.");
+      setGlobalError(form, error.message || "Nao foi possivel criar a conta.");
     } finally {
       submitBtn.disabled = false;
     }

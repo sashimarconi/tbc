@@ -132,7 +132,7 @@ async function login(event) {
     if (data?.user?.is_admin !== true) {
       token = "";
       localStorage.removeItem(tokenKey);
-      window.location.href = "/admin/index.html";
+      window.location.href = "/dashboard";
       return;
     }
     showPanel();
@@ -153,7 +153,7 @@ async function bootstrap() {
     if (me?.user?.is_admin !== true) {
       token = "";
       localStorage.removeItem(tokenKey);
-      window.location.href = "/admin/index.html";
+      window.location.href = "/dashboard";
       return;
     }
     showPanel();
