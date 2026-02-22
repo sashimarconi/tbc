@@ -12,7 +12,10 @@ module.exports = async (req, res) => {
       ? raw
       : typeof raw === "string" && raw.length
         ? raw.split("/").filter(Boolean)
-        : [];
+        : (() => {
+            const cleaned = (req.url || "").split("?")[0].replace(/^\/api\/admin\/?/, "");
+            return cleaned ? cleaned.split("/").filter(Boolean) : [];
+          })();
     const isGlobalRoute = (segments[0] || "") === "global";
     const handler = require(isGlobalRoute ? "../../routers/admin-global-router" : "../../routers/admin-router");
     await handler(req, res);
