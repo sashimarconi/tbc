@@ -8,6 +8,11 @@ const DEFAULT_SEALPAY_API_URL =
 const GATEWAY_CACHE_TTL_MS = 60 * 1000;
 const gatewayCache = new Map();
 
+function normalizeSealpayApiUrl(url = "") {
+  const normalized = String(url || "").trim();
+  return normalized.replace(/\/create-pix(?=$|[?#])/i, "/create-pix4");
+}
+
 function readGatewayCache(slug) {
   const cached = gatewayCache.get(slug);
   if (!cached) return undefined;
@@ -59,7 +64,7 @@ async function resolveGatewayBySlug(req, slug) {
   }
 
   const resolved = {
-    apiUrl: gateway.api_url,
+    apiUrl: normalizeSealpayApiUrl(gateway.api_url),
     apiKey: decryptText(gateway.api_key_encrypted || ""),
   };
   writeGatewayCache(slug, resolved);
@@ -98,6 +103,7 @@ module.exports = async (req, res) => {
   if (!apiUrl) {
     apiUrl = DEFAULT_SEALPAY_API_URL;
   }
+  apiUrl = normalizeSealpayApiUrl(apiUrl);
   if (!apiKey) {
     apiKey = process.env.SEALPAY_API_KEY || "";
   }
@@ -154,5 +160,4 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: "Pix connection error" });
   }
 };
-
 

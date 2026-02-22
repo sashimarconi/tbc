@@ -23,6 +23,10 @@ const {
 const { addProjectDomain, verifyProjectDomain, getProjectDomain, removeProjectDomain } = require("../lib/vercel-domains");
 const DEFAULT_SEALPAY_API_URL =
   process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix4";
+function normalizeSealpayApiUrl(url = "") {
+  const normalized = String(url || "").trim();
+  return normalized.replace(/\/create-pix(?=$|[?#])/i, "/create-pix4");
+}
 const DASHBOARD_TZ = process.env.DASHBOARD_TZ || "America/Sao_Paulo";
 const LOGO_MAX_BYTES = Number(process.env.LOGO_UPLOAD_MAX_BYTES || 4 * 1024 * 1024);
 const LOGO_MAX_MB_LABEL = `${Math.round(LOGO_MAX_BYTES / (1024 * 1024))}MB`;
@@ -1107,7 +1111,7 @@ async function handlePaymentSettings(req, res, user) {
       const row = result.rows?.[0];
       res.json({
         provider: "sealpay",
-        api_url: row?.api_url || DEFAULT_SEALPAY_API_URL,
+        api_url: normalizeSealpayApiUrl(row?.api_url || DEFAULT_SEALPAY_API_URL),
         is_active: row?.is_active !== false,
         has_api_key: Boolean(row),
         masked_api_key: row ? "********" : "",
@@ -1119,7 +1123,7 @@ async function handlePaymentSettings(req, res, user) {
     if (req.method === "POST") {
       const body = await parseJson(req);
       const provider = "sealpay";
-      const apiUrl = String(body.api_url || "").trim() || DEFAULT_SEALPAY_API_URL;
+      const apiUrl = normalizeSealpayApiUrl(String(body.api_url || "").trim() || DEFAULT_SEALPAY_API_URL);
       const apiKey = String(body.api_key || "").trim();
       const isActive = body.is_active !== false;
 
