@@ -1,6 +1,6 @@
 module.exports = async (req, res) => {
   try {
-    const handler = require("../../routers/admin-router");
+    const handler = require("../routers/admin-router");
     await handler(req, res);
   } catch (error) {
     if (!res.headersSent) {

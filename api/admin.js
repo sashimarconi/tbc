@@ -1,4 +1,4 @@
-const { requireAdmin } = require("../../lib/auth");
+const { requireAdmin } = require("../lib/auth");
 
 function normalizeSegments(raw) {
   if (Array.isArray(raw)) {
@@ -24,8 +24,6 @@ module.exports = async (req, res) => {
     }
 
     const urlPath = (req.url || "").split("?")[0];
-    const isGlobalByUrl = /^\/api\/admin\/global(?:\/|$)/.test(urlPath);
-
     const raw = req.query?.path;
     let segments = normalizeSegments(raw);
     if (!segments.length) {
@@ -36,10 +34,10 @@ module.exports = async (req, res) => {
     req.query = req.query || {};
     req.query.path = segments;
 
-    const isGlobalRoute = isGlobalByUrl || (segments[0] || "") === "global";
+    const isGlobalRoute = (segments[0] || "") === "global";
     const handler = isGlobalRoute
-      ? require("../../routers/admin-global-router")
-      : require("../../routers/admin-router");
+      ? require("../routers/admin-global-router")
+      : require("../routers/admin-router");
     await handler(req, res);
   } catch (error) {
     if (!res.headersSent) {
@@ -47,4 +45,3 @@ module.exports = async (req, res) => {
     }
   }
 };
-
