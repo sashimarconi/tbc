@@ -178,7 +178,7 @@ function bindSignup() {
       const data = await authFetch("/api/auth/signup", { name, email, phone, password });
       if (data?.user?.is_admin !== true) {
         localStorage.removeItem(TOKEN_KEY);
-        setGlobalError(form, "Cadastro concluido. Use /login para acessar seu dashboard.");
+        window.location.href = "/login";
         return;
       }
       localStorage.setItem(TOKEN_KEY, data.token);
