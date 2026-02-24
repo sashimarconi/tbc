@@ -35,3 +35,4 @@ th, td { padding: 10px; border-bottom: var(--border); text-align: left; font-siz
 th { color: var(--muted); font-weight: 600; }
 .role { padding: 4px 10px; border-radius: 999px; border: var(--border); }
 .role.admin { border-color: rgba(161,0,255,.5); color: var(--accent); }
+.user-actions { display: flex; gap: 8px; flex-wrap: wrap; }

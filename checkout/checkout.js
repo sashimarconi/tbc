@@ -7,7 +7,6 @@ const copyBtn = document.getElementById("copy-btn");
 const pixOrderTotal = document.getElementById("pix-order-total");
 const pixCountdown = document.getElementById("pix-countdown");
 const pixLoadingModal = document.getElementById("pix-loading-modal");
-const pixBankList = document.getElementById("pix-bank-list");
 const pixCopyFeedback = document.getElementById("pix-copy-feedback");
 const productCover = document.getElementById("product-cover");
 const productTitle = document.getElementById("product-title");
@@ -2668,16 +2667,6 @@ copyBtn.addEventListener("click", async () => {
     setTimeout(() => {
       copyBtn.textContent = "Copiar";
     }, 1500);
-  } catch (_error) {
-    alert("Nao foi possivel copiar o codigo PIX.");
-  }
-});
-
-pixBankList?.addEventListener("click", async (event) => {
-  const bankItem = event.target.closest("li");
-  if (!bankItem) return;
-  try {
-    await copyPixCodeToClipboard();
   } catch (_error) {
     alert("Nao foi possivel copiar o codigo PIX.");
   }

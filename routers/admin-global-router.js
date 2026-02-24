@@ -3,6 +3,7 @@ const { requireAdmin } = require("../lib/auth");
 const { ensureSalesTables } = require("../lib/ensure-sales");
 const { ensureProductSchema } = require("../lib/ensure-products");
 const { ensureAnalyticsTables } = require("../lib/ensure-analytics");
+const bcrypt = require("bcryptjs");
 
 function getPathSegments(req) {
   const raw = req.query?.path;
@@ -172,6 +173,42 @@ async function handleSetAdmin(req, res, userId) {
   res.json({ ok: true, user: row });
 }
 
+async function handleResetPassword(req, res, userId) {
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
+
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  let body = {};
+  try {
+    body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString("utf8")) : {};
+  } catch (_error) {
+    res.status(400).json({ error: "Invalid JSON" });
+    return;
+  }
+
+  const password = String(body.password || "");
+  if (password.length < 6) {
+    res.status(400).json({ error: "Senha deve ter no minimo 6 caracteres" });
+    return;
+  }
+
+  const passwordHash = await bcrypt.hash(password, 12);
+  const result = await query(
+    "update users set password_hash = $2 where id = $1 returning id, email, is_admin, created_at",
+    [userId, passwordHash]
+  );
+  const row = result.rows?.[0];
+  if (!row) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  res.json({ ok: true, user: row });
+}
+
 module.exports = async (req, res) => {
   const admin = await requireAdmin(req, res);
   if (!admin) {
@@ -204,6 +241,11 @@ module.exports = async (req, res) => {
 
     if (action === "users" && maybeId && maybeAction === "set-admin") {
       await handleSetAdmin(req, res, maybeId);
+      return;
+    }
+
+    if (action === "users" && maybeId && maybeAction === "reset-password") {
+      await handleResetPassword(req, res, maybeId);
       return;
     }
 

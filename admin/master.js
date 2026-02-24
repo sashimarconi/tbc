@@ -94,7 +94,10 @@ function renderUsers(rows) {
           <td>${u.paid_orders || 0}</td>
           <td>${(Number(u.conversion_rate) || 0).toFixed(2)}%</td>
           <td><span class="role ${u.is_admin ? "admin" : ""}">${u.is_admin ? "admin" : "user"}</span></td>
-          <td><button class="btn-ghost" data-user-id="${u.id}" data-next-admin="${nextAdmin}">${nextAdmin ? "Promover" : "Rebaixar"}</button></td>
+          <td class="user-actions">
+            <button class="btn-ghost" data-user-id="${u.id}" data-next-admin="${nextAdmin}" data-action="toggle-admin">${nextAdmin ? "Promover" : "Rebaixar"}</button>
+            <button class="btn-ghost" data-user-id="${u.id}" data-action="reset-password">Redefinir senha</button>
+          </td>
         </tr>
       `;
     })
@@ -239,7 +242,30 @@ refreshBtn?.addEventListener("click", () => loadData().catch(() => {}));
 usersBody?.addEventListener("click", async (event) => {
   const btn = event.target.closest("button[data-user-id]");
   if (!btn) return;
+
+  const action = btn.getAttribute("data-action");
   const userId = btn.getAttribute("data-user-id");
+
+  if (action === "reset-password") {
+    const password = window.prompt("Digite a nova senha (minimo 6 caracteres):", "");
+    if (password === null) return;
+    const normalized = String(password);
+    if (normalized.length < 6) {
+      alert("A senha precisa ter no minimo 6 caracteres.");
+      return;
+    }
+    try {
+      await api(`/api/admin?path=global/users/${encodeURIComponent(userId)}/reset-password`, {
+        method: "POST",
+        body: JSON.stringify({ password: normalized }),
+      });
+      alert("Senha redefinida com sucesso.");
+    } catch (error) {
+      alert(error.message || "Nao foi possivel redefinir a senha");
+    }
+    return;
+  }
+
   const nextAdmin = btn.getAttribute("data-next-admin") === "true";
   try {
     await api(`/api/admin?path=global/users/${encodeURIComponent(userId)}/set-admin`, {
