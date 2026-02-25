@@ -5,11 +5,32 @@ const { decryptText } = require("../lib/credentials-crypto");
 const { resolvePublicOwnerContext } = require("../lib/public-owner-context");
 const DEFAULT_SEALPAY_API_URL =
   process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix4";
+const DEFAULT_BLACKCAT_API_URL =
+  process.env.BLACKCAT_API_URL || "https://api.blackcatpagamentos.online/api/sales/create-sale";
+const PAYMENT_PROVIDER_OPTIONS = new Set(["sealpay", "blackcat"]);
 const GATEWAY_CACHE_TTL_MS = 60 * 1000;
 const gatewayCache = new Map();
 
 function normalizeSealpayApiUrl(url = "") {
   return String(url || "").trim();
+}
+function normalizeBlackcatApiUrl(url = "") {
+  return String(url || "").trim();
+}
+function normalizeProvider(value = "") {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  return PAYMENT_PROVIDER_OPTIONS.has(normalized) ? normalized : "sealpay";
+}
+function normalizePaymentApiUrl(provider, url = "") {
+  if (provider === "blackcat") {
+    return normalizeBlackcatApiUrl(url);
+  }
+  return normalizeSealpayApiUrl(url);
+}
+function getDefaultApiUrl(provider) {
+  return provider === "blackcat" ? DEFAULT_BLACKCAT_API_URL : DEFAULT_SEALPAY_API_URL;
 }
 
 function readGatewayCache(slug) {
@@ -48,69 +69,59 @@ async function resolveGatewayBySlug(req, slug) {
   }
 
   await ensurePaymentGatewayTable();
-  const gatewayRes = await query(
-    `select api_url, api_key_encrypted, is_active
-     from user_payment_gateways
-     where owner_user_id = $1 and provider = 'sealpay'
-     limit 1`,
-    [ownerUserId]
-  );
+  const [settingsRes, gatewayRes] = await Promise.all([
+    query(
+      `select selected_provider
+         from user_payment_gateway_settings
+        where owner_user_id = $1
+        limit 1`,
+      [ownerUserId]
+    ),
+    query(
+      `select provider, api_url, api_key_encrypted, is_active
+       from user_payment_gateways
+       where owner_user_id = $1 and provider = any($2::text[])`,
+      [ownerUserId, Array.from(PAYMENT_PROVIDER_OPTIONS)]
+    ),
+  ]);
 
-  const gateway = gatewayRes.rows?.[0];
+  const selectedProvider = normalizeProvider(settingsRes.rows?.[0]?.selected_provider || "sealpay");
+  const gatewayByProvider = new Map(
+    (gatewayRes.rows || []).map((row) => [normalizeProvider(row.provider), row])
+  );
+  const gateway = gatewayByProvider.get(selectedProvider);
+
   if (!gateway || gateway.is_active === false) {
     writeGatewayCache(slug, null);
     return null;
   }
 
   const resolved = {
-    apiUrl: normalizeSealpayApiUrl(gateway.api_url),
+    provider: selectedProvider,
+    apiUrl: normalizePaymentApiUrl(selectedProvider, gateway.api_url),
     apiKey: decryptText(gateway.api_key_encrypted || ""),
   };
   writeGatewayCache(slug, resolved);
   return resolved;
 }
 
-module.exports = async (req, res) => {
-  if (req.method !== "POST") {
-    res.status(405).json({ error: "Method not allowed" });
-    return;
-  }
+function normalizeDocument(taxId = "") {
+  const digits = String(taxId || "").replace(/\D/g, "");
+  if (!digits) return { number: "", type: "cpf" };
+  if (digits.length === 14) return { number: digits, type: "cnpj" };
+  return { number: digits, type: "cpf" };
+}
 
-  const body = await parseJson(req);
-  const amount = Number(body.amount || 0);
-  const customer = body.customer || {};
-  const slug = String(body.slug || "").trim();
+function normalizePhone(value = "") {
+  return String(value || "").replace(/\D/g, "");
+}
 
-  if (!amount || amount < 100 || !customer.name || !customer.email) {
-    res.status(400).json({ error: "Missing required fields" });
-    return;
-  }
+function extractProviderError(data, fallback) {
+  if (!data || typeof data !== "object") return fallback;
+  return data.error || data.message || fallback;
+}
 
-  let apiUrl = "";
-  let apiKey = "";
-  try {
-    const gateway = await resolveGatewayBySlug(req, slug);
-    if (gateway) {
-      apiUrl = gateway.apiUrl;
-      apiKey = gateway.apiKey;
-    }
-  } catch (error) {
-    res.status(500).json({ error: "Falha ao carregar configuracao de pagamento" });
-    return;
-  }
-
-  if (!apiUrl) {
-    apiUrl = DEFAULT_SEALPAY_API_URL;
-  }
-  apiUrl = normalizeSealpayApiUrl(apiUrl);
-  if (!apiKey) {
-    apiKey = process.env.SEALPAY_API_KEY || "";
-  }
-  if (!apiKey) {
-    res.status(400).json({ error: "Pagamento nao configurado para este checkout" });
-    return;
-  }
-
+async function requestSealpay({ apiUrl, apiKey, amount, body, req, customer }) {
   const tracking = body.tracking || {};
   const payload = {
     amount,
@@ -131,30 +142,170 @@ module.exports = async (req, res) => {
     user_agent: body.user_agent || req.headers["user-agent"],
   };
 
-  try {
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => ({}));
 
-    const data = await response.json();
+  if (!response.ok) {
+    return { ok: false, status: response.status, error: extractProviderError(data, "Pix error") };
+  }
 
-    if (!response.ok) {
-      res.status(response.status).json({ error: data.error || "Pix error" });
-      return;
-    }
-
-    const rawQr = data.pix_qr_code || data.pixQrCode || "";
-    const pixQr = rawQr.startsWith("data:image")
-      ? rawQr
-      : `data:image/png;base64,${rawQr}`;
-
-    res.json({
+  const rawQr = data.pix_qr_code || data.pixQrCode || "";
+  const pixQr = rawQr.startsWith("data:image") ? rawQr : `data:image/png;base64,${rawQr}`;
+  return {
+    ok: true,
+    data: {
       pix_qr_code: pixQr,
       pix_code: data.pix_code || data.pixCode || "",
       txid: data.txid || "",
-    });
+      expires_at: data.expires_at || null,
+    },
+  };
+}
+
+async function requestBlackcat({ apiUrl, apiKey, amount, body, req, customer, slug }) {
+  const tracking = body.tracking || {};
+  const utm = tracking.utm || {};
+  const document = normalizeDocument(customer.taxId);
+  if (!document.number) {
+    return { ok: false, status: 400, error: "CPF/CNPJ obrigatorio para gerar PIX na BlackCat" };
+  }
+
+  const shippingAddress = body.shipping?.address || body.address || customer.address || null;
+  const hasShippingAddress = Boolean(shippingAddress?.street && shippingAddress?.city && shippingAddress?.state);
+  const payload = {
+    amount,
+    currency: "BRL",
+    paymentMethod: "pix",
+    items: [
+      {
+        title: String(body.description || "Pedido").trim() || "Pedido",
+        unitPrice: amount,
+        quantity: 1,
+        tangible: hasShippingAddress,
+      },
+    ],
+    customer: {
+      name: customer.name,
+      email: customer.email,
+      phone: normalizePhone(customer.cellphone),
+      document,
+    },
+    pix: { expiresInDays: 1 },
+    metadata: String(body.description || "").trim() || undefined,
+    externalRef: `${slug || "checkout"}-${Date.now()}`,
+    utm_source: utm.utm_source || "",
+    utm_medium: utm.utm_medium || "",
+    utm_campaign: utm.utm_campaign || "",
+    utm_content: utm.utm_content || "",
+    utm_term: utm.utm_term || "",
+  };
+  if (hasShippingAddress) {
+    payload.shipping = {
+      name: customer.name,
+      street: shippingAddress.street || "",
+      number: shippingAddress.number || "S/N",
+      complement: shippingAddress.complement || "",
+      neighborhood: shippingAddress.neighborhood || "",
+      city: shippingAddress.city || "",
+      state: shippingAddress.state || "",
+      zipCode: String(shippingAddress.cep || shippingAddress.zipCode || "").replace(/\D/g, ""),
+    };
+  }
+  const postbackUrl = String(process.env.BLACKCAT_POSTBACK_URL || "").trim();
+  if (postbackUrl) {
+    payload.postbackUrl = postbackUrl;
+  }
+
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": apiKey,
+      "User-Agent": body.user_agent || req.headers["user-agent"] || "TheBlackCheckout",
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.success === false) {
+    return {
+      ok: false,
+      status: response.status || 400,
+      error: extractProviderError(data, "Pix error"),
+    };
+  }
+
+  const transaction = data.data || {};
+  const paymentData = transaction.paymentData || {};
+  const rawQr = paymentData.qrCodeBase64 || "";
+  const pixQr = rawQr.startsWith("data:image") ? rawQr : rawQr ? `data:image/png;base64,${rawQr}` : "";
+  return {
+    ok: true,
+    data: {
+      pix_qr_code: pixQr,
+      pix_code: paymentData.copyPaste || paymentData.qrCode || "",
+      txid: transaction.transactionId || "",
+      expires_at: paymentData.expiresAt || null,
+    },
+  };
+}
+
+module.exports = async (req, res) => {
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
+
+  const body = await parseJson(req);
+  const amount = Number(body.amount || 0);
+  const customer = body.customer || {};
+  const slug = String(body.slug || "").trim();
+
+  if (!amount || amount < 100 || !customer.name || !customer.email) {
+    res.status(400).json({ error: "Missing required fields" });
+    return;
+  }
+
+  let provider = "sealpay";
+  let apiUrl = "";
+  let apiKey = "";
+  try {
+    const gateway = await resolveGatewayBySlug(req, slug);
+    if (gateway) {
+      provider = normalizeProvider(gateway.provider || "sealpay");
+      apiUrl = gateway.apiUrl;
+      apiKey = gateway.apiKey;
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Falha ao carregar configuracao de pagamento" });
+    return;
+  }
+
+  if (!apiUrl) apiUrl = getDefaultApiUrl(provider);
+  apiUrl = normalizePaymentApiUrl(provider, apiUrl);
+  if (!apiKey) {
+    apiKey = provider === "blackcat" ? process.env.BLACKCAT_API_KEY || "" : process.env.SEALPAY_API_KEY || "";
+  }
+  if (!apiKey) {
+    res.status(400).json({ error: "Pagamento nao configurado para este checkout" });
+    return;
+  }
+
+  try {
+    const result =
+      provider === "blackcat"
+        ? await requestBlackcat({ apiUrl, apiKey, amount, body, req, customer, slug })
+        : await requestSealpay({ apiUrl, apiKey, amount, body, req, customer });
+
+    if (!result.ok) {
+      res.status(result.status || 400).json({ error: result.error || "Pix error" });
+      return;
+    }
+
+    res.json(result.data);
   } catch (error) {
     res.status(500).json({ error: "Pix connection error" });
   }

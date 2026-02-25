@@ -79,6 +79,15 @@ const DEVICE_PRESETS = {
   tablet: { width: 768, height: 900 },
   desktop: { width: 980, height: 820 },
 };
+const PAYMENT_PROVIDER_DEFAULTS = {
+  sealpay: "https://abacate-5eo1.onrender.com/create-pix4",
+  blackcat: "https://api.blackcatpagamentos.online/api/sales/create-sale",
+};
+const PAYMENT_PROVIDER_LABELS = {
+  sealpay: "SealPay",
+  blackcat: "BlackCat Pagamentos",
+};
+let paymentSettingsCache = null;
 
 const ELEMENT_LABELS = {
   header: "Cabecalho",
@@ -754,36 +763,82 @@ function bindThemeActions() {
 
 async function loadPaymentSettings() {
   const data = await apiFetch("/api/dashboard/payment-settings");
+  paymentSettingsCache = data;
   const apiKeyHint = document.getElementById("payment-key-hint");
-  const nominalInput = document.getElementById("payment-nominal");
+  const providerInput = document.getElementById("payment-provider");
+  const apiUrlInput = document.getElementById("payment-api-url");
   const activeInput = document.getElementById("payment-active");
-  if (nominalInput) {
-    const knownUrls = Array.from(nominalInput.options).map((option) => option.value);
-    const currentUrl = String(data.api_url || "").trim();
-    nominalInput.value = knownUrls.includes(currentUrl) ? currentUrl : knownUrls[0];
+  const selectedProvider = String(data.selected_provider || data.provider || "sealpay")
+    .trim()
+    .toLowerCase();
+  const providers = data.providers && typeof data.providers === "object" ? data.providers : {};
+  const selectedConfig = providers[selectedProvider] || {
+    api_url: data.api_url || PAYMENT_PROVIDER_DEFAULTS[selectedProvider] || PAYMENT_PROVIDER_DEFAULTS.sealpay,
+    is_active: data.is_active !== false,
+    has_api_key: Boolean(data.has_api_key),
+  };
+
+  if (providerInput) {
+    providerInput.value = selectedProvider in PAYMENT_PROVIDER_DEFAULTS ? selectedProvider : "sealpay";
+  }
+  if (apiUrlInput) {
+    apiUrlInput.value = String(selectedConfig.api_url || PAYMENT_PROVIDER_DEFAULTS[selectedProvider] || "").trim();
   }
   if (activeInput) {
-    activeInput.checked = data.is_active !== false;
+    activeInput.checked = selectedConfig.is_active !== false;
   }
   if (apiKeyHint) {
-    apiKeyHint.textContent = data.has_api_key
+    const providerLabel = PAYMENT_PROVIDER_LABELS[selectedProvider] || "gateway selecionado";
+    apiKeyHint.textContent = selectedConfig.has_api_key
       ? "Chave cadastrada. Preencha novamente apenas se quiser substituir."
-      : "Nenhuma chave cadastrada ainda.";
+      : `Nenhuma chave cadastrada para ${providerLabel}.`;
   }
 }
 
 function bindPaymentSettings() {
   const saveBtn = document.getElementById("save-payment-settings");
-  const nominalInput = document.getElementById("payment-nominal");
+  const providerInput = document.getElementById("payment-provider");
+  const apiUrlInput = document.getElementById("payment-api-url");
   const apiKeyInput = document.getElementById("payment-api-key");
   const activeInput = document.getElementById("payment-active");
+  const apiKeyHint = document.getElementById("payment-key-hint");
+
+  const refreshGatewayForm = () => {
+    const provider = String(providerInput?.value || "sealpay")
+      .trim()
+      .toLowerCase();
+    const providers =
+      paymentSettingsCache?.providers && typeof paymentSettingsCache.providers === "object"
+        ? paymentSettingsCache.providers
+        : {};
+    const config = providers[provider] || null;
+    if (apiUrlInput) {
+      apiUrlInput.value = String(config?.api_url || PAYMENT_PROVIDER_DEFAULTS[provider] || "").trim();
+    }
+    if (activeInput) {
+      activeInput.checked = config?.is_active !== false;
+    }
+    if (apiKeyHint) {
+      const label = PAYMENT_PROVIDER_LABELS[provider] || "gateway selecionado";
+      apiKeyHint.textContent = config?.has_api_key
+        ? "Chave cadastrada. Preencha novamente apenas se quiser substituir."
+        : `Nenhuma chave cadastrada para ${label}.`;
+    }
+  };
+
+  providerInput?.addEventListener("change", refreshGatewayForm);
 
   saveBtn?.addEventListener("click", async () => {
     try {
+      const selectedProvider = String(providerInput?.value || "sealpay")
+        .trim()
+        .toLowerCase();
       await apiFetch("/api/dashboard/payment-settings", {
         method: "POST",
         body: JSON.stringify({
-          api_url: nominalInput?.value?.trim() || "",
+          provider: selectedProvider,
+          selected_provider: selectedProvider,
+          api_url: apiUrlInput?.value?.trim() || "",
           api_key: apiKeyInput?.value?.trim() || "",
           is_active: activeInput?.checked !== false,
         }),

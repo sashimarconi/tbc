@@ -310,11 +310,11 @@
               </article>
             </section>
 
-            <section class="builder-section hidden" data-section="pagamentos" data-search="pagamentos sealpay api key gateway pix">
+            <section class="builder-section hidden" data-section="pagamentos" data-search="pagamentos sealpay blackcat api key gateway pix">
               <article class="card">
                 <header class="card-head">
                   <div class="card-head-inline">
-                    <h3>Gateway SealPay</h3>
+                    <h3>Gateway de Pagamento</h3>
                     <span class="sealpay-badge" aria-label="SealPay">
                       <svg viewBox="0 0 120 28" role="img" aria-hidden="true">
                         <rect x="0.5" y="0.5" width="119" height="27" rx="8" fill="rgba(91,0,181,0.16)" stroke="rgba(161,0,255,0.42)"></rect>
@@ -323,15 +323,18 @@
                       </svg>
                     </span>
                   </div>
-                  <p>Escolha sua nominal e configure sua API Key.</p>
+                  <p>Escolha o gateway ativo e configure sua API Key.</p>
                 </header>
                 <div class="field-group">
-                  <label for="payment-nominal">Escolha sua Nominal</label>
-                  <select id="payment-nominal">
-                    <option value="https://abacate-5eo1.onrender.com/create-pix">create-pix: SIMPAY - AZ INTERMEDIACOES</option>
-                    <option value="https://abacate-5eo1.onrender.com/create-pix4">create-pix4: SIMPAY - BLSX INTERMEDIACOES</option>
-                    <option value="https://abacate-5eo1.onrender.com/create-pix3">create-pix3: MICROCASH - NEXT PAY</option>
+                  <label for="payment-provider">Gateway ativo</label>
+                  <select id="payment-provider">
+                    <option value="sealpay">SealPay</option>
+                    <option value="blackcat">BlackCat Pagamentos</option>
                   </select>
+                </div>
+                <div class="field-group">
+                  <label for="payment-api-url">Endpoint da API</label>
+                  <input id="payment-api-url" type="text" placeholder="https://api.exemplo.com/endpoint" />
                 </div>
                 <div class="field-group">
                   <label for="payment-api-key">API Key</label>

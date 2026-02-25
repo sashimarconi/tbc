@@ -23,8 +23,29 @@ const {
 const { addProjectDomain, verifyProjectDomain, getProjectDomain, removeProjectDomain } = require("../lib/vercel-domains");
 const DEFAULT_SEALPAY_API_URL =
   process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix4";
+const DEFAULT_BLACKCAT_API_URL =
+  process.env.BLACKCAT_API_URL || "https://api.blackcatpagamentos.online/api/sales/create-sale";
+const PAYMENT_PROVIDER_OPTIONS = new Set(["sealpay", "blackcat"]);
 function normalizeSealpayApiUrl(url = "") {
   return String(url || "").trim();
+}
+function normalizeBlackcatApiUrl(url = "") {
+  return String(url || "").trim();
+}
+function normalizePaymentProvider(value = "") {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  return PAYMENT_PROVIDER_OPTIONS.has(normalized) ? normalized : "sealpay";
+}
+function normalizePaymentApiUrl(provider, url = "") {
+  if (provider === "blackcat") {
+    return normalizeBlackcatApiUrl(url);
+  }
+  return normalizeSealpayApiUrl(url);
+}
+function getDefaultPaymentApiUrl(provider) {
+  return provider === "blackcat" ? DEFAULT_BLACKCAT_API_URL : DEFAULT_SEALPAY_API_URL;
 }
 const DASHBOARD_TZ = process.env.DASHBOARD_TZ || "America/Sao_Paulo";
 const LOGO_MAX_BYTES = Number(process.env.LOGO_UPLOAD_MAX_BYTES || 4 * 1024 * 1024);
@@ -1100,31 +1121,59 @@ async function handlePaymentSettings(req, res, user) {
     await ensurePaymentGatewayTable();
 
     if (req.method === "GET") {
-      const result = await query(
-        `select provider, api_url, is_active, updated_at
-         from user_payment_gateways
-         where owner_user_id = $1 and provider = 'sealpay'
-         limit 1`,
-        [user.id]
-      );
-      const row = result.rows?.[0];
+      const [result, selectedResult] = await Promise.all([
+        query(
+          `select provider, api_url, is_active, updated_at
+           from user_payment_gateways
+           where owner_user_id = $1 and provider = any($2::text[])`,
+          [user.id, Array.from(PAYMENT_PROVIDER_OPTIONS)]
+        ),
+        query(
+          `select selected_provider
+             from user_payment_gateway_settings
+            where owner_user_id = $1
+            limit 1`,
+          [user.id]
+        ),
+      ]);
+      const byProvider = new Map((result.rows || []).map((row) => [String(row.provider || "").toLowerCase(), row]));
+      const selectedProvider = normalizePaymentProvider(selectedResult.rows?.[0]?.selected_provider || "sealpay");
+      const selectedRow = byProvider.get(selectedProvider);
+      const providers = Array.from(PAYMENT_PROVIDER_OPTIONS).reduce((acc, provider) => {
+        const row = byProvider.get(provider);
+        acc[provider] = {
+          provider,
+          api_url: normalizePaymentApiUrl(provider, row?.api_url || getDefaultPaymentApiUrl(provider)),
+          is_active: row?.is_active !== false,
+          has_api_key: Boolean(row),
+          masked_api_key: row ? "********" : "",
+          updated_at: row?.updated_at || null,
+        };
+        return acc;
+      }, {});
       res.json({
-        provider: "sealpay",
-        api_url: normalizeSealpayApiUrl(row?.api_url || DEFAULT_SEALPAY_API_URL),
-        is_active: row?.is_active !== false,
-        has_api_key: Boolean(row),
-        masked_api_key: row ? "********" : "",
-        updated_at: row?.updated_at || null,
+        selected_provider: selectedProvider,
+        providers,
+        provider: selectedProvider,
+        api_url: normalizePaymentApiUrl(selectedProvider, selectedRow?.api_url || getDefaultPaymentApiUrl(selectedProvider)),
+        is_active: selectedRow?.is_active !== false,
+        has_api_key: Boolean(selectedRow),
+        masked_api_key: selectedRow ? "********" : "",
+        updated_at: selectedRow?.updated_at || null,
       });
       return;
     }
 
     if (req.method === "POST") {
       const body = await parseJson(req);
-      const provider = "sealpay";
-      const apiUrl = normalizeSealpayApiUrl(String(body.api_url || "").trim() || DEFAULT_SEALPAY_API_URL);
+      const provider = normalizePaymentProvider(body.provider || body.selected_provider || "sealpay");
+      const apiUrl = normalizePaymentApiUrl(
+        provider,
+        String(body.api_url || "").trim() || getDefaultPaymentApiUrl(provider)
+      );
       const apiKey = String(body.api_key || "").trim();
       const isActive = body.is_active !== false;
+      const selectedProvider = normalizePaymentProvider(body.selected_provider || provider);
 
       const currentRes = await query(
         `select api_key_encrypted
@@ -1163,9 +1212,18 @@ async function handlePaymentSettings(req, res, user) {
           [user.id, provider, apiUrl, encryptedKey, isActive]
         );
       }
+      await query(
+        `insert into user_payment_gateway_settings (owner_user_id, selected_provider, updated_at)
+         values ($1, $2, now())
+         on conflict (owner_user_id)
+         do update set selected_provider = excluded.selected_provider,
+                       updated_at = now()`,
+        [user.id, selectedProvider]
+      );
 
       res.json({
         ok: true,
+        selected_provider: selectedProvider,
         provider,
         api_url: apiUrl,
         is_active: isActive,
