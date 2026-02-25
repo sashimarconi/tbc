@@ -2590,6 +2590,7 @@ form.addEventListener("submit", async (event) => {
   }
 
   const payload = {
+    cart_id: cartId,
     amount: calcTotal(),
     description: offerData.base.name,
     slug: activeOfferSlug,

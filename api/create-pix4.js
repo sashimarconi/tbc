@@ -155,6 +155,16 @@ function buildPixQrImage(candidates = [], pixCode = "") {
   return `https://quickchart.io/qr?size=340&text=${encodeURIComponent(pixCode)}`;
 }
 
+function resolveRequestBaseUrl(req) {
+  const protoRaw = String(req.headers["x-forwarded-proto"] || "").split(",")[0].trim();
+  const host =
+    String(req.headers["x-forwarded-host"] || "").split(",")[0].trim() ||
+    String(req.headers.host || "").trim();
+  if (!host) return "";
+  const proto = protoRaw || "https";
+  return `${proto}://${host}`;
+}
+
 async function requestSealpay({ apiUrl, apiKey, amount, body, req, customer }) {
   const tracking = body.tracking || {};
   const payload = {
@@ -203,6 +213,7 @@ async function requestSealpay({ apiUrl, apiKey, amount, body, req, customer }) {
 async function requestBlackcat({ apiUrl, apiKey, amount, body, req, customer, slug }) {
   const tracking = body.tracking || {};
   const utm = tracking.utm || {};
+  const cartId = String(body.cart_id || body.cartId || "").trim();
   const document = normalizeDocument(customer.taxId);
   if (!document.number) {
     return { ok: false, status: 400, error: "CPF/CNPJ obrigatorio para gerar PIX na BlackCat" };
@@ -230,7 +241,7 @@ async function requestBlackcat({ apiUrl, apiKey, amount, body, req, customer, sl
     },
     pix: { expiresInDays: 1 },
     metadata: String(body.description || "").trim() || undefined,
-    externalRef: `${slug || "checkout"}-${Date.now()}`,
+    externalRef: cartId ? `${slug || "checkout"}:${cartId}` : `${slug || "checkout"}-${Date.now()}`,
     utm_source: utm.utm_source || "",
     utm_medium: utm.utm_medium || "",
     utm_campaign: utm.utm_campaign || "",
@@ -249,7 +260,9 @@ async function requestBlackcat({ apiUrl, apiKey, amount, body, req, customer, sl
       zipCode: String(shippingAddress.cep || shippingAddress.zipCode || "").replace(/\D/g, ""),
     };
   }
-  const postbackUrl = String(process.env.BLACKCAT_POSTBACK_URL || "").trim();
+  const postbackUrl =
+    String(process.env.BLACKCAT_POSTBACK_URL || "").trim() ||
+    `${resolveRequestBaseUrl(req)}/api/webhooks/payment`;
   if (postbackUrl) {
     payload.postbackUrl = postbackUrl;
   }
