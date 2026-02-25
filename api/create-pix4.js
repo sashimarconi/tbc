@@ -121,6 +121,40 @@ function extractProviderError(data, fallback) {
   return data.error || data.message || fallback;
 }
 
+function looksLikeBase64Image(raw = "") {
+  const normalized = String(raw || "").trim();
+  if (!normalized) return false;
+  if (normalized.startsWith("iVBOR")) return true;
+  if (normalized.startsWith("/9j/")) return true;
+  if (normalized.startsWith("R0lGOD")) return true;
+  if (normalized.startsWith("PHN2Zy")) return true;
+  if (normalized.startsWith("PD94bWwg")) return true;
+  return false;
+}
+
+function isPixCopyCode(value = "") {
+  const normalized = String(value || "").trim();
+  return normalized.startsWith("000201");
+}
+
+function buildPixQrImage(candidates = [], pixCode = "") {
+  for (const candidate of candidates) {
+    const value = String(candidate || "").trim();
+    if (!value) continue;
+    if (value.startsWith("data:image")) return value;
+    if (/^https?:\/\//i.test(value)) return value;
+    if (value.startsWith("<svg") || value.startsWith("<?xml")) {
+      return `data:image/svg+xml;utf8,${encodeURIComponent(value)}`;
+    }
+    if (looksLikeBase64Image(value)) {
+      return `data:image/png;base64,${value}`;
+    }
+  }
+
+  if (!pixCode) return "";
+  return `https://quickchart.io/qr?size=340&text=${encodeURIComponent(pixCode)}`;
+}
+
 async function requestSealpay({ apiUrl, apiKey, amount, body, req, customer }) {
   const tracking = body.tracking || {};
   const payload = {
@@ -154,7 +188,7 @@ async function requestSealpay({ apiUrl, apiKey, amount, body, req, customer }) {
   }
 
   const rawQr = data.pix_qr_code || data.pixQrCode || "";
-  const pixQr = rawQr.startsWith("data:image") ? rawQr : `data:image/png;base64,${rawQr}`;
+  const pixQr = rawQr ? (rawQr.startsWith("data:image") ? rawQr : `data:image/png;base64,${rawQr}`) : "";
   return {
     ok: true,
     data: {
@@ -240,13 +274,25 @@ async function requestBlackcat({ apiUrl, apiKey, amount, body, req, customer, sl
 
   const transaction = data.data || {};
   const paymentData = transaction.paymentData || {};
-  const rawQr = paymentData.qrCodeBase64 || "";
-  const pixQr = rawQr.startsWith("data:image") ? rawQr : rawQr ? `data:image/png;base64,${rawQr}` : "";
+  const copyPaste = String(paymentData.copyPaste || paymentData.pixCode || paymentData.code || "").trim();
+  const qrCodeText = String(paymentData.qrCode || "").trim();
+  const pixCode = copyPaste || (isPixCopyCode(qrCodeText) ? qrCodeText : "");
+  const pixQr = buildPixQrImage(
+    [
+      paymentData.qrCodeBase64,
+      paymentData.qrcodeBase64,
+      paymentData.qrCodeImage,
+      paymentData.qrcodeImage,
+      paymentData.qrCode,
+    ],
+    pixCode
+  );
+
   return {
     ok: true,
     data: {
       pix_qr_code: pixQr,
-      pix_code: paymentData.copyPaste || paymentData.qrCode || "",
+      pix_code: pixCode,
       txid: transaction.transactionId || "",
       expires_at: paymentData.expiresAt || null,
     },
