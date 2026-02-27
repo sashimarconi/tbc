@@ -346,13 +346,48 @@ async function requestBlackcat({ apiUrl, apiKey, amount, body, req, customer, sl
 }
 
 function buildBrutalcashAuthHeader(apiKey = "") {
-  const normalized = String(apiKey || "").trim();
-  if (!normalized) return "";
-  if (/^basic\s+/i.test(normalized)) return normalized;
-  if (normalized.includes(":")) {
-    return `Basic ${Buffer.from(normalized, "utf8").toString("base64")}`;
+  const raw = String(apiKey || "").trim();
+  if (!raw) return "";
+
+  const withoutPrefix = raw.replace(/^basic\s+/i, "").trim();
+  if (!withoutPrefix) return "";
+
+  const normalizePair = (value) => {
+    const trimmed = String(value || "").trim();
+    if (!trimmed) return "";
+    const separators = [":", "|", ";", ","];
+    for (const separator of separators) {
+      if (trimmed.includes(separator)) {
+        const [left, ...rest] = trimmed.split(separator);
+        const right = rest.join(separator);
+        if (left?.trim() && right?.trim()) {
+          return `${left.trim()}:${right.trim()}`;
+        }
+      }
+    }
+    const wsParts = trimmed.split(/\s+/).filter(Boolean);
+    if (wsParts.length === 2) {
+      return `${wsParts[0]}:${wsParts[1]}`;
+    }
+    return "";
+  };
+
+  const pair = normalizePair(withoutPrefix);
+  if (pair) {
+    return `Basic ${Buffer.from(pair, "utf8").toString("base64")}`;
   }
-  return `Basic ${normalized}`;
+
+  // If no pair was found, only accept already-base64 credentials that decode to "user:pass".
+  try {
+    const decoded = Buffer.from(withoutPrefix, "base64").toString("utf8");
+    if (decoded.includes(":")) {
+      return `Basic ${withoutPrefix}`;
+    }
+  } catch (_error) {
+    // ignore and fallback to invalid
+  }
+
+  return "";
 }
 
 async function requestBrutalcash({ apiUrl, apiKey, amount, body, req, customer, slug }) {
@@ -424,7 +459,11 @@ async function requestBrutalcash({ apiUrl, apiKey, amount, body, req, customer, 
 
   const authHeader = buildBrutalcashAuthHeader(apiKey);
   if (!authHeader) {
-    return { ok: false, status: 400, error: "Credencial da BrutalCash invalida" };
+    return {
+      ok: false,
+      status: 400,
+      error: "Credencial da BrutalCash invalida. Use public_key:secret_key no campo API Key.",
+    };
   }
 
   const response = await fetch(apiUrl, {
