@@ -90,6 +90,9 @@ const PAYMENT_PROVIDER_LABELS = {
   brutalcash: "BrutalCash",
 };
 let paymentSettingsCache = null;
+function isBrutalcashProvider(provider = "") {
+  return String(provider || "").trim().toLowerCase() === "brutalcash";
+}
 
 const ELEMENT_LABELS = {
   header: "Cabecalho",
@@ -770,6 +773,8 @@ async function loadPaymentSettings() {
   const providerInput = document.getElementById("payment-provider");
   const apiUrlInput = document.getElementById("payment-api-url");
   const activeInput = document.getElementById("payment-active");
+  const apiKeyGroup = document.getElementById("payment-api-key-group");
+  const brutalcashKeysGroup = document.getElementById("payment-brutalcash-keys-group");
   const selectedProvider = String(data.selected_provider || data.provider || "sealpay")
     .trim()
     .toLowerCase();
@@ -789,11 +794,23 @@ async function loadPaymentSettings() {
   if (activeInput) {
     activeInput.checked = selectedConfig.is_active !== false;
   }
+  if (apiKeyGroup) {
+    apiKeyGroup.classList.toggle("hidden", isBrutalcashProvider(selectedProvider));
+  }
+  if (brutalcashKeysGroup) {
+    brutalcashKeysGroup.classList.toggle("hidden", !isBrutalcashProvider(selectedProvider));
+  }
   if (apiKeyHint) {
     const providerLabel = PAYMENT_PROVIDER_LABELS[selectedProvider] || "gateway selecionado";
-    apiKeyHint.textContent = selectedConfig.has_api_key
-      ? "Chave cadastrada. Preencha novamente apenas se quiser substituir."
-      : `Nenhuma chave cadastrada para ${providerLabel}.`;
+    if (isBrutalcashProvider(selectedProvider)) {
+      apiKeyHint.textContent = selectedConfig.has_api_key
+        ? "Chaves PK/SK cadastradas. Preencha novamente apenas se quiser substituir."
+        : `Nenhuma chave PK/SK cadastrada para ${providerLabel}.`;
+    } else {
+      apiKeyHint.textContent = selectedConfig.has_api_key
+        ? "Chave cadastrada. Preencha novamente apenas se quiser substituir."
+        : `Nenhuma chave cadastrada para ${providerLabel}.`;
+    }
   }
 }
 
@@ -802,8 +819,12 @@ function bindPaymentSettings() {
   const providerInput = document.getElementById("payment-provider");
   const apiUrlInput = document.getElementById("payment-api-url");
   const apiKeyInput = document.getElementById("payment-api-key");
+  const publicKeyInput = document.getElementById("payment-public-key");
+  const secretKeyInput = document.getElementById("payment-secret-key");
   const activeInput = document.getElementById("payment-active");
   const apiKeyHint = document.getElementById("payment-key-hint");
+  const apiKeyGroup = document.getElementById("payment-api-key-group");
+  const brutalcashKeysGroup = document.getElementById("payment-brutalcash-keys-group");
 
   const refreshGatewayForm = () => {
     const provider = String(providerInput?.value || "sealpay")
@@ -820,11 +841,23 @@ function bindPaymentSettings() {
     if (activeInput) {
       activeInput.checked = config?.is_active !== false;
     }
+    if (apiKeyGroup) {
+      apiKeyGroup.classList.toggle("hidden", isBrutalcashProvider(provider));
+    }
+    if (brutalcashKeysGroup) {
+      brutalcashKeysGroup.classList.toggle("hidden", !isBrutalcashProvider(provider));
+    }
     if (apiKeyHint) {
       const label = PAYMENT_PROVIDER_LABELS[provider] || "gateway selecionado";
-      apiKeyHint.textContent = config?.has_api_key
-        ? "Chave cadastrada. Preencha novamente apenas se quiser substituir."
-        : `Nenhuma chave cadastrada para ${label}.`;
+      if (isBrutalcashProvider(provider)) {
+        apiKeyHint.textContent = config?.has_api_key
+          ? "Chaves PK/SK cadastradas. Preencha novamente apenas se quiser substituir."
+          : `Nenhuma chave PK/SK cadastrada para ${label}.`;
+      } else {
+        apiKeyHint.textContent = config?.has_api_key
+          ? "Chave cadastrada. Preencha novamente apenas se quiser substituir."
+          : `Nenhuma chave cadastrada para ${label}.`;
+      }
     }
   };
 
@@ -835,18 +868,27 @@ function bindPaymentSettings() {
       const selectedProvider = String(providerInput?.value || "sealpay")
         .trim()
         .toLowerCase();
+      const brutalcash = isBrutalcashProvider(selectedProvider);
       await apiFetch("/api/dashboard/payment-settings", {
         method: "POST",
         body: JSON.stringify({
           provider: selectedProvider,
           selected_provider: selectedProvider,
           api_url: apiUrlInput?.value?.trim() || "",
-          api_key: apiKeyInput?.value?.trim() || "",
+          api_key: brutalcash ? "" : apiKeyInput?.value?.trim() || "",
+          public_key: brutalcash ? publicKeyInput?.value?.trim() || "" : "",
+          secret_key: brutalcash ? secretKeyInput?.value?.trim() || "" : "",
           is_active: activeInput?.checked !== false,
         }),
       });
       if (apiKeyInput) {
         apiKeyInput.value = "";
+      }
+      if (publicKeyInput) {
+        publicKeyInput.value = "";
+      }
+      if (secretKeyInput) {
+        secretKeyInput.value = "";
       }
       await loadPaymentSettings();
       alert("Credenciais de pagamento salvas com sucesso.");

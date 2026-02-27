@@ -337,9 +337,17 @@
                   <label for="payment-api-url">Endpoint da API</label>
                   <input id="payment-api-url" type="text" placeholder="https://api.exemplo.com/endpoint" />
                 </div>
-                <div class="field-group">
+                <div id="payment-api-key-group" class="field-group">
                   <label for="payment-api-key">API Key</label>
                   <input id="payment-api-key" type="password" placeholder="Cole sua chave (não exibimos novamente)" />
+                </div>
+                <div id="payment-brutalcash-keys-group" class="field-group hidden">
+                  <label for="payment-public-key">Public Key (PK)</label>
+                  <input id="payment-public-key" type="text" placeholder="brutalcash_live_..." />
+                  <label for="payment-secret-key">Secret Key (SK)</label>
+                  <input id="payment-secret-key" type="password" placeholder="sk_live_..." />
+                </div>
+                <div class="field-group">
                   <small id="payment-key-hint"></small>
                 </div>
                 <div class="payment-actions">

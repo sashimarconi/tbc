@@ -369,6 +369,14 @@ function buildBrutalcashAuthHeader(apiKey = "") {
     if (wsParts.length === 2) {
       return `${wsParts[0]}:${wsParts[1]}`;
     }
+
+    // Accept concatenated BrutalCash keys without separator.
+    const publicMatch = trimmed.match(/(brutalcash_[A-Za-z0-9_]+)/i);
+    const secretMatch = trimmed.match(/(sk_[A-Za-z0-9_]+)/i);
+    if (publicMatch?.[1] && secretMatch?.[1]) {
+      return `${publicMatch[1]}:${secretMatch[1]}`;
+    }
+
     return "";
   };
 

@@ -1181,7 +1181,11 @@ async function handlePaymentSettings(req, res, user) {
         provider,
         String(body.api_url || "").trim() || getDefaultPaymentApiUrl(provider)
       );
-      const apiKey = String(body.api_key || "").trim();
+      const rawApiKey = String(body.api_key || "").trim();
+      const publicKey = String(body.public_key || "").trim();
+      const secretKey = String(body.secret_key || "").trim();
+      const apiKey =
+        provider === "brutalcash" ? (publicKey && secretKey ? `${publicKey}:${secretKey}` : rawApiKey) : rawApiKey;
       const isActive = body.is_active !== false;
       const selectedProvider = normalizePaymentProvider(body.selected_provider || provider);
 
