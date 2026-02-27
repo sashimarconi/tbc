@@ -6,6 +6,7 @@ const pixCode = document.getElementById("pix-code");
 const copyBtn = document.getElementById("copy-btn");
 const pixOrderTotal = document.getElementById("pix-order-total");
 const pixCountdown = document.getElementById("pix-countdown");
+const pixStatusText = document.querySelector(".pix-screen__status span:last-child");
 const pixLoadingModal = document.getElementById("pix-loading-modal");
 const pixCopyFeedback = document.getElementById("pix-copy-feedback");
 const productCover = document.getElementById("product-cover");
@@ -123,6 +124,9 @@ let firedPurchasePixelEvent = false;
 let summaryCollapsed = true;
 let pixCountdownTimer = null;
 let pixCopyFeedbackTimeout = null;
+let pixStatusPollTimer = null;
+let pixStatusPollAttempts = 0;
+let pixStatusDetectedPaid = false;
 
 let offerData = null;
 let selectedBumps = new Set();
@@ -1438,6 +1442,83 @@ function startPixCountdown(expiresAt) {
   pixCountdownTimer = setInterval(tick, 1000);
 }
 
+function setPixStatusLabel(message) {
+  if (!pixStatusText) return;
+  pixStatusText.textContent = message;
+}
+
+function stopPixStatusPolling() {
+  if (pixStatusPollTimer) {
+    clearInterval(pixStatusPollTimer);
+    pixStatusPollTimer = null;
+  }
+}
+
+function normalizeOrderStatusClient(status) {
+  const value = String(status || "")
+    .trim()
+    .toLowerCase();
+  if (!value || value === "pending") return "waiting_payment";
+  return value;
+}
+
+function isPaidOrderStatus(status) {
+  const normalized = normalizeOrderStatusClient(status);
+  return normalized === "paid";
+}
+
+async function fetchCurrentOrderStatus() {
+  if (!cartId || !activeOfferSlug) return null;
+  const query = new URLSearchParams({
+    cart_id: cartId,
+    slug: activeOfferSlug,
+  });
+  const response = await fetch(`/api/public/order?${query.toString()}`, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) {
+    return null;
+  }
+  const data = await response.json().catch(() => null);
+  return data && typeof data === "object" ? data : null;
+}
+
+async function pollOrderStatusOnce() {
+  const data = await fetchCurrentOrderStatus();
+  if (!data?.found) return false;
+  if (isPaidOrderStatus(data.status)) {
+    pixStatusDetectedPaid = true;
+    setPixStatusLabel("Pagamento aprovado! Pedido confirmado.");
+    stopPixStatusPolling();
+    return true;
+  }
+  return false;
+}
+
+function startPixStatusPolling() {
+  stopPixStatusPolling();
+  pixStatusDetectedPaid = false;
+  pixStatusPollAttempts = 0;
+  setPixStatusLabel("Aguardando pagamento...");
+
+  const run = async () => {
+    pixStatusPollAttempts += 1;
+    try {
+      await pollOrderStatusOnce();
+    } catch (_error) {
+      // Keep polling resilient.
+    }
+    if (pixStatusDetectedPaid) return;
+    if (pixStatusPollAttempts >= 180) {
+      stopPixStatusPolling();
+    }
+  };
+
+  void run();
+  pixStatusPollTimer = setInterval(run, 5000);
+}
+
 function showPixCopyFeedback(message) {
   if (!pixCopyFeedback) return;
   pixCopyFeedback.textContent = message;
@@ -1812,9 +1893,13 @@ async function recordOrder(pixData, checkoutPayload) {
     if (!response.ok) {
       const raw = await response.text().catch(() => "");
       console.warn("Falha ao registrar pedido", { status: response.status, error: raw || "Erro desconhecido" });
+      return null;
     }
+    const data = await response.json().catch(() => null);
+    return data;
   } catch (error) {
     console.warn("Nao foi possivel registrar o pedido", error);
+    return null;
   }
 }
 
@@ -2619,6 +2704,8 @@ form.addEventListener("submit", async (event) => {
   });
 
   openPixLoadingModal();
+  stopPixStatusPolling();
+  setPixStatusLabel("Aguardando pagamento...");
 
   try {
     const cartSyncPromise = syncCartSnapshot("payment");
@@ -2649,7 +2736,8 @@ form.addEventListener("submit", async (event) => {
       bumps: Array.from(selectedBumps),
       txid: data.txid || "",
     });
-    recordOrder(data, payload);
+    await recordOrder(data, payload);
+    startPixStatusPolling();
   } catch (error) {
     trackCheckout("checkout_error", { message: error.message });
     alert(error.message || "Erro na conexao com Pix");

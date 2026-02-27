@@ -67,6 +67,50 @@ async function registerOrderAnalytics({ ownerUserId, cartKey, status, totalCents
 }
 
 module.exports = async (req, res) => {
+  if (req.method === "GET") {
+    const cartKey = sanitizeText(req.query?.cart_id || req.query?.cartKey);
+    const slug = sanitizeText(req.query?.slug);
+    if (!cartKey || !slug) {
+      res.status(400).json({ error: "Missing cart_id or slug" });
+      return;
+    }
+
+    try {
+      await ensureSalesTables();
+      const ownerContext = await resolvePublicOwnerContext(req, slug, { activeOnlyBase: true });
+      const ownerUserId = ownerContext?.ownerUserId;
+      if (!ownerUserId) {
+        res.status(404).json({ error: "Checkout nao encontrado" });
+        return;
+      }
+
+      const result = await query(
+        `select id, status, paid_at
+           from checkout_orders
+          where owner_user_id = $1 and cart_key = $2
+          order by created_at desc
+          limit 1`,
+        [ownerUserId, cartKey]
+      );
+      const row = result.rows?.[0];
+      if (!row) {
+        res.json({ found: false, status: "waiting_payment", paid_at: null });
+        return;
+      }
+
+      res.json({
+        found: true,
+        order_id: row.id,
+        status: normalizeOrderStatus(row.status),
+        paid_at: row.paid_at || null,
+      });
+      return;
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+      return;
+    }
+  }
+
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
     return;

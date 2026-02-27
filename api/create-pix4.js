@@ -7,7 +7,9 @@ const DEFAULT_SEALPAY_API_URL =
   process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix4";
 const DEFAULT_BLACKCAT_API_URL =
   process.env.BLACKCAT_API_URL || "https://api.blackcatpagamentos.online/api/sales/create-sale";
-const PAYMENT_PROVIDER_OPTIONS = new Set(["sealpay", "blackcat"]);
+const DEFAULT_BRUTALCASH_API_URL =
+  process.env.BRUTALCASH_API_URL || "https://api.brutalcash.com/v1/payment-transaction/create";
+const PAYMENT_PROVIDER_OPTIONS = new Set(["sealpay", "blackcat", "brutalcash"]);
 const GATEWAY_CACHE_TTL_MS = 60 * 1000;
 const gatewayCache = new Map();
 
@@ -15,6 +17,9 @@ function normalizeSealpayApiUrl(url = "") {
   return String(url || "").trim();
 }
 function normalizeBlackcatApiUrl(url = "") {
+  return String(url || "").trim();
+}
+function normalizeBrutalcashApiUrl(url = "") {
   return String(url || "").trim();
 }
 function normalizeProvider(value = "") {
@@ -27,10 +32,15 @@ function normalizePaymentApiUrl(provider, url = "") {
   if (provider === "blackcat") {
     return normalizeBlackcatApiUrl(url);
   }
+  if (provider === "brutalcash") {
+    return normalizeBrutalcashApiUrl(url);
+  }
   return normalizeSealpayApiUrl(url);
 }
 function getDefaultApiUrl(provider) {
-  return provider === "blackcat" ? DEFAULT_BLACKCAT_API_URL : DEFAULT_SEALPAY_API_URL;
+  if (provider === "blackcat") return DEFAULT_BLACKCAT_API_URL;
+  if (provider === "brutalcash") return DEFAULT_BRUTALCASH_API_URL;
+  return DEFAULT_SEALPAY_API_URL;
 }
 
 function readGatewayCache(slug) {
@@ -116,6 +126,12 @@ function normalizePhone(value = "") {
   return String(value || "").replace(/\D/g, "");
 }
 
+function resolveClientIp(req, body) {
+  const forwardedFor = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  const fallback = String(req.socket?.remoteAddress || "").trim();
+  return String(body.ip || forwardedFor || fallback || "").trim();
+}
+
 function extractProviderError(data, fallback) {
   if (!data || typeof data !== "object") return fallback;
   return data.error || data.message || fallback;
@@ -163,6 +179,22 @@ function resolveRequestBaseUrl(req) {
   if (!host) return "";
   const proto = protoRaw || "https";
   return `${proto}://${host}`;
+}
+
+function appendWebhookTokenIfNeeded(url) {
+  const base = String(url || "").trim();
+  if (!base) return "";
+  const secret = String(process.env.BLACKCAT_WEBHOOK_SECRET || process.env.PAYMENT_WEBHOOK_SECRET || "").trim();
+  if (!secret) return base;
+  try {
+    const parsed = new URL(base);
+    if (!parsed.searchParams.get("token")) {
+      parsed.searchParams.set("token", secret);
+    }
+    return parsed.toString();
+  } catch (_error) {
+    return base;
+  }
 }
 
 async function requestSealpay({ apiUrl, apiKey, amount, body, req, customer }) {
@@ -260,9 +292,10 @@ async function requestBlackcat({ apiUrl, apiKey, amount, body, req, customer, sl
       zipCode: String(shippingAddress.cep || shippingAddress.zipCode || "").replace(/\D/g, ""),
     };
   }
-  const postbackUrl =
+  const postbackUrlRaw =
     String(process.env.BLACKCAT_POSTBACK_URL || "").trim() ||
     `${resolveRequestBaseUrl(req)}/api/webhooks/payment`;
+  const postbackUrl = appendWebhookTokenIfNeeded(postbackUrlRaw);
   if (postbackUrl) {
     payload.postbackUrl = postbackUrl;
   }
@@ -312,6 +345,124 @@ async function requestBlackcat({ apiUrl, apiKey, amount, body, req, customer, sl
   };
 }
 
+function buildBrutalcashAuthHeader(apiKey = "") {
+  const normalized = String(apiKey || "").trim();
+  if (!normalized) return "";
+  if (/^basic\s+/i.test(normalized)) return normalized;
+  if (normalized.includes(":")) {
+    return `Basic ${Buffer.from(normalized, "utf8").toString("base64")}`;
+  }
+  return `Basic ${normalized}`;
+}
+
+async function requestBrutalcash({ apiUrl, apiKey, amount, body, req, customer, slug }) {
+  const document = normalizeDocument(customer.taxId);
+  const phone = normalizePhone(customer.cellphone);
+  if (!document.number || !phone) {
+    return { ok: false, status: 400, error: "CPF/CNPJ e telefone sao obrigatorios para gerar PIX na BrutalCash" };
+  }
+
+  const shippingAddress = body.shipping?.address || body.address || customer.address || null;
+  const hasShippingAddress = Boolean(shippingAddress?.street && shippingAddress?.city && shippingAddress?.state);
+  const postbackUrlRaw =
+    String(process.env.BRUTALCASH_POSTBACK_URL || process.env.BLACKCAT_POSTBACK_URL || "").trim() ||
+    `${resolveRequestBaseUrl(req)}/api/webhooks/payment`;
+  const postbackUrl = appendWebhookTokenIfNeeded(postbackUrlRaw);
+  const cartId = String(body.cart_id || body.cartId || "").trim();
+  const externalRef = cartId ? `${slug || "checkout"}:${cartId}` : `${slug || "checkout"}-${Date.now()}`;
+  const payload = {
+    amount,
+    payment_method: "pix",
+    postback_url: postbackUrl,
+    customer: {
+      name: customer.name,
+      email: customer.email,
+      phone,
+      document: {
+        number: document.number,
+        type: document.type,
+      },
+      external_ref: externalRef,
+    },
+    items: [
+      {
+        title: String(body.description || "Pedido").trim() || "Pedido",
+        unit_price: amount,
+        quantity: 1,
+        tangible: hasShippingAddress,
+        external_ref: externalRef,
+      },
+    ],
+    pix: {
+      expires_in_days: 1,
+    },
+    metadata: {
+      slug: slug || "checkout",
+      cart_id: cartId || "",
+    },
+    traceable: true,
+    ip: resolveClientIp(req, body),
+  };
+
+  if (hasShippingAddress) {
+    payload.shipping = {
+      fee: 0,
+      address: {
+        street: String(shippingAddress.street || "").trim(),
+        street_number: String(shippingAddress.number || shippingAddress.street_number || "S/N").trim(),
+        complement: String(shippingAddress.complement || "").trim(),
+        zip_code: String(shippingAddress.cep || shippingAddress.zipCode || shippingAddress.zip_code || "")
+          .replace(/\D/g, "")
+          .trim(),
+        neighborhood: String(shippingAddress.neighborhood || "").trim(),
+        city: String(shippingAddress.city || "").trim(),
+        state: String(shippingAddress.state || "").trim(),
+        country: String(shippingAddress.country || "BR").trim().toUpperCase(),
+      },
+    };
+  }
+
+  const authHeader = buildBrutalcashAuthHeader(apiKey);
+  if (!authHeader) {
+    return { ok: false, status: 400, error: "Credencial da BrutalCash invalida" };
+  }
+
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: authHeader,
+      "User-Agent": body.user_agent || req.headers["user-agent"] || "TheBlackCheckout",
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    return {
+      ok: false,
+      status: response.status || 400,
+      error: extractProviderError(data, "Pix error"),
+    };
+  }
+
+  const transactionRaw = Array.isArray(data.data) ? data.data[0] : data.data || {};
+  const pixRaw = Array.isArray(transactionRaw.pix) ? transactionRaw.pix[0] : transactionRaw.pix || {};
+  const qrCodeText = String(pixRaw.qr_code || "").trim();
+  const copyPaste = String(pixRaw.e2_e || "").trim();
+  const pixCode = copyPaste || qrCodeText;
+  const pixQr = buildPixQrImage([pixRaw.url, transactionRaw.qr_code], pixCode);
+
+  return {
+    ok: true,
+    data: {
+      pix_qr_code: pixQr,
+      pix_code: pixCode,
+      txid: String(transactionRaw.id || transactionRaw.transactionId || transactionRaw.transaction_id || "").trim(),
+      expires_at: pixRaw.expiration_date || null,
+    },
+  };
+}
+
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
@@ -346,7 +497,13 @@ module.exports = async (req, res) => {
   if (!apiUrl) apiUrl = getDefaultApiUrl(provider);
   apiUrl = normalizePaymentApiUrl(provider, apiUrl);
   if (!apiKey) {
-    apiKey = provider === "blackcat" ? process.env.BLACKCAT_API_KEY || "" : process.env.SEALPAY_API_KEY || "";
+    if (provider === "blackcat") {
+      apiKey = process.env.BLACKCAT_API_KEY || "";
+    } else if (provider === "brutalcash") {
+      apiKey = process.env.BRUTALCASH_API_KEY || "";
+    } else {
+      apiKey = process.env.SEALPAY_API_KEY || "";
+    }
   }
   if (!apiKey) {
     res.status(400).json({ error: "Pagamento nao configurado para este checkout" });
@@ -357,6 +514,8 @@ module.exports = async (req, res) => {
     const result =
       provider === "blackcat"
         ? await requestBlackcat({ apiUrl, apiKey, amount, body, req, customer, slug })
+        : provider === "brutalcash"
+          ? await requestBrutalcash({ apiUrl, apiKey, amount, body, req, customer, slug })
         : await requestSealpay({ apiUrl, apiKey, amount, body, req, customer });
 
     if (!result.ok) {

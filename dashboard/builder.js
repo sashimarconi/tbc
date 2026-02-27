@@ -82,10 +82,12 @@ const DEVICE_PRESETS = {
 const PAYMENT_PROVIDER_DEFAULTS = {
   sealpay: "https://abacate-5eo1.onrender.com/create-pix4",
   blackcat: "https://api.blackcatpagamentos.online/api/sales/create-sale",
+  brutalcash: "https://api.brutalcash.com/v1/payment-transaction/create",
 };
 const PAYMENT_PROVIDER_LABELS = {
   sealpay: "SealPay",
   blackcat: "BlackCat Pagamentos",
+  brutalcash: "BrutalCash",
 };
 let paymentSettingsCache = null;
 

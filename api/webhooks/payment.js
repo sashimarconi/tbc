@@ -27,6 +27,8 @@ function asString(value) {
 }
 
 function isPaidStatus(payload = {}) {
+  const data = asObject(payload.data) || {};
+  const nestedEvent = asObject(data.event) || {};
   const candidates = [
     payload.status,
     payload.event,
@@ -38,11 +40,14 @@ function isPaidStatus(payload = {}) {
     payload.paymentStatus,
     payload.sale_status,
     payload.saleStatus,
-    payload.data && payload.data.status,
-    payload.data && payload.data.event,
-    payload.data && payload.data.type,
-    payload.data && payload.data.paymentStatus,
-    payload.data && payload.data.payment_status,
+    data.status,
+    data.event,
+    data.type,
+    data.paymentStatus,
+    data.payment_status,
+    nestedEvent.status,
+    nestedEvent.type,
+    nestedEvent.name,
   ]
     .map((value) => asString(value).toLowerCase())
     .filter(Boolean);
@@ -69,17 +74,29 @@ function extractIdentifiers(payload = {}) {
     payload.txid ||
       payload.transactionId ||
       payload.transaction_id ||
+      payload.id ||
       payload.chargeId ||
+      payload.saleId ||
+      payload.sale_id ||
       data.txid ||
       data.transactionId ||
       data.transaction_id ||
+      data.id ||
       data.chargeId ||
+      data.saleId ||
+      data.sale_id ||
       paymentData.txid ||
-      paymentData.transactionId
+      paymentData.transactionId ||
+      paymentData.transaction_id
   );
 
   const externalRef = asString(
-    payload.externalRef || payload.external_ref || data.externalRef || data.external_ref || data.reference
+    payload.externalRef ||
+      payload.external_ref ||
+      payload.reference ||
+      data.externalRef ||
+      data.external_ref ||
+      data.reference
   );
 
   const cartKeyFromPayload = asString(payload.cart_id || payload.cartId || data.cart_id || data.cartId);
@@ -91,6 +108,8 @@ function extractIdentifiers(payload = {}) {
 function hasValidWebhookSecret(req) {
   const secret = asString(process.env.BLACKCAT_WEBHOOK_SECRET || process.env.PAYMENT_WEBHOOK_SECRET);
   if (!secret) return true;
+  const token = asString(req.query?.token || req.query?.secret);
+  if (token && token === secret) return true;
   const received = asString(
     req.headers["x-webhook-secret"] ||
       req.headers["x-blackcat-secret"] ||
