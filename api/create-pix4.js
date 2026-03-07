@@ -545,7 +545,7 @@ async function requestParadise({ apiUrl, apiKey, amount, body, req, customer, sl
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    return { ok: false, status: response.status, error: data.error || data.message || "Pix error" };
+    return { ok: false, status: response.status, error: data.error || data.message || "Pix error", raw: data };
   }
 
   const txid = String(data.txid || data.transactionId || data.id || "").trim();
@@ -629,6 +629,17 @@ module.exports = async (req, res) => {
         : await requestSealpay({ apiUrl, apiKey, amount, body, req, customer });
 
     if (!result.ok) {
+      try {
+        console.error('[create-pix4] provider error', {
+          provider,
+          status: result.status,
+          error: result.error,
+          raw: result.raw,
+          apiUrl,
+        });
+      } catch (_e) {
+        // ignore logging failures
+      }
       res.status(result.status || 400).json({ error: result.error || "Pix error" });
       return;
     }
