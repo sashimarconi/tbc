@@ -1144,7 +1144,7 @@ async function handlePaymentSettings(req, res, user) {
     if (req.method === "GET") {
       const [result, selectedResult] = await Promise.all([
         query(
-          `select provider, api_url, is_active, updated_at
+          `select provider, api_url, product_hash, is_active, updated_at
            from user_payment_gateways
            where owner_user_id = $1 and provider = any($2::text[])`,
           [user.id, Array.from(PAYMENT_PROVIDER_OPTIONS)]
@@ -1165,6 +1165,7 @@ async function handlePaymentSettings(req, res, user) {
         acc[provider] = {
           provider,
           api_url: normalizePaymentApiUrl(provider, row?.api_url || getDefaultPaymentApiUrl(provider)),
+          product_hash: row?.product_hash || null,
           is_active: row?.is_active !== false,
           has_api_key: Boolean(row),
           masked_api_key: row ? "********" : "",
@@ -1177,6 +1178,7 @@ async function handlePaymentSettings(req, res, user) {
         providers,
         provider: selectedProvider,
         api_url: normalizePaymentApiUrl(selectedProvider, selectedRow?.api_url || getDefaultPaymentApiUrl(selectedProvider)),
+        product_hash: selectedRow?.product_hash || null,
         is_active: selectedRow?.is_active !== false,
         has_api_key: Boolean(selectedRow),
         masked_api_key: selectedRow ? "********" : "",
@@ -1192,6 +1194,7 @@ async function handlePaymentSettings(req, res, user) {
         provider,
         String(body.api_url || "").trim() || getDefaultPaymentApiUrl(provider)
       );
+      const productHash = String(body.product_hash || body.productHash || "").trim() || null;
       const rawApiKey = String(body.api_key || "").trim();
       const publicKey = String(body.public_key || "").trim();
       const secretKey = String(body.secret_key || "").trim();
@@ -1222,19 +1225,20 @@ async function handlePaymentSettings(req, res, user) {
       const updateRes = await query(
         `update user_payment_gateways
          set api_url = $3,
-             api_key_encrypted = $4,
-             is_active = $5,
+             product_hash = $4,
+             api_key_encrypted = $5,
+             is_active = $6,
              updated_at = now()
          where owner_user_id = $1 and provider = $2
          returning id`,
-        [user.id, provider, apiUrl, encryptedKey, isActive]
+        [user.id, provider, apiUrl, productHash, encryptedKey, isActive]
       );
 
       if (!updateRes.rows?.length) {
         await query(
-          `insert into user_payment_gateways (owner_user_id, provider, api_url, api_key_encrypted, is_active, updated_at)
-           values ($1, $2, $3, $4, $5, now())`,
-          [user.id, provider, apiUrl, encryptedKey, isActive]
+            `insert into user_payment_gateways (owner_user_id, provider, api_url, product_hash, api_key_encrypted, is_active, updated_at)
+              values ($1, $2, $3, $4, $5, $6, now())`,
+             [user.id, provider, apiUrl, productHash, encryptedKey, isActive]
         );
       }
       await query(

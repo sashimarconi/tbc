@@ -680,6 +680,7 @@ async function loadPaymentSettings() {
   const apiUrlInput = document.getElementById("payment-api-url");
   const activeInput = document.getElementById("payment-active");
   const apiKeyGroup = document.getElementById("payment-api-key-group");
+  const productHashInput = document.getElementById("payment-product-hash");
   const brutalcashKeysGroup = document.getElementById("payment-brutalcash-keys-group");
   const selectedProvider = String(data.selected_provider || data.provider || "sealpay")
     .trim()
@@ -696,6 +697,9 @@ async function loadPaymentSettings() {
   }
   if (apiUrlInput) {
     apiUrlInput.value = String(selectedConfig.api_url || PAYMENT_PROVIDER_DEFAULTS[selectedProvider] || "").trim();
+  }
+  if (productHashInput) {
+    productHashInput.value = String(selectedConfig.product_hash || data.product_hash || "").trim();
   }
   if (activeInput) {
     activeInput.checked = selectedConfig.is_active !== false;
@@ -731,6 +735,7 @@ function bindPaymentSettings() {
   const apiKeyHint = document.getElementById("payment-key-hint");
   const apiKeyGroup = document.getElementById("payment-api-key-group");
   const brutalcashKeysGroup = document.getElementById("payment-brutalcash-keys-group");
+  const productHashInput = document.getElementById("payment-product-hash");
 
   const refreshGatewayForm = () => {
     const provider = String(providerInput?.value || "sealpay")
@@ -749,6 +754,10 @@ function bindPaymentSettings() {
     }
     if (apiKeyGroup) {
       apiKeyGroup.classList.toggle("hidden", isBrutalcashProvider(provider));
+    }
+    if (productHashInput) {
+      productHashInput.value = String(config?.product_hash || "").trim();
+      productHashInput.parentElement?.classList.toggle("hidden", provider !== "paradise");
     }
     if (brutalcashKeysGroup) {
       brutalcashKeysGroup.classList.toggle("hidden", !isBrutalcashProvider(provider));
@@ -781,6 +790,7 @@ function bindPaymentSettings() {
           provider: selectedProvider,
           selected_provider: selectedProvider,
           api_url: apiUrlInput?.value?.trim() || "",
+          product_hash: productHashInput?.value?.trim() || "",
           api_key: brutalcash ? "" : apiKeyInput?.value?.trim() || "",
           public_key: brutalcash ? publicKeyInput?.value?.trim() || "" : "",
           secret_key: brutalcash ? secretKeyInput?.value?.trim() || "" : "",
