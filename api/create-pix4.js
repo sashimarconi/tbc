@@ -571,10 +571,24 @@ async function requestParadise({ apiUrl, apiKey, amount, body, req, customer, sl
       variant.build() || {}
     );
 
-    try {
       try {
-        console.info("[create-pix4][paradise] attempt", i + 1, { apiUrl, header: variant.name });
-      } catch (_e) {}
+        try {
+          console.info("[create-pix4][paradise] attempt", i + 1, { apiUrl, header: variant.name });
+        } catch (_e) {}
+
+        // Log outgoing payload and headers (mask API keys) for diagnostics
+        try {
+          const maskedHeaders = {};
+          Object.keys(headers || {}).forEach((hk) => {
+            const hv = headers[hk];
+            if (/api[-_ ]?key|authorization/i.test(hk)) {
+              maskedHeaders[hk] = hv ? (typeof hv === 'string' ? `${hv.slice(0,4)}***` : '***') : hv;
+            } else {
+              maskedHeaders[hk] = hv;
+            }
+          });
+          console.info('[create-pix4][paradise] outgoing', { attempt: i + 1, apiUrl, header: variant.name, payload, headers: maskedHeaders });
+        } catch (_e) {}
 
       const response = await fetch(apiUrl, {
         method: "POST",
