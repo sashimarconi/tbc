@@ -187,6 +187,114 @@ function buildPixQrImage(candidates = [], pixCode = "") {
   return `https://quickchart.io/qr?size=340&text=${encodeURIComponent(pixCode)}`;
 }
 
+function getByPath(source, path) {
+  const segments = String(path || "").split(".").filter(Boolean);
+  let current = source;
+  for (const segment of segments) {
+    if (!current || typeof current !== "object") return undefined;
+    current = current[segment];
+  }
+  return current;
+}
+
+function firstNonEmptyString(values = []) {
+  for (const value of values) {
+    if (typeof value !== "string") continue;
+    const normalized = value.trim();
+    if (normalized) return normalized;
+  }
+  return "";
+}
+
+function extractParadisePixData(data = {}) {
+  const scopes = [
+    data,
+    data?.data,
+    data?.transaction,
+    data?.charge,
+    data?.pix,
+    data?.payment,
+    data?.paymentData,
+    data?.data?.pix,
+    data?.data?.payment,
+    data?.data?.paymentData,
+  ].filter(Boolean);
+
+  const collect = (paths) => {
+    const out = [];
+    for (const scope of scopes) {
+      for (const path of paths) {
+        out.push(getByPath(scope, path));
+      }
+    }
+    return out;
+  };
+
+  const txid = firstNonEmptyString(
+    collect([
+      "txid",
+      "id",
+      "transactionId",
+      "transaction_id",
+      "hash",
+      "external_id",
+      "externalId",
+    ])
+  );
+
+  const pixCode = firstNonEmptyString(
+    collect([
+      "pix_code",
+      "pixCode",
+      "copyPaste",
+      "copy_and_paste",
+      "copyAndPaste",
+      "emv",
+      "payload",
+      "code",
+      "qr_code",
+      "qrCode",
+    ]).map((value) => {
+      if (typeof value !== "string") return "";
+      const normalized = value.trim();
+      return isPixCopyCode(normalized) ? normalized : "";
+    })
+  );
+
+  const rawQrCandidates = collect([
+    "pix_qr_code",
+    "pixQrCode",
+    "qr",
+    "qr_code",
+    "qrCode",
+    "qr_base64",
+    "qrBase64",
+    "qrcode",
+    "qrcode_base64",
+    "qrcodeBase64",
+    "qrCodeBase64",
+    "qrCodeImage",
+    "qrcodeImage",
+    "image",
+  ]);
+
+  let pixQr = buildPixQrImage(rawQrCandidates, pixCode);
+  if (!pixQr && pixCode) {
+    pixQr = buildPixQrImage([], pixCode);
+  }
+
+  const expiresAt =
+    firstNonEmptyString(collect(["expires_at", "expiresAt", "expiration", "expiration_date", "expires_in"])) ||
+    null;
+
+  return {
+    txid,
+    pixCode,
+    pixQr,
+    expiresAt,
+  };
+}
+
 function resolveRequestBaseUrl(req) {
   const protoRaw = String(req.headers["x-forwarded-proto"] || "").split(",")[0].trim();
   const host =
@@ -628,23 +736,24 @@ async function requestParadise({ apiUrl, apiKey, amount, body, req, customer, sl
         continue;
       }
 
-      const txid = String(data.txid || data.transactionId || data.id || "").trim();
-      const rawQr = data.pix_qr_code || data.pixQrCode || data.qr || data.qr_code || "";
-      const pixCode = data.pix_code || data.pixCode || data.copyPaste || data.code || "";
-      let pixQr = "";
-      if (rawQr) {
-        pixQr = rawQr.startsWith("data:image") ? rawQr : /^https?:\/\//i.test(rawQr) ? rawQr : `data:image/png;base64,${rawQr}`;
-      } else if (data.qr_base64) {
-        pixQr = `data:image/png;base64,${data.qr_base64}`;
-      }
+      const parsed = extractParadisePixData(data);
+
+      // Keep a compact success log to inspect provider format without leaking secrets.
+      try {
+        console.info("[create-pix4][paradise] success parsed", {
+          has_qr: Boolean(parsed.pixQr),
+          has_code: Boolean(parsed.pixCode),
+          txid: parsed.txid ? `${parsed.txid.slice(0, 8)}...` : "",
+        });
+      } catch (_e) {}
 
       return {
         ok: true,
         data: {
-          pix_qr_code: pixQr || "",
-          pix_code: pixCode || "",
-          txid: txid || "",
-          expires_at: data.expires_at || data.expiresAt || null,
+          pix_qr_code: parsed.pixQr || "",
+          pix_code: parsed.pixCode || "",
+          txid: parsed.txid || "",
+          expires_at: parsed.expiresAt,
         },
       };
     } catch (error) {
@@ -755,23 +864,15 @@ async function requestParadise({ apiUrl, apiKey, amount, body, req, customer, sl
                 continue;
               }
 
-              const txid = String(data.txid || data.transactionId || data.id || "").trim();
-              const rawQr = data.pix_qr_code || data.pixQrCode || data.qr || data.qr_code || "";
-              const pixCode = data.pix_code || data.pixCode || data.copyPaste || data.code || "";
-              let pixQr = "";
-              if (rawQr) {
-                pixQr = rawQr.startsWith("data:image") ? rawQr : /^https?:\/\//i.test(rawQr) ? rawQr : `data:image/png;base64,${rawQr}`;
-              } else if (data.qr_base64) {
-                pixQr = `data:image/png;base64,${data.qr_base64}`;
-              }
+              const parsed = extractParadisePixData(data);
 
               return {
                 ok: true,
                 data: {
-                  pix_qr_code: pixQr || "",
-                  pix_code: pixCode || "",
-                  txid: txid || "",
-                  expires_at: data.expires_at || data.expiresAt || null,
+                  pix_qr_code: parsed.pixQr || "",
+                  pix_code: parsed.pixCode || "",
+                  txid: parsed.txid || "",
+                  expires_at: parsed.expiresAt,
                 },
               };
             } catch (error) {
