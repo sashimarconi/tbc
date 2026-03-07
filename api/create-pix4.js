@@ -549,8 +549,11 @@ async function requestParadise({ apiUrl, apiKey, amount, body, req, customer, sl
 
   const payload = {
     amount,
-    // include productHash only when available
-    ...(productHash ? { productHash } : {}),
+    // include productHash in both common variants to maximize compatibility
+    ...(productHash ? { productHash, product_hash: productHash } : {}),
+    // include amount variants some providers expect (amount in cents)
+    amount_cents: amount,
+    amountInCents: amount,
     customer: {
       name: customer.name || `Cliente ${Date.now()}`,
       email: ensureEmail(customer),
@@ -569,7 +572,7 @@ async function requestParadise({ apiUrl, apiKey, amount, body, req, customer, sl
   for (let i = 0; i < headerVariants.length; i++) {
     const variant = headerVariants[i];
     const headers = Object.assign(
-      { "Content-Type": "application/json", "User-Agent": body.user_agent || req.headers["user-agent"] || "TheBlackCheckout" },
+      { "Content-Type": "application/json", Accept: "application/json", "User-Agent": body.user_agent || req.headers["user-agent"] || "TheBlackCheckout" },
       variant.build() || {}
     );
 
