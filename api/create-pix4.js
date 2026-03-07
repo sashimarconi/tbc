@@ -532,41 +532,79 @@ async function requestParadise({ apiUrl, apiKey, amount, body, req, customer, sl
     utm: tracking.utm || {},
     source: tracking.src || req.headers.referer || "",
   };
+  // Try multiple auth header variants to diagnose provider differences.
+  const headerVariants = [
+    { name: "Authorization: Bearer", build: () => ({ Authorization: apiKey ? `Bearer ${apiKey}` : undefined }) },
+    { name: "X-API-Key", build: () => ({ "X-API-Key": apiKey }) },
+    { name: "x-api-key", build: () => ({ "x-api-key": apiKey }) },
+  ];
 
-  const response = await fetch(apiUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: apiKey ? `Bearer ${apiKey}` : undefined,
-      "User-Agent": body.user_agent || req.headers["user-agent"] || "TheBlackCheckout",
-    },
-    body: JSON.stringify(payload),
-  });
+  let lastError = { status: 0, error: "Pix error", raw: {} };
+  for (let i = 0; i < headerVariants.length; i++) {
+    const variant = headerVariants[i];
+    const headers = Object.assign(
+      { "Content-Type": "application/json", "User-Agent": body.user_agent || req.headers["user-agent"] || "TheBlackCheckout" },
+      variant.build() || {}
+    );
 
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    return { ok: false, status: response.status, error: data.error || data.message || "Pix error", raw: data };
+    try {
+      try {
+        console.info("[create-pix4][paradise] attempt", i + 1, { apiUrl, header: variant.name });
+      } catch (_e) {}
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+      });
+
+      let data = {};
+      try {
+        data = await response.json();
+      } catch (err) {
+        // fallback to text if not json
+        const text = await response.text().catch(() => "");
+        data = text ? { text } : {};
+      }
+
+      if (!response.ok) {
+        lastError = { status: response.status || 400, error: extractProviderError(data, "Pix error"), raw: data };
+        try {
+          console.warn("[create-pix4][paradise] provider responded not-ok", { attempt: i + 1, apiUrl, status: response.status, header: variant.name, raw: data });
+        } catch (_e) {}
+        // try next header variant
+        continue;
+      }
+
+      const txid = String(data.txid || data.transactionId || data.id || "").trim();
+      const rawQr = data.pix_qr_code || data.pixQrCode || data.qr || data.qr_code || "";
+      const pixCode = data.pix_code || data.pixCode || data.copyPaste || data.code || "";
+      let pixQr = "";
+      if (rawQr) {
+        pixQr = rawQr.startsWith("data:image") ? rawQr : /^https?:\/\//i.test(rawQr) ? rawQr : `data:image/png;base64,${rawQr}`;
+      } else if (data.qr_base64) {
+        pixQr = `data:image/png;base64,${data.qr_base64}`;
+      }
+
+      return {
+        ok: true,
+        data: {
+          pix_qr_code: pixQr || "",
+          pix_code: pixCode || "",
+          txid: txid || "",
+          expires_at: data.expires_at || data.expiresAt || null,
+        },
+      };
+    } catch (error) {
+      lastError = { status: 502, error: error?.message || "Pix connection error", raw: {} };
+      try {
+        console.error("[create-pix4][paradise] fetch error", { attempt: i + 1, apiUrl, header: variant.name, message: error?.message });
+      } catch (_e) {}
+      // continue to next variant
+    }
   }
 
-  const txid = String(data.txid || data.transactionId || data.id || "").trim();
-  const rawQr = data.pix_qr_code || data.pixQrCode || data.qr || data.qr_code || "";
-  const pixCode = data.pix_code || data.pixCode || data.copyPaste || data.code || "";
-  let pixQr = "";
-  if (rawQr) {
-    pixQr = rawQr.startsWith("data:image") ? rawQr : /^https?:\/\//i.test(rawQr) ? rawQr : `data:image/png;base64,${rawQr}`;
-  } else if (data.qr_base64) {
-    pixQr = `data:image/png;base64,${data.qr_base64}`;
-  }
-
-  return {
-    ok: true,
-    data: {
-      pix_qr_code: pixQr || "",
-      pix_code: pixCode || "",
-      txid: txid || "",
-      expires_at: data.expires_at || data.expiresAt || null,
-    },
-  };
+  return { ok: false, status: lastError.status || 400, error: lastError.error || "Pix error", raw: lastError.raw || {} };
 }
 
 module.exports = async (req, res) => {
