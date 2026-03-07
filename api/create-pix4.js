@@ -641,6 +641,99 @@ async function requestParadise({ apiUrl, apiKey, amount, body, req, customer, sl
       // continue to next variant
     }
   }
+  // If all header variants failed with 404 (or other), attempt a small set of alternative endpoint paths
+  const triedUrls = new Set([String(apiUrl || "")]);
+  const altPaths = [
+    "/api/v1/transaction",
+    "/api/v1/transactions",
+    "/api/v1/transaction/create",
+    "/api/create-charge",
+    "/api/v1/charge",
+    "/api/v1/charges",
+    "/api/transaction",
+    "/api/transaction/create",
+  ];
+
+  try {
+    const urlObj = new URL(apiUrl);
+    const origin = `${urlObj.protocol}//${urlObj.host}`;
+    for (const p of altPaths) {
+      const candidate = origin + p;
+      if (triedUrls.has(candidate)) continue;
+      triedUrls.add(candidate);
+      try {
+        console.info('[create-pix4][paradise] trying alternative url', { candidate });
+      } catch (_e) {}
+
+      for (let i = 0; i < headerVariants.length; i++) {
+        const variant = headerVariants[i];
+        const headers = Object.assign(
+          { "Content-Type": "application/json", "User-Agent": body.user_agent || req.headers["user-agent"] || "TheBlackCheckout" },
+          variant.build() || {}
+        );
+
+        try {
+          try { console.info("[create-pix4][paradise] alt attempt", { candidate, attempt: i + 1, header: variant.name }); } catch (_e) {}
+          const maskedHeaders = {};
+          Object.keys(headers || {}).forEach((hk) => {
+            const hv = headers[hk];
+            if (/api[-_ ]?key|authorization/i.test(hk)) {
+              maskedHeaders[hk] = hv ? (typeof hv === 'string' ? `${hv.slice(0,4)}***` : '***') : hv;
+            } else {
+              maskedHeaders[hk] = hv;
+            }
+          });
+          console.info('[create-pix4][paradise] outgoing alt', { candidate, attempt: i + 1, header: variant.name, payload, headers: maskedHeaders });
+
+          const response = await fetch(candidate, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(payload),
+          });
+
+          let data = {};
+          try {
+            data = await response.json();
+          } catch (err) {
+            const text = await response.text().catch(() => "");
+            data = text ? { text } : {};
+          }
+
+          if (!response.ok) {
+            try { console.warn('[create-pix4][paradise] alt provider not-ok', { candidate, status: response.status, header: variant.name, raw: data }); } catch (_e) {}
+            lastError = { status: response.status || 400, error: extractProviderError(data, 'Pix error'), raw: data };
+            continue;
+          }
+
+          const txid = String(data.txid || data.transactionId || data.id || "").trim();
+          const rawQr = data.pix_qr_code || data.pixQrCode || data.qr || data.qr_code || "";
+          const pixCode = data.pix_code || data.pixCode || data.copyPaste || data.code || "";
+          let pixQr = "";
+          if (rawQr) {
+            pixQr = rawQr.startsWith("data:image") ? rawQr : /^https?:\/\//i.test(rawQr) ? rawQr : `data:image/png;base64,${rawQr}`;
+          } else if (data.qr_base64) {
+            pixQr = `data:image/png;base64,${data.qr_base64}`;
+          }
+
+          return {
+            ok: true,
+            data: {
+              pix_qr_code: pixQr || "",
+              pix_code: pixCode || "",
+              txid: txid || "",
+              expires_at: data.expires_at || data.expiresAt || null,
+            },
+          };
+        } catch (error) {
+          lastError = { status: 502, error: error?.message || 'Pix connection error', raw: {} };
+          try { console.error('[create-pix4][paradise] alt fetch error', { candidate, attempt: i + 1, header: variant.name, message: error?.message }); } catch (_e) {}
+          continue;
+        }
+      }
+    }
+  } catch (_error) {
+    // ignore URL parsing errors and fall through to return lastError
+  }
 
   return { ok: false, status: lastError.status || 400, error: lastError.error || "Pix error", raw: lastError.raw || {} };
 }
