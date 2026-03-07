@@ -94,7 +94,7 @@ async function resolveGatewayBySlug(req, slug) {
       [ownerUserId]
     ),
     query(
-      `select provider, api_url, api_key_encrypted, is_active
+      `select provider, api_url, product_hash, api_key_encrypted, is_active
        from user_payment_gateways
        where owner_user_id = $1 and provider = any($2::text[])`,
       [ownerUserId, Array.from(PAYMENT_PROVIDER_OPTIONS)]
@@ -115,6 +115,7 @@ async function resolveGatewayBySlug(req, slug) {
   const resolved = {
     provider: selectedProvider,
     apiUrl: normalizePaymentApiUrl(selectedProvider, gateway.api_url),
+    productHash: gateway.product_hash || process.env.PARADISE_PRODUCT_HASH || undefined,
     apiKey: decryptText(gateway.api_key_encrypted || ""),
   };
   writeGatewayCache(slug, resolved);
@@ -516,10 +517,11 @@ async function requestBrutalcash({ apiUrl, apiKey, amount, body, req, customer, 
   };
 }
 
-async function requestParadise({ apiUrl, apiKey, amount, body, req, customer, slug }) {
+async function requestParadise({ apiUrl, apiKey, amount, body, req, customer, slug, productHash }) {
   const tracking = body.tracking || {};
   // Paradise expects amount in cents and productHash; build payload accordingly.
-  const productHash = String(body.productHash || body.product_hash || process.env.PARADISE_PRODUCT_HASH || "").trim() || undefined;
+  // productHash precedence: explicit param (from gateway), then request body, then env var
+  const productHash = String(productHash || body.productHash || body.product_hash || process.env.PARADISE_PRODUCT_HASH || "").trim() || undefined;
 
   // Ensure we have a unique email and a document (CPF) when not provided (One-Click flows require unique customer)
   const ensureEmail = (c) => {
@@ -757,8 +759,9 @@ module.exports = async (req, res) => {
   let provider = "sealpay";
   let apiUrl = "";
   let apiKey = "";
+  let gateway = null;
   try {
-    const gateway = await resolveGatewayBySlug(req, slug);
+    gateway = await resolveGatewayBySlug(req, slug);
     if (gateway) {
       provider = normalizeProvider(gateway.provider || "sealpay");
       apiUrl = gateway.apiUrl;
@@ -794,7 +797,7 @@ module.exports = async (req, res) => {
         : provider === "brutalcash"
         ? await requestBrutalcash({ apiUrl, apiKey, amount, body, req, customer, slug })
         : provider === "paradise"
-        ? await requestParadise({ apiUrl, apiKey, amount, body, req, customer, slug })
+        ? await requestParadise({ apiUrl, apiKey, amount, body, req, customer, slug, productHash: (gateway && gateway.productHash) || process.env.PARADISE_PRODUCT_HASH })
         : await requestSealpay({ apiUrl, apiKey, amount, body, req, customer });
 
     if (!result.ok) {
