@@ -517,11 +517,11 @@ async function requestBrutalcash({ apiUrl, apiKey, amount, body, req, customer, 
   };
 }
 
-async function requestParadise({ apiUrl, apiKey, amount, body, req, customer, slug, productHash }) {
+async function requestParadise({ apiUrl, apiKey, amount, body, req, customer, slug, productHash: productHashParam }) {
   const tracking = body.tracking || {};
   // Paradise expects amount in cents and productHash; build payload accordingly.
   // productHash precedence: explicit param (from gateway), then request body, then env var
-  const productHash = String(productHash || body.productHash || body.product_hash || process.env.PARADISE_PRODUCT_HASH || "").trim() || undefined;
+  const productHash = String(productHashParam || body.productHash || body.product_hash || process.env.PARADISE_PRODUCT_HASH || "").trim() || undefined;
 
   // Ensure we have a unique email and a document (CPF) when not provided (One-Click flows require unique customer)
   const ensureEmail = (c) => {
