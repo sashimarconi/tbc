@@ -23,7 +23,7 @@ const {
 const { addProjectDomain, verifyProjectDomain, getProjectDomain, removeProjectDomain } = require("../lib/vercel-domains");
 const DEFAULT_SEALPAY_API_URL =
   process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix4";
-const DEFAULT_PARADISE_API_URL = process.env.PARADISE_API_URL || "https://multi.paradisepags.com/api/create-charge";
+const DEFAULT_PARADISE_API_URL = process.env.PARADISE_API_URL || "https://multi.paradisepags.com/api/v1/transaction.php";
 const DEFAULT_BLACKCAT_API_URL =
   process.env.BLACKCAT_API_URL || "https://api.blackcatpagamentos.online/api/sales/create-sale";
 const DEFAULT_BRUTALCASH_API_URL =
@@ -39,7 +39,15 @@ function normalizeBrutalcashApiUrl(url = "") {
   return String(url || "").trim();
 }
 function normalizeParadiseApiUrl(url = "") {
-  return String(url || "").trim();
+  const normalized = String(url || "").trim();
+  if (!normalized) return normalized;
+  if (/\/api\/v1\/transaction$/i.test(normalized)) {
+    return normalized.replace(/\/api\/v1\/transaction$/i, "/api/v1/transaction.php");
+  }
+  if (/\/api\/create-charge$/i.test(normalized)) {
+    return normalized.replace(/\/api\/create-charge$/i, "/api/v1/transaction.php");
+  }
+  return normalized;
 }
 function normalizePaymentProvider(value = "") {
   const normalized = String(value || "")

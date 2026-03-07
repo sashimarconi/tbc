@@ -5,7 +5,7 @@ const { decryptText } = require("../lib/credentials-crypto");
 const { resolvePublicOwnerContext } = require("../lib/public-owner-context");
 const DEFAULT_SEALPAY_API_URL =
   process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix4";
-const DEFAULT_PARADISE_API_URL = process.env.PARADISE_API_URL || "https://multi.paradisepags.com/api/v1/transaction";
+const DEFAULT_PARADISE_API_URL = process.env.PARADISE_API_URL || "https://multi.paradisepags.com/api/v1/transaction.php";
 const DEFAULT_BLACKCAT_API_URL =
   process.env.BLACKCAT_API_URL || "https://api.blackcatpagamentos.online/api/sales/create-sale";
 const DEFAULT_BRUTALCASH_API_URL =
@@ -24,7 +24,16 @@ function normalizeBrutalcashApiUrl(url = "") {
   return String(url || "").trim();
 }
 function normalizeParadiseApiUrl(url = "") {
-  return String(url || "").trim();
+  const normalized = String(url || "").trim();
+  if (!normalized) return normalized;
+  // Keep backward compatibility with old saved values that returned 404.
+  if (/\/api\/v1\/transaction$/i.test(normalized)) {
+    return normalized.replace(/\/api\/v1\/transaction$/i, "/api/v1/transaction.php");
+  }
+  if (/\/api\/create-charge$/i.test(normalized)) {
+    return normalized.replace(/\/api\/create-charge$/i, "/api/v1/transaction.php");
+  }
+  return normalized;
 }
 function normalizeProvider(value = "") {
   const normalized = String(value || "")
@@ -649,6 +658,8 @@ async function requestParadise({ apiUrl, apiKey, amount, body, req, customer, sl
   // If all header variants failed with 404 (or other), attempt a small set of alternative endpoint paths
   const triedUrls = new Set([String(apiUrl || "")]);
   const altPaths = [
+    "/api/v1/transaction.php",
+    "/api/v1/check_status.php",
     "/api/v1/transaction",
     "/api/v1/transactions",
     "/api/v1/transaction/create",
