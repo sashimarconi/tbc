@@ -156,6 +156,7 @@ const productDescriptionInput = document.getElementById("product-description");
 const productPriceInput = document.getElementById("product-price");
 const productCompareInput = document.getElementById("product-compare");
 const productActiveSelect = document.getElementById("product-active");
+const productThankyouInput = document.getElementById("product-thankyou");
 const formFactorButtons = document.querySelectorAll("[data-form-factor]");
 const logisticsSection = document.getElementById("logistics-section");
 const logHeightInput = document.getElementById("log-height");
@@ -1305,6 +1306,9 @@ function resetProductForm() {
   if (productImageUrl) {
     productImageUrl.value = "";
   }
+  if (productThankyouInput) {
+    productThankyouInput.value = "";
+  }
   updateImagePreview("");
   setFormFactor("physical");
   setImageMode("upload");
@@ -1319,6 +1323,9 @@ function fillProductForm(item) {
     ? formatCentsForField(item.compare_price_cents)
     : "";
   productActiveSelect.value = item.active ? "true" : "false";
+  if (productThankyouInput) {
+    productThankyouInput.value = item.thank_you_url || item.thank_you || "";
+  }
   logHeightInput.value = Number(item.height_cm || 0) || "";
   logWidthInput.value = Number(item.width_cm || 0) || "";
   logLengthInput.value = Number(item.length_cm || 0) || "";
@@ -1393,6 +1400,7 @@ function collectProductPayload() {
     length_cm: selectedFormFactor === "digital" ? 0 : Number(logLengthInput.value || 0),
     width_cm: selectedFormFactor === "digital" ? 0 : Number(logWidthInput.value || 0),
     height_cm: selectedFormFactor === "digital" ? 0 : Number(logHeightInput.value || 0),
+    thank_you_url: productThankyouInput?.value?.trim() || "",
   };
   return payload;
 }

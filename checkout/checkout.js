@@ -1491,6 +1491,14 @@ async function pollOrderStatusOnce() {
     pixStatusDetectedPaid = true;
     setPixStatusLabel("Pagamento aprovado! Pedido confirmado.");
     stopPixStatusPolling();
+    const thankUrl = (offerData?.base?.thank_you_url || "").toString().trim();
+    if (thankUrl) {
+      try {
+        window.location.href = thankUrl;
+      } catch (_e) {
+        // ignore navigation errors
+      }
+    }
     return true;
   }
   return false;

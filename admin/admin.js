@@ -113,6 +113,7 @@ const productDescriptionInput = document.getElementById("product-description");
 const productPriceInput = document.getElementById("product-price");
 const productCompareInput = document.getElementById("product-compare");
 const productActiveSelect = document.getElementById("product-active");
+const productThankyouInput = document.getElementById("product-thankyou");
 const formFactorButtons = document.querySelectorAll("[data-form-factor]");
 const logisticsSection = document.getElementById("logistics-section");
 const logHeightInput = document.getElementById("log-height");
@@ -1039,6 +1040,9 @@ function resetProductForm() {
   if (productImageUrl) {
     productImageUrl.value = "";
   }
+  if (productThankyouInput) {
+    productThankyouInput.value = "";
+  }
   updateImagePreview("");
   setFormFactor("physical");
   setImageMode("upload");
@@ -1066,6 +1070,9 @@ function fillProductForm(item) {
   }
   const mode = storedUpload ? "upload" : currentImageValue ? "url" : "upload";
   setImageMode(mode);
+  if (productThankyouInput) {
+    productThankyouInput.value = item.thank_you_url || item.thank_you || "";
+  }
 }
 
 function openProductModal(mode, product) {
@@ -1127,6 +1134,7 @@ function collectProductPayload() {
     length_cm: selectedFormFactor === "digital" ? 0 : Number(logLengthInput.value || 0),
     width_cm: selectedFormFactor === "digital" ? 0 : Number(logWidthInput.value || 0),
     height_cm: selectedFormFactor === "digital" ? 0 : Number(logHeightInput.value || 0),
+    thank_you_url: productThankyouInput?.value?.trim() || "",
   };
   return payload;
 }

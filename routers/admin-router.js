@@ -289,6 +289,7 @@ function normalizeItemPayload(body = {}) {
     width_cm: Number(body.width_cm || 0),
     height_cm: Number(body.height_cm || 0),
     bump_rule: bumpRule,
+    thank_you_url: body.thank_you_url || body.thank_you || "",
   };
 }
 
@@ -803,8 +804,9 @@ async function handleItems(req, res, user) {
            weight_grams,
            length_cm,
            width_cm,
-           height_cm
-         ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) returning *`,
+           height_cm,
+           thank_you_url
+         ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) returning *`,
         [
           user.id,
           item.type,
@@ -821,6 +823,7 @@ async function handleItems(req, res, user) {
           item.length_cm,
           item.width_cm,
           item.height_cm,
+          item.thank_you_url || null,
         ]
       );
       const saved = sanitizeProductRow(result.rows[0]);
@@ -857,8 +860,9 @@ async function handleItems(req, res, user) {
            weight_grams = $10,
            length_cm = $11,
            width_cm = $12,
-           height_cm = $13
-         where id = $14 and owner_user_id = $15 returning *`,
+           height_cm = $13,
+           thank_you_url = $14
+         where id = $15 and owner_user_id = $16 returning *`,
         [
           updates.type,
           updates.name,
@@ -873,6 +877,7 @@ async function handleItems(req, res, user) {
           updates.length_cm,
           updates.width_cm,
           updates.height_cm,
+          updates.thank_you_url || null,
           id,
           user.id,
         ]
