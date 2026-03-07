@@ -23,11 +23,12 @@ const {
 const { addProjectDomain, verifyProjectDomain, getProjectDomain, removeProjectDomain } = require("../lib/vercel-domains");
 const DEFAULT_SEALPAY_API_URL =
   process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix4";
+const DEFAULT_PARADISE_API_URL = process.env.PARADISE_API_URL || "https://multi.paradisepags.com/api/create-charge";
 const DEFAULT_BLACKCAT_API_URL =
   process.env.BLACKCAT_API_URL || "https://api.blackcatpagamentos.online/api/sales/create-sale";
 const DEFAULT_BRUTALCASH_API_URL =
   process.env.BRUTALCASH_API_URL || "https://api.brutalcash.com/v1/payment-transaction/create";
-const PAYMENT_PROVIDER_OPTIONS = new Set(["sealpay", "blackcat", "brutalcash"]);
+const PAYMENT_PROVIDER_OPTIONS = new Set(["sealpay", "blackcat", "brutalcash", "paradise"]);
 function normalizeSealpayApiUrl(url = "") {
   return String(url || "").trim();
 }
@@ -35,6 +36,9 @@ function normalizeBlackcatApiUrl(url = "") {
   return String(url || "").trim();
 }
 function normalizeBrutalcashApiUrl(url = "") {
+  return String(url || "").trim();
+}
+function normalizeParadiseApiUrl(url = "") {
   return String(url || "").trim();
 }
 function normalizePaymentProvider(value = "") {
@@ -50,11 +54,13 @@ function normalizePaymentApiUrl(provider, url = "") {
   if (provider === "brutalcash") {
     return normalizeBrutalcashApiUrl(url);
   }
+  if (provider === "paradise") return normalizeParadiseApiUrl(url);
   return normalizeSealpayApiUrl(url);
 }
 function getDefaultPaymentApiUrl(provider) {
   if (provider === "blackcat") return DEFAULT_BLACKCAT_API_URL;
   if (provider === "brutalcash") return DEFAULT_BRUTALCASH_API_URL;
+  if (provider === "paradise") return DEFAULT_PARADISE_API_URL;
   return DEFAULT_SEALPAY_API_URL;
 }
 const DASHBOARD_TZ = process.env.DASHBOARD_TZ || "America/Sao_Paulo";

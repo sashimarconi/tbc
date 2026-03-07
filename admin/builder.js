@@ -67,11 +67,13 @@ const PAYMENT_PROVIDER_DEFAULTS = {
   sealpay: "https://abacate-5eo1.onrender.com/create-pix4",
   blackcat: "https://api.blackcatpagamentos.online/api/sales/create-sale",
   brutalcash: "https://api.brutalcash.com/v1/payment-transaction/create",
+  paradise: "https://multi.paradisepags.com/api/create-charge",
 };
 const PAYMENT_PROVIDER_LABELS = {
   sealpay: "SealPay",
   blackcat: "BlackCat Pagamentos",
   brutalcash: "BrutalCash",
+  paradise: "Paradise Pagamentos",
 };
 let paymentSettingsCache = null;
 function isBrutalcashProvider(provider = "") {

@@ -5,11 +5,12 @@ const { decryptText } = require("../lib/credentials-crypto");
 const { resolvePublicOwnerContext } = require("../lib/public-owner-context");
 const DEFAULT_SEALPAY_API_URL =
   process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix4";
+const DEFAULT_PARADISE_API_URL = process.env.PARADISE_API_URL || "https://multi.paradisepags.com/api/create-charge";
 const DEFAULT_BLACKCAT_API_URL =
   process.env.BLACKCAT_API_URL || "https://api.blackcatpagamentos.online/api/sales/create-sale";
 const DEFAULT_BRUTALCASH_API_URL =
   process.env.BRUTALCASH_API_URL || "https://api.brutalcash.com/v1/payment-transaction/create";
-const PAYMENT_PROVIDER_OPTIONS = new Set(["sealpay", "blackcat", "brutalcash"]);
+const PAYMENT_PROVIDER_OPTIONS = new Set(["sealpay", "blackcat", "brutalcash", "paradise"]);
 const GATEWAY_CACHE_TTL_MS = 60 * 1000;
 const gatewayCache = new Map();
 
@@ -20,6 +21,9 @@ function normalizeBlackcatApiUrl(url = "") {
   return String(url || "").trim();
 }
 function normalizeBrutalcashApiUrl(url = "") {
+  return String(url || "").trim();
+}
+function normalizeParadiseApiUrl(url = "") {
   return String(url || "").trim();
 }
 function normalizeProvider(value = "") {
@@ -35,11 +39,13 @@ function normalizePaymentApiUrl(provider, url = "") {
   if (provider === "brutalcash") {
     return normalizeBrutalcashApiUrl(url);
   }
+  if (provider === "paradise") return normalizeParadiseApiUrl(url);
   return normalizeSealpayApiUrl(url);
 }
 function getDefaultApiUrl(provider) {
   if (provider === "blackcat") return DEFAULT_BLACKCAT_API_URL;
   if (provider === "brutalcash") return DEFAULT_BRUTALCASH_API_URL;
+  if (provider === "paradise") return DEFAULT_PARADISE_API_URL;
   return DEFAULT_SEALPAY_API_URL;
 }
 
@@ -510,6 +516,59 @@ async function requestBrutalcash({ apiUrl, apiKey, amount, body, req, customer, 
   };
 }
 
+async function requestParadise({ apiUrl, apiKey, amount, body, req, customer, slug }) {
+  const tracking = body.tracking || {};
+  const payload = {
+    amount,
+    currency: "BRL",
+    description: body.description || "Pedido",
+    customer: {
+      name: customer.name,
+      email: customer.email,
+      phone: customer.cellphone || "",
+      document: customer.taxId || "",
+    },
+    external_ref: String(body.cart_id || body.cartId || "").trim() || undefined,
+    utm: tracking.utm || {},
+    source: tracking.src || req.headers.referer || "",
+  };
+
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: apiKey ? `Bearer ${apiKey}` : undefined,
+      "User-Agent": body.user_agent || req.headers["user-agent"] || "TheBlackCheckout",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    return { ok: false, status: response.status, error: data.error || data.message || "Pix error" };
+  }
+
+  const txid = String(data.txid || data.transactionId || data.id || "").trim();
+  const rawQr = data.pix_qr_code || data.pixQrCode || data.qr || data.qr_code || "";
+  const pixCode = data.pix_code || data.pixCode || data.copyPaste || data.code || "";
+  let pixQr = "";
+  if (rawQr) {
+    pixQr = rawQr.startsWith("data:image") ? rawQr : /^https?:\/\//i.test(rawQr) ? rawQr : `data:image/png;base64,${rawQr}`;
+  } else if (data.qr_base64) {
+    pixQr = `data:image/png;base64,${data.qr_base64}`;
+  }
+
+  return {
+    ok: true,
+    data: {
+      pix_qr_code: pixQr || "",
+      pix_code: pixCode || "",
+      txid: txid || "",
+      expires_at: data.expires_at || data.expiresAt || null,
+    },
+  };
+}
+
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
@@ -548,6 +607,8 @@ module.exports = async (req, res) => {
       apiKey = process.env.BLACKCAT_API_KEY || "";
     } else if (provider === "brutalcash") {
       apiKey = process.env.BRUTALCASH_API_KEY || "";
+    } else if (provider === "paradise") {
+      apiKey = process.env.PARADISE_API_KEY || "";
     } else {
       apiKey = process.env.SEALPAY_API_KEY || "";
     }
@@ -562,7 +623,9 @@ module.exports = async (req, res) => {
       provider === "blackcat"
         ? await requestBlackcat({ apiUrl, apiKey, amount, body, req, customer, slug })
         : provider === "brutalcash"
-          ? await requestBrutalcash({ apiUrl, apiKey, amount, body, req, customer, slug })
+        ? await requestBrutalcash({ apiUrl, apiKey, amount, body, req, customer, slug })
+        : provider === "paradise"
+        ? await requestParadise({ apiUrl, apiKey, amount, body, req, customer, slug })
         : await requestSealpay({ apiUrl, apiKey, amount, body, req, customer });
 
     if (!result.ok) {
