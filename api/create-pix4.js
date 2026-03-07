@@ -5,7 +5,7 @@ const { decryptText } = require("../lib/credentials-crypto");
 const { resolvePublicOwnerContext } = require("../lib/public-owner-context");
 const DEFAULT_SEALPAY_API_URL =
   process.env.SEALPAY_API_URL || "https://abacate-5eo1.onrender.com/create-pix4";
-const DEFAULT_PARADISE_API_URL = process.env.PARADISE_API_URL || "https://multi.paradisepags.com/api/create-charge";
+const DEFAULT_PARADISE_API_URL = process.env.PARADISE_API_URL || "https://multi.paradisepags.com/api/v1/transaction";
 const DEFAULT_BLACKCAT_API_URL =
   process.env.BLACKCAT_API_URL || "https://api.blackcatpagamentos.online/api/sales/create-sale";
 const DEFAULT_BRUTALCASH_API_URL =
@@ -518,25 +518,49 @@ async function requestBrutalcash({ apiUrl, apiKey, amount, body, req, customer, 
 
 async function requestParadise({ apiUrl, apiKey, amount, body, req, customer, slug }) {
   const tracking = body.tracking || {};
+  // Paradise expects amount in cents and productHash; build payload accordingly.
+  const productHash = String(body.productHash || body.product_hash || process.env.PARADISE_PRODUCT_HASH || "").trim() || undefined;
+
+  // Ensure we have a unique email and a document (CPF) when not provided (One-Click flows require unique customer)
+  const ensureEmail = (c) => {
+    if (c && c.email) return String(c.email).trim();
+    return `cliente_${Date.now()}@email.com`;
+  };
+
+  const generateCpf = () => {
+    // simple CPF generator (mod11) producing valid formatted digits-only string
+    const rand = () => Math.floor(Math.random() * 9);
+    const base = Array.from({ length: 9 }, () => String(rand())).join("");
+    const calc = (digits) => {
+      const nums = digits.split("").map(Number);
+      let sum = 0;
+      for (let i = 0; i < nums.length; i++) {
+        sum += nums[i] * (nums.length + 1 - i);
+      }
+      const mod = sum % 11;
+      return mod < 2 ? 0 : 11 - mod;
+    };
+    const d1 = calc(base);
+    const d2 = calc(base + String(d1));
+    return `${base}${d1}${d2}`;
+  };
+
   const payload = {
     amount,
-    currency: "BRL",
-    description: body.description || "Pedido",
+    // include productHash only when available
+    ...(productHash ? { productHash } : {}),
     customer: {
-      name: customer.name,
-      email: customer.email,
-      phone: customer.cellphone || "",
-      document: customer.taxId || "",
+      name: customer.name || `Cliente ${Date.now()}`,
+      email: ensureEmail(customer),
+      document: customer.taxId || customer.document || generateCpf(),
+      phone: customer.cellphone || normalizePhone(customer.cellphone) || "11999999999",
     },
-    external_ref: String(body.cart_id || body.cartId || "").trim() || undefined,
-    utm: tracking.utm || {},
-    source: tracking.src || req.headers.referer || "",
   };
-  // Try multiple auth header variants to diagnose provider differences.
+  // Try multiple auth header variants to diagnose provider differences. Prioritize X-API-Key per Paradise docs.
   const headerVariants = [
-    { name: "Authorization: Bearer", build: () => ({ Authorization: apiKey ? `Bearer ${apiKey}` : undefined }) },
     { name: "X-API-Key", build: () => ({ "X-API-Key": apiKey }) },
     { name: "x-api-key", build: () => ({ "x-api-key": apiKey }) },
+    { name: "Authorization: Bearer", build: () => ({ Authorization: apiKey ? `Bearer ${apiKey}` : undefined }) },
   ];
 
   let lastError = { status: 0, error: "Pix error", raw: {} };
