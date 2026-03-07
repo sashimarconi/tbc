@@ -662,77 +662,113 @@ async function requestParadise({ apiUrl, apiKey, amount, body, req, customer, sl
   try {
     const urlObj = new URL(apiUrl);
     const origin = `${urlObj.protocol}//${urlObj.host}`;
-    for (const p of altPaths) {
-      const candidate = origin + p;
-      if (triedUrls.has(candidate)) continue;
-      triedUrls.add(candidate);
-      try {
-        console.info('[create-pix4][paradise] trying alternative url', { candidate });
-      } catch (_e) {}
+    // Build host variants to handle merchant-specific hosts (multi. -> api., app., root)
+    const host = urlObj.host || "";
+    const hostVariants = new Set([host]);
+    try {
+      if (host.startsWith("multi.")) {
+        hostVariants.add(host.replace(/^multi\./i, "api."));
+        hostVariants.add(host.replace(/^multi\./i, ""));
+        hostVariants.add(host.replace(/^multi\./i, "app."));
+      } else {
+        hostVariants.add(`api.${host}`);
+        hostVariants.add(`app.${host}`);
+        if (host.split('.').length > 2) {
+          const parts = host.split('.');
+          hostVariants.add(parts.slice(-2).join('.'));
+        }
+      }
+    } catch (_err) {}
 
-      for (let i = 0; i < headerVariants.length; i++) {
-        const variant = headerVariants[i];
-        const headers = Object.assign(
-          { "Content-Type": "application/json", "User-Agent": body.user_agent || req.headers["user-agent"] || "TheBlackCheckout" },
-          variant.build() || {}
-        );
+    const originVariants = Array.from(hostVariants).map((h) => `${urlObj.protocol}//${h}`);
 
+    for (const originCandidate of originVariants) {
+      for (const p of altPaths) {
+        const candidate = originCandidate + p;
+        if (triedUrls.has(candidate)) continue;
+        triedUrls.add(candidate);
         try {
-          try { console.info("[create-pix4][paradise] alt attempt", { candidate, attempt: i + 1, header: variant.name }); } catch (_e) {}
-          const maskedHeaders = {};
-          Object.keys(headers || {}).forEach((hk) => {
-            const hv = headers[hk];
-            if (/api[-_ ]?key|authorization/i.test(hk)) {
-              maskedHeaders[hk] = hv ? (typeof hv === 'string' ? `${hv.slice(0,4)}***` : '***') : hv;
-            } else {
-              maskedHeaders[hk] = hv;
+          console.info('[create-pix4][paradise] trying alternative url', { candidate });
+        } catch (_e) {}
+
+        // try path variants including productHash embedded paths
+        const candidatePaths = [p];
+        if (productHash) {
+          candidatePaths.push(`${p.replace(/\/$/, '')}/${productHash}`);
+          candidatePaths.push(`${p.replace(/\/$/, '')}/merchant/${productHash}`);
+          candidatePaths.push(`${p.replace(/\/$/, '')}/store/${productHash}`);
+          candidatePaths.push(`${p.replace(/\/$/, '')}/product/${productHash}`);
+        }
+
+        for (const subPath of candidatePaths) {
+          const candidateUrl = originCandidate + subPath;
+          if (triedUrls.has(candidateUrl)) continue;
+          triedUrls.add(candidateUrl);
+          for (let i = 0; i < headerVariants.length; i++) {
+            const variant = headerVariants[i];
+            const headers = Object.assign(
+              { "Content-Type": "application/json", Accept: "application/json", "User-Agent": body.user_agent || req.headers["user-agent"] || "TheBlackCheckout" },
+              variant.build() || {}
+            );
+
+            try {
+              try { console.info("[create-pix4][paradise] alt attempt", { candidate: candidateUrl, attempt: i + 1, header: variant.name }); } catch (_e) {}
+              const maskedHeaders = {};
+              Object.keys(headers || {}).forEach((hk) => {
+                const hv = headers[hk];
+                if (/api[-_ ]?key|authorization/i.test(hk)) {
+                  maskedHeaders[hk] = hv ? (typeof hv === 'string' ? `${hv.slice(0,4)}***` : '***') : hv;
+                } else {
+                  maskedHeaders[hk] = hv;
+                }
+              });
+              console.info('[create-pix4][paradise] outgoing alt', { candidate: candidateUrl, attempt: i + 1, header: variant.name, payload, headers: maskedHeaders });
+
+              const response = await fetch(candidateUrl, {
+                method: "POST",
+                headers,
+                body: JSON.stringify(payload),
+              });
+
+              let data = {};
+              try {
+                data = await response.json();
+              } catch (err) {
+                const text = await response.text().catch(() => "");
+                data = text ? { text } : {};
+              }
+
+              if (!response.ok) {
+                try { console.warn('[create-pix4][paradise] alt provider not-ok', { candidate: candidateUrl, status: response.status, header: variant.name, raw: data }); } catch (_e) {}
+                lastError = { status: response.status || 400, error: extractProviderError(data, 'Pix error'), raw: data };
+                continue;
+              }
+
+              const txid = String(data.txid || data.transactionId || data.id || "").trim();
+              const rawQr = data.pix_qr_code || data.pixQrCode || data.qr || data.qr_code || "";
+              const pixCode = data.pix_code || data.pixCode || data.copyPaste || data.code || "";
+              let pixQr = "";
+              if (rawQr) {
+                pixQr = rawQr.startsWith("data:image") ? rawQr : /^https?:\/\//i.test(rawQr) ? rawQr : `data:image/png;base64,${rawQr}`;
+              } else if (data.qr_base64) {
+                pixQr = `data:image/png;base64,${data.qr_base64}`;
+              }
+
+              return {
+                ok: true,
+                data: {
+                  pix_qr_code: pixQr || "",
+                  pix_code: pixCode || "",
+                  txid: txid || "",
+                  expires_at: data.expires_at || data.expiresAt || null,
+                },
+              };
+            } catch (error) {
+              lastError = { status: 502, error: error?.message || 'Pix connection error', raw: {} };
+              try { console.error('[create-pix4][paradise] alt fetch error', { candidate: candidateUrl, attempt: i + 1, header: variant.name, message: error?.message }); } catch (_e) {}
+              continue;
             }
-          });
-          console.info('[create-pix4][paradise] outgoing alt', { candidate, attempt: i + 1, header: variant.name, payload, headers: maskedHeaders });
-
-          const response = await fetch(candidate, {
-            method: "POST",
-            headers,
-            body: JSON.stringify(payload),
-          });
-
-          let data = {};
-          try {
-            data = await response.json();
-          } catch (err) {
-            const text = await response.text().catch(() => "");
-            data = text ? { text } : {};
           }
-
-          if (!response.ok) {
-            try { console.warn('[create-pix4][paradise] alt provider not-ok', { candidate, status: response.status, header: variant.name, raw: data }); } catch (_e) {}
-            lastError = { status: response.status || 400, error: extractProviderError(data, 'Pix error'), raw: data };
-            continue;
-          }
-
-          const txid = String(data.txid || data.transactionId || data.id || "").trim();
-          const rawQr = data.pix_qr_code || data.pixQrCode || data.qr || data.qr_code || "";
-          const pixCode = data.pix_code || data.pixCode || data.copyPaste || data.code || "";
-          let pixQr = "";
-          if (rawQr) {
-            pixQr = rawQr.startsWith("data:image") ? rawQr : /^https?:\/\//i.test(rawQr) ? rawQr : `data:image/png;base64,${rawQr}`;
-          } else if (data.qr_base64) {
-            pixQr = `data:image/png;base64,${data.qr_base64}`;
-          }
-
-          return {
-            ok: true,
-            data: {
-              pix_qr_code: pixQr || "",
-              pix_code: pixCode || "",
-              txid: txid || "",
-              expires_at: data.expires_at || data.expiresAt || null,
-            },
-          };
-        } catch (error) {
-          lastError = { status: 502, error: error?.message || 'Pix connection error', raw: {} };
-          try { console.error('[create-pix4][paradise] alt fetch error', { candidate, attempt: i + 1, header: variant.name, message: error?.message }); } catch (_e) {}
-          continue;
         }
       }
     }
